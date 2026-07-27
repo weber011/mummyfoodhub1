@@ -45,23 +45,22 @@ export function Hero() {
       className="relative min-h-screen flex items-center overflow-hidden"
     >
       {/* ── BACKGROUND ── */}
-      {/* Dark bg fills letterbox gaps on mobile when plate is contained */}
       <div className="absolute inset-0 z-0 bg-[#0f0a06]">
-        {/* Food plate hero background image */}
-        {/* Mobile: object-contain so full plate is visible; Desktop: object-cover for full bleed */}
+        {/* Plate positioned on the RIGHT / upper area so it shows behind the quote */}
         <Image
           src="/images/hero section background.png"
           alt="Delicious homemade food"
           fill
           priority
-          className="object-contain md:object-cover object-center"
+          className="object-contain md:object-cover object-[center_20%] md:object-[right_center]"
         />
-        {/* Mobile overlay — lighter so plate shows through, text still readable via text-shadow */}
-        <div className="absolute inset-0 bg-black/60 md:bg-transparent" />
-        {/* Desktop: heavy left overlay for text clarity, right stays lighter */}
-        <div className="absolute inset-0 hidden md:block bg-gradient-to-r from-black/92 via-black/75 to-black/55" />
-        {/* Top & bottom fade for polish */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/40" />
+        {/* Vertical gradient: transparent at top (plate shows behind quote)
+            → solid dark from middle down (buttons & CTAs are clean) */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/80 to-black/97" />
+        {/* Desktop: left dark column so left-side text is always readable */}
+        <div className="absolute inset-0 hidden md:block bg-gradient-to-r from-black/90 via-black/60 to-transparent" />
+        {/* Bottom solid strip — guarantees buttons area is fully dark */}
+        <div className="absolute bottom-0 left-0 right-0 h-[55%] bg-gradient-to-t from-black/98 via-black/85 to-transparent" />
       </div>
 
       {/* ── SPLIT LAYOUT ── */}
