@@ -45,22 +45,19 @@ export function Hero() {
       className="relative min-h-screen flex items-center overflow-hidden"
     >
       {/* ── BACKGROUND ── */}
-      {/* Soft background color so the logo blends well */}
-      <div className="absolute inset-0 z-0 bg-[#1a100c]">
-        {/* Logo as background */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-20">
-          <Image
-            src="/logo.png"
-            alt="Mummy Food Hub Logo Background"
-            fill
-            priority
-            className="object-cover object-center scale-110 blur-sm"
-          />
-        </div>
-        {/* Heavy left overlay so ALL text pops — right side stays brighter */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/80 to-transparent" />
-        {/* Bottom fade */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+      <div className="absolute inset-0 z-0">
+        {/* Food plate hero background image */}
+        <Image
+          src="/images/hero section background.png"
+          alt="Delicious homemade food"
+          fill
+          priority
+          className="object-cover object-center"
+        />
+        {/* Heavy dark overlay — left side for text clarity, right slightly lighter */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/92 via-black/75 to-black/55" />
+        {/* Top & bottom fade for polish */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/40" />
       </div>
 
       {/* ── SPLIT LAYOUT ── */}
