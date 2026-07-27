@@ -45,17 +45,21 @@ export function Hero() {
       className="relative min-h-screen flex items-center overflow-hidden"
     >
       {/* ── BACKGROUND ── */}
-      <div className="absolute inset-0 z-0">
+      {/* Dark bg fills letterbox gaps on mobile when plate is contained */}
+      <div className="absolute inset-0 z-0 bg-[#0f0a06]">
         {/* Food plate hero background image */}
+        {/* Mobile: object-contain so full plate is visible; Desktop: object-cover for full bleed */}
         <Image
           src="/images/hero section background.png"
           alt="Delicious homemade food"
           fill
           priority
-          className="object-cover object-center"
+          className="object-contain md:object-cover object-center"
         />
-        {/* Heavy dark overlay — left side for text clarity, right slightly lighter */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/92 via-black/75 to-black/55" />
+        {/* Mobile overlay — lighter so plate shows through, text still readable via text-shadow */}
+        <div className="absolute inset-0 bg-black/60 md:bg-transparent" />
+        {/* Desktop: heavy left overlay for text clarity, right stays lighter */}
+        <div className="absolute inset-0 hidden md:block bg-gradient-to-r from-black/92 via-black/75 to-black/55" />
         {/* Top & bottom fade for polish */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/40" />
       </div>
@@ -91,15 +95,15 @@ export function Hero() {
             </h1>
 
             {/* Tagline */}
-            <p className="hero-text-block text-white/85 font-subheading text-lg md:text-xl leading-relaxed mb-3">
+            <p className="hero-text-block text-white/85 font-subheading text-lg md:text-xl leading-relaxed mb-3 drop-shadow-lg">
               Fresh • Less Oily • Hygienic • Homemade
             </p>
-            <p className="hero-text-block text-white/85 font-subheading text-base md:text-lg leading-relaxed mb-3">
+            <p className="hero-text-block text-white/85 font-subheading text-base md:text-lg leading-relaxed mb-3 drop-shadow-lg">
               Meals Delivered Daily to Your Doorstep
             </p>
 
             {/* Delivery charge */}
-            <p className="hero-text-block text-white/50 text-sm font-subheading mb-10">
+            <p className="hero-text-block text-white/60 text-sm font-subheading mb-10 drop-shadow-lg">
               Delivery: ₹5 – ₹20 depending on distance
             </p>
 
