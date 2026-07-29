@@ -226,7 +226,11 @@ export function MenuCard({
           }`}
         >
           <AnimatePresence mode="wait">
-            {added ? (
+            {disabled ? (
+              <motion.span key="coming" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="flex items-center gap-2">
+                Coming Soon
+              </motion.span>
+            ) : added ? (
               <motion.span key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="flex items-center gap-2">
                 <Check className="w-4 h-4" /> Added to Cart!
               </motion.span>
