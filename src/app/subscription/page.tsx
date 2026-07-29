@@ -6,6 +6,19 @@ import Link from "next/link";
 
 const plans = [
   {
+    id: "trial",
+    name: "Trial Plan (6 Meals)",
+    price: 500,
+    duration: "6 Meals",
+    features: [
+      "Try before committing",
+      "Any 6 meals (Lunch/Dinner)",
+      "Different menu every day",
+      "Valid for 10 days"
+    ],
+    recommended: false,
+  },
+  {
     id: "lunch",
     name: "Lunch Only Plan",
     price: 2100,
@@ -62,7 +75,7 @@ export default function SubscriptionPage() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
         
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-20 items-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto mb-20 items-center">
           {plans.map((plan, idx) => (
             <motion.div
               key={plan.id}
