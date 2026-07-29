@@ -2,31 +2,48 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import { X, Minus, Plus, ShoppingBag, Trash2, MapPin, ChevronDown } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+
+// Sector → base delivery charge mapping
+const SECTOR_CHARGES: Record<string, number> = {
+  "106": 5,
+  "104": 7,
+  "107": 7,
+  "108": 10,
+  "82":  10,
+  "93":  10,
+  "133": 10,
+  "101": 12,
+  "135": 15,
+};
+
+const SECTOR_OPTIONS = [
+  { value: "106", label: "Sector 106", charge: 5 },
+  { value: "104", label: "Sector 104", charge: 7 },
+  { value: "107", label: "Sector 107", charge: 7 },
+  { value: "108", label: "Sector 108", charge: 10 },
+  { value: "82",  label: "Sector 82",  charge: 10 },
+  { value: "93",  label: "Sector 93",  charge: 10 },
+  { value: "133", label: "Sector 133", charge: 10 },
+  { value: "101", label: "Sector 101", charge: 12 },
+  { value: "135", label: "Sector 135", charge: 15 },
+];
 
 export function CartDrawer() {
   const { cart, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity, clearCart, totalPrice, totalItems } = useCart();
   const [step, setStep] = useState<"cart" | "form">("cart");
-  const [form, setForm] = useState({ 
-    name: "", phone: "", sector: "106", address: "", floor: "", landmark: "", 
-    deliveryType: "Office Gate", time: "Lunch (12:30 - 2 PM)", payment: "Cash on Delivery", 
-    notes: "", isBulkOrder: false 
+  const [form, setForm] = useState({
+    name: "", phone: "", sector: "106", address: "", floor: "", landmark: "",
+    deliveryType: "Office Gate", time: "Lunch (12:30 - 2 PM)", payment: "Cash on Delivery",
+    notes: "", isBulkOrder: false
   });
 
-  // Calculate delivery logic
-  const sectorNum = parseInt(form.sector) || 106;
-  const diff = Math.abs(sectorNum - 106);
-  const km = diff * 0.5;
-  
-  let deliveryBase = 5;
-  if (km > 3) {
-    deliveryBase = 5 + Math.ceil(km - 3) * 2;
-  }
-  if (form.deliveryType === "Doorstep") {
-    deliveryBase += 10;
-  }
-  
+  // Sector-based delivery charge lookup
+  const sectorBaseCharge = SECTOR_CHARGES[form.sector] ?? 10;
+  let deliveryBase = sectorBaseCharge;
+  if (form.deliveryType === "Doorstep (+₹10)") deliveryBase += 10;
+
   let discountRatio = 0;
   let discountMsg = "";
   if (totalPrice >= 400) {
@@ -34,33 +51,19 @@ export function CartDrawer() {
     discountMsg = "🚀 You unlocked FREE delivery!";
   } else if (totalPrice >= 200) {
     discountRatio = 0.5;
-    discountMsg = "🎉 Wow! You unlocked 50% off delivery!";
+    discountMsg = "🎉 Wow! You get 50% off on delivery!";
   }
-  
+
   const finalDeliveryCharge = Math.floor(deliveryBase * (1 - discountRatio));
   const finalTotal = totalPrice + finalDeliveryCharge;
 
   const handleOrder = () => {
     const itemLines = cart.map((i) => `  • ${i.quantity}x ${i.title}${i.extras && i.extras.length > 0 ? ` (+ ${i.extras.map(e => e.name).join(', ')})` : ''} — ₹${(i.price + (i.extras?.reduce((s, e) => s + e.price, 0) || 0)) * i.quantity}`).join("\n");
-    const addressDetails = `${form.address}, Sector ${form.sector}${form.deliveryType === "Doorstep" ? `, Floor: ${form.floor}` : ''}`;
-    
-    const msg = `🍱 *New Order - Mummy Food Hub*
-${form.isBulkOrder ? '📦 *BULK ORDER*\n' : ''}
-👤 *Name:* ${form.name}
-📞 *Phone:* ${form.phone}
-📍 *Deliver To:* ${form.deliveryType}
-🏠 *Address:* ${addressDetails}
-🏢 *Landmark:* ${form.landmark}
-⏰ *Delivery:* ${form.time}
-💳 *Payment:* ${form.payment}
+    const sectorLabel = SECTOR_OPTIONS.find(s => s.value === form.sector)?.label ?? `Sector ${form.sector}`;
+    const deliveryTypeLabel = form.deliveryType;
+    const addressDetails = `${form.address}, ${sectorLabel}${form.deliveryType === "Doorstep (+₹10)" ? `, Floor/Flat: ${form.floor}` : ''}`;
 
-🛒 *Items:*
-${itemLines}
-
-🚚 *Delivery Charge:* ₹${finalDeliveryCharge}
-💰 *Total:* ₹${finalTotal}
-
-📝 *Notes:* ${form.notes || "None"}`;
+    const msg = `🍱 *New Order - Mummy Food Hub*\n${form.isBulkOrder ? '\n📦 *BULK ORDER*' : ''}\n\n👤 *Name:* ${form.name}\n📞 *Phone:* ${form.phone}\n📍 *Deliver To:* ${deliveryTypeLabel}\n🏠 *Address:* ${addressDetails}\n🏢 *Landmark:* ${form.landmark}\n⏰ *Delivery Time:* ${form.time}\n💳 *Payment:* ${form.payment}\n\n🛒 *Items:*\n${itemLines}\n\n🚚 *Delivery Charge:* ₹${finalDeliveryCharge}\n💰 *Total to Pay:* ₹${finalTotal}\n\n📝 *Notes:* ${form.notes || "None"}`;
     const url = `https://wa.me/917065665988?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
     clearCart();
@@ -161,33 +164,48 @@ ${itemLines}
               <>
                 {/* Order Form */}
                 <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-                  {/* Summary */}
-                  <div className="bg-primary/5 rounded-xl p-4 border border-primary/20 mb-2">
-                    <p className="text-xs font-bold uppercase tracking-wider text-primary mb-2">Order Summary</p>
-                    {cart.map((item) => (
-                      <div key={item.title} className="flex justify-between text-sm text-foreground/80">
-                        <span>{item.quantity}x {item.title}</span>
-                        <span className="font-bold">₹{item.price * item.quantity}</span>
-                      </div>
-                    ))}
-                    <div className="flex justify-between text-sm text-foreground/80 border-t border-primary/10 mt-2 pt-2">
+                  {/* Order Summary Card */}
+                  <div className="bg-primary/5 rounded-xl border border-primary/20 overflow-hidden">
+                    <div className="px-4 pt-4 pb-2">
+                      <p className="text-xs font-bold uppercase tracking-wider text-primary mb-2">Order Summary</p>
+                      {cart.map((item) => (
+                        <div key={item.title} className="flex justify-between text-sm text-foreground/80 py-0.5">
+                          <span>{item.quantity}x {item.title}</span>
+                          <span className="font-bold">₹{item.price * item.quantity}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Live Delivery Charge Row */}
+                    <div className="mx-4 border-t border-primary/10 py-2 flex justify-between text-sm text-foreground/70">
                       <span>Delivery Charge</span>
-                      <span>
-                        {discountRatio > 0 && <span className="line-through text-muted-foreground mr-2">₹{deliveryBase}</span>}
+                      <motion.span
+                        key={finalDeliveryCharge}
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="font-bold"
+                      >
+                        {discountRatio > 0 && (
+                          <span className="line-through text-muted-foreground mr-1 text-xs">₹{deliveryBase}</span>
+                        )}
                         ₹{finalDeliveryCharge}
-                      </span>
+                      </motion.span>
                     </div>
-                    <div className="flex justify-between text-sm font-bold text-primary border-t border-primary/20 mt-2 pt-2">
+                    <div className="mx-4 border-t border-primary/20 py-2 flex justify-between text-sm font-bold text-primary">
                       <span>Total to Pay</span>
-                      <span>₹{finalTotal}</span>
+                      <motion.span
+                        key={finalTotal}
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                      >
+                        ₹{finalTotal}
+                      </motion.span>
                     </div>
+                    {discountMsg && (
+                      <div className="bg-[#25D366]/10 text-[#25D366] px-4 py-2 text-xs font-bold text-center border-t border-[#25D366]/20">
+                        {discountMsg}
+                      </div>
+                    )}
                   </div>
-                  
-                  {discountMsg && (
-                    <div className="bg-[#25D366]/10 text-[#25D366] p-2 rounded-lg text-xs font-bold text-center border border-[#25D366]/20">
-                      {discountMsg}
-                    </div>
-                  )}
 
                   {/* Bulk Order Checkbox */}
                   <label className="flex items-center gap-2 p-3 bg-secondary/5 border border-secondary/20 rounded-lg cursor-pointer">
@@ -219,43 +237,68 @@ ${itemLines}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
+                    {/* Sector Dropdown */}
                     <div>
                       <label className="text-xs font-bold text-foreground uppercase tracking-wide mb-1 block">Sector *</label>
-                      <input
-                        type="number"
-                        placeholder="e.g. 106"
-                        value={form.sector}
-                        onChange={(e) => setForm({ ...form, sector: e.target.value })}
-                        className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors font-subheading"
-                      />
+                      <div className="relative">
+                        <select
+                          value={form.sector}
+                          onChange={(e) => setForm({ ...form, sector: e.target.value })}
+                          className="w-full appearance-none border border-border rounded-lg pl-3 pr-8 py-2 text-sm focus:outline-none focus:border-primary font-subheading bg-white transition-colors"
+                        >
+                          {SECTOR_OPTIONS.map(s => (
+                            <option key={s.value} value={s.value}>
+                              {s.label} — ₹{s.charge}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      </div>
+                      <p className="text-xs text-primary font-semibold mt-1 pl-0.5">
+                        Delivery: ₹{SECTOR_CHARGES[form.sector] ?? 10}
+                      </p>
                     </div>
+                    {/* Deliver To */}
                     <div>
                       <label className="text-xs font-bold text-foreground uppercase tracking-wide mb-1 block">Deliver To</label>
-                      <select
-                        value={form.deliveryType}
-                        onChange={(e) => setForm({ ...form, deliveryType: e.target.value })}
-                        className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-subheading bg-white"
-                      >
-                        <option>Office Gate</option>
-                        <option>Doorstep (+₹10)</option>
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={form.deliveryType}
+                          onChange={(e) => setForm({ ...form, deliveryType: e.target.value })}
+                          className="w-full appearance-none border border-border rounded-lg pl-3 pr-8 py-2 text-sm focus:outline-none focus:border-primary font-subheading bg-white transition-colors"
+                        >
+                          <option value="Office Gate">Office Gate</option>
+                          <option value="Main Gate of House">Main Gate of House</option>
+                          <option value="Doorstep (+₹10)">Doorstep (+₹10)</option>
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      </div>
                     </div>
                   </div>
 
-                  {form.deliveryType === "Doorstep" && (
-                    <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-2">
-                      <div className="col-span-2">
-                        <label className="text-xs font-bold text-foreground uppercase tracking-wide mb-1 block">Floor & Tower / Flat No. *</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. 5th Floor, Tower B, Flat 501"
-                          value={form.floor}
-                          onChange={(e) => setForm({ ...form, floor: e.target.value })}
-                          className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors font-subheading"
-                        />
-                      </div>
-                    </div>
-                  )}
+                  <AnimatePresence>
+                    {form.deliveryType === "Doorstep (+₹10)" && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pt-1">
+                          <label className="text-xs font-bold text-foreground uppercase tracking-wide mb-1 flex items-center gap-1.5">
+                            <MapPin className="w-3 h-3 text-primary" /> Floor & Tower / Flat No. *
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 5th Floor, Tower B, Flat 501"
+                            value={form.floor}
+                            onChange={(e) => setForm({ ...form, floor: e.target.value })}
+                            className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors font-subheading"
+                          />
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                   <div>
                     <label className="text-xs font-bold text-foreground uppercase tracking-wide mb-1 block">Building / Society Name *</label>

@@ -41,6 +41,14 @@ export function MenuCard({
     setTimeout(() => setAdded(false), 1500);
   };
 
+  const handleSkipAddons = () => {
+    addToCart({ title, price, extras: [] });
+    setAdded(true);
+    setShowExtras(false);
+    setSelectedExtras([]);
+    setTimeout(() => setAdded(false), 1500);
+  };
+
   const addExtra = (extra: { name: string; price: number }) => {
     setSelectedExtras(prev => [...prev, extra]);
   };
@@ -150,7 +158,7 @@ export function MenuCard({
             >
               <div className="flex justify-between items-center mb-3">
                 <p className="font-heading font-bold text-foreground">Select Add-ons</p>
-                <button onClick={() => setShowExtras(false)} className="text-muted-foreground hover:text-foreground text-sm font-subheading">Skip</button>
+                <button onClick={() => setShowExtras(false)} className="text-muted-foreground hover:text-foreground text-sm font-subheading">✕ Close</button>
               </div>
               <div className="flex flex-col gap-2 mb-4 overflow-y-auto max-h-48">
                 {extras?.map((extra, idx) => {
@@ -181,13 +189,23 @@ export function MenuCard({
                   );
                 })}
               </div>
-              <motion.button
-                onClick={handleAdd}
-                whileTap={{ scale: 0.95 }}
-                className="w-full bg-primary text-white font-subheading font-bold py-2.5 rounded-xl flex items-center justify-center shadow-md"
-              >
-                Confirm & Add
-              </motion.button>
+              <div className="flex flex-col gap-2">
+                <motion.button
+                  onClick={handleAdd}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-full bg-primary text-white font-subheading font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-md"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add with Extras · ₹{price + selectedExtras.reduce((s, e) => s + e.price, 0)}
+                </motion.button>
+                <motion.button
+                  onClick={handleSkipAddons}
+                  whileTap={{ scale: 0.97 }}
+                  className="w-full bg-muted border border-border text-foreground/70 font-subheading font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-muted/80 transition-colors"
+                >
+                  Proceed without Add-ons · ₹{price}
+                </motion.button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
