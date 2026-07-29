@@ -129,14 +129,7 @@ export default function VegMealsPage() {
               image="/images/rasgulla.jpeg"
               items={["Soft & Spongy", "Sugar Syrup"]}
             />
-            <MenuCard
-              title="Kheer / Phirni"
-              price={60}
-              badge="Weekend Special"
-              image="/images/rasgulla.jpeg"
-              disabled={true}
-              items={["Basmati Rice", "Full Cream Milk", "Dry Fruits", "Saffron"]}
-            />
+
           </div>
         </div>
 

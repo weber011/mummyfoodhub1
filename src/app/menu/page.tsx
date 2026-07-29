@@ -176,14 +176,7 @@ const allItems = [
     image: "/images/gulab jamun.jpeg",
     items: ["Soft & Spongy", "Sugar Syrup", "Cardamom Flavour"],
   },
-  {
-    category: "Sweets & Desserts",
-    title: "Kheer / Phirni",
-    price: 60,
-    badge: "Weekend Special",
-    image: "/images/rasgulla.jpeg",
-    items: ["Basmati Rice", "Full Cream Milk", "Dry Fruits", "Saffron"],
-  },
+
 ];
 
 export default function FullMenuPage() {
