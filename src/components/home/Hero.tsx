@@ -133,6 +133,7 @@ export function Hero() {
               {[
                 { num: "🏠 Homemade", label: "Cooked Fresh Daily" },
                 { num: "🍲 Daily Fresh", label: "No Frozen Food" },
+                { num: "🚚 5–7 KM", label: "Fast Delivery" },
                 { num: "❤️ Made with Love", label: "Maa Jaisa Taste" },
               ].map((stat) => (
                 <div key={stat.label} className="text-left">
