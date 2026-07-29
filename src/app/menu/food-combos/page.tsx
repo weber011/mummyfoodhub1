@@ -33,7 +33,7 @@ export default function FoodCombosPage() {
             originalPrice={99}
             price={89}
             discount="10%"
-            image="/images/kadhi chawal.jpeg"
+            image="/images/kadhi chawal.png"
             badge="New"
             items={["Punjabi Pakora Kadhi", "Steamed Rice", "Onion Salad", "Pickle"]}
             extras={[{ name: "Extra Rice (Half)", price: 30 }, { name: "Raita 100ml", price: 10 }]}
