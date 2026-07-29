@@ -19,8 +19,7 @@ const categories = [
     desc: "Stuffed and buttery",
     // Golden stuffed paratha on tawa
     image: "/images/aalu parata comboo.jpeg",
-    href: "/menu/parathas",
-    disabled: true
+    href: "/menu/parathas"
   },
   {
     title: "Diet Foods",
@@ -28,8 +27,7 @@ const categories = [
     // Mixed sprouts & veggies salad bowl
     image: "/images/sprouts salad.jpeg",
     href: "/menu/diet-foods",
-    badge: "10% OFF",
-    disabled: true
+    badge: "10% OFF"
   },
   {
     title: "Rice Together",
