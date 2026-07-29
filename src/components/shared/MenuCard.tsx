@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Check, Leaf } from "lucide-react";
+import { Plus, Check, Leaf, Minus } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useState } from "react";
 
@@ -41,12 +41,20 @@ export function MenuCard({
     setTimeout(() => setAdded(false), 1500);
   };
 
-  const toggleExtra = (extra: { name: string; price: number }) => {
-    setSelectedExtras(prev => 
-      prev.some(e => e.name === extra.name)
-        ? prev.filter(e => e.name !== extra.name)
-        : [...prev, extra]
-    );
+  const addExtra = (extra: { name: string; price: number }) => {
+    setSelectedExtras(prev => [...prev, extra]);
+  };
+
+  const removeExtra = (name: string) => {
+    setSelectedExtras(prev => {
+      const idx = prev.findIndex(e => e.name === name);
+      if (idx !== -1) {
+        const newExtras = [...prev];
+        newExtras.splice(idx, 1);
+        return newExtras;
+      }
+      return prev;
+    });
   };
 
   return (
@@ -144,22 +152,32 @@ export function MenuCard({
                 <p className="font-heading font-bold text-foreground">Select Add-ons</p>
                 <button onClick={() => setShowExtras(false)} className="text-muted-foreground hover:text-foreground text-sm font-subheading">Skip</button>
               </div>
-              <div className="flex flex-col gap-2 mb-4 overflow-y-auto max-h-32">
+              <div className="flex flex-col gap-2 mb-4 overflow-y-auto max-h-48">
                 {extras?.map((extra, idx) => {
-                  const isSelected = selectedExtras.some(e => e.name === extra.name);
+                  const count = selectedExtras.filter(e => e.name === extra.name).length;
                   return (
-                    <label key={idx} className={`flex items-center justify-between p-2 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}>
-                      <div className="flex items-center gap-2">
-                        <input 
-                          type="checkbox" 
-                          checked={isSelected}
-                          onChange={() => toggleExtra(extra)}
-                          className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
-                        />
-                        <span className="text-sm font-subheading text-foreground">{extra.name}</span>
+                    <div key={idx} className={`flex items-center justify-between p-2.5 rounded-lg border transition-colors ${count > 0 ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-subheading font-medium text-foreground">{extra.name}</span>
+                        <span className="text-sm font-bold text-primary">+₹{extra.price}</span>
                       </div>
-                      <span className="text-sm font-bold text-primary">+₹{extra.price}</span>
-                    </label>
+                      <div className="flex items-center gap-3 bg-white border border-border rounded-lg p-1 shadow-sm">
+                        <button 
+                          onClick={() => removeExtra(extra.name)} 
+                          disabled={count === 0}
+                          className="w-7 h-7 flex items-center justify-center rounded-md bg-muted text-muted-foreground hover:bg-primary hover:text-white disabled:opacity-50 disabled:hover:bg-muted disabled:hover:text-muted-foreground transition-colors"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="text-sm font-bold w-4 text-center text-foreground">{count}</span>
+                        <button 
+                          onClick={() => addExtra(extra)} 
+                          className="w-7 h-7 flex items-center justify-center rounded-md bg-muted text-muted-foreground hover:bg-primary hover:text-white transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
