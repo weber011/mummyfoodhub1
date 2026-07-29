@@ -93,7 +93,7 @@ export default function VegMealsPage() {
             <MenuCard
               title="Plain Roti"
               price={7}
-              image="/images/butter roti.jpeg"
+              image="/images/plain roti 1.jpeg"
               items={["Soft Wheat Roti", "Freshly baked"]}
             />
             <MenuCard
