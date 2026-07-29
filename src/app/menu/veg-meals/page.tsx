@@ -29,7 +29,7 @@ export default function VegMealsPage() {
               discount="12%"
               image="/images/regular veg thali.jpeg"
               badge="Bestseller"
-              items={["4 Butter Roti", "Dal of the day", "Jeera Rice", "Seasonal Sabzi", "Fresh Salad", "Pickle"]}
+              items={["4 Butter Roti", "Dal of the day", "Rice", "Seasonal Sabzi", "Fresh Salad", "Pickle"]}
               extras={[{ name: "Butter Roti", price: 10 }, { name: "Ghee Roti", price: 15 }, { name: "250ml Raita", price: 20 }, { name: "Rasgulla", price: 10 }]}
             />
             <MenuCard
@@ -59,7 +59,7 @@ export default function VegMealsPage() {
               image="/images/delux thali.jpeg"
               badge="Premium"
               disabled={true}
-              items={["Paneer Sabzi", "Dal Makhani / Dal Fry", "Jeera Rice", "4 Butter Roti", "Fresh Salad", "Pickle", "Sweet of the day"]}
+              items={["Paneer Sabzi", "Dal Makhani / Dal Fry", "Rice", "4 Butter Roti", "Fresh Salad", "Pickle", "Sweet of the day"]}
               extras={[{ name: "Butter Roti", price: 10 }, { name: "Ghee Roti", price: 15 }]}
             />
           </div>
@@ -81,7 +81,7 @@ export default function VegMealsPage() {
               title="Boondi Raita (250ml)"
               price={20}
               badge="Family Size"
-              image="/images/raita 20 img .jpeg"
+              image="/images/boondi raita2.jpeg"
               items={["Fresh Dahi", "Crispy Boondi", "Roasted Jeera", "Black Salt"]}
             />
             <MenuCard
