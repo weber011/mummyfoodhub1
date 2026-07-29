@@ -23,7 +23,7 @@ export default function FoodCombosPage() {
             price={89}
             discount="10%"
             image="/images/chhole chawal combo.jpeg"
-            items={["Punjabi Style Chhole", "Steamed Rice", "Onion Salad", "Pickle"]}
+            items={["Home made chhola", "Steamed Rice", "Onion Salad", "Pickle"]}
             extras={[{ name: "Extra Rice (Half)", price: 30 }, { name: "Raita 100ml", price: 10 }]}
           />
 

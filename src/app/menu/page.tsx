@@ -59,7 +59,7 @@ const allItems = [
     title: "Stuffed Paratha (1 Pc)",
     price: 50,
     image: "/images/aalu parata comboo.jpeg",
-    items: ["1 Large Aloo/Gobi/Onion Paratha", "Fresh Dahi (50ml)", "Homemade Achar"],
+    items: ["1 Large Aloo/Gobi/Onion Paratha", "Fresh Dahi (50ml)", "Achar"],
     extras: [{ name: "50ml Dahi", price: 15 }, { name: "Extra Achar", price: 10 }],
   },
   {
@@ -68,7 +68,7 @@ const allItems = [
     price: 80,
     badge: "Best Value",
     image: "/images/aalu parata comboo.jpeg",
-    items: ["2 Large Aloo/Gobi/Onion Parathas", "Fresh Dahi (100ml)", "Homemade Achar"],
+    items: ["2 Large Aloo/Gobi/Onion Parathas", "Fresh Dahi (100ml)", "Achar"],
     extras: [{ name: "100ml Dahi", price: 25 }, { name: "Extra Achar", price: 10 }],
   },
   {
@@ -76,7 +76,7 @@ const allItems = [
     title: "Paneer Paratha (1 Pc)",
     price: 70,
     image: "/images/paneer paratha.jpeg",
-    items: ["1 Large Paneer Paratha", "Fresh Dahi (50ml)", "Homemade Achar"],
+    items: ["1 Large Paneer Paratha", "Fresh Dahi (50ml)", "Achar"],
     extras: [{ name: "50ml Dahi", price: 15 }, { name: "Extra Achar", price: 10 }],
   },
   {
@@ -84,7 +84,7 @@ const allItems = [
     title: "Paneer Paratha (2 Pcs)",
     price: 120,
     image: "/images/paneer paratha.jpeg",
-    items: ["2 Large Paneer Parathas", "Fresh Dahi (100ml)", "Homemade Achar"],
+    items: ["2 Large Paneer Parathas", "Fresh Dahi (100ml)", "Achar"],
     extras: [{ name: "100ml Dahi", price: 25 }, { name: "Extra Achar", price: 10 }],
   },
 

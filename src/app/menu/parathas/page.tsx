@@ -27,7 +27,7 @@ export default function ParathasPage() {
               title="1 Piece Combo"
               price={50}
               image="/images/aalu parata comboo.jpeg"
-              items={["1 Large Stuffed Paratha", "Fresh Dahi (50ml)", "Homemade Achar"]}
+              items={["1 Large Stuffed Paratha", "Fresh Dahi (50ml)", "Achar"]}
               extras={[{ name: "50ml Dahi", price: 15 }, { name: "100ml Dahi", price: 25 }, { name: "Extra Achar", price: 10 }]}
             />
 
@@ -37,7 +37,7 @@ export default function ParathasPage() {
               price={80}
               badge="Best Value"
               image="/images/aalu parata comboo.jpeg"
-              items={["2 Large Stuffed Parathas", "Fresh Dahi (100ml)", "Homemade Achar"]}
+              items={["2 Large Stuffed Parathas", "Fresh Dahi (100ml)", "Achar"]}
               extras={[{ name: "50ml Dahi", price: 15 }, { name: "100ml Dahi", price: 25 }, { name: "Extra Achar", price: 10 }]}
             />
 
@@ -56,7 +56,7 @@ export default function ParathasPage() {
               title="1 Piece Paneer Combo"
               price={70}
               image="/images/paneer paratha.jpeg"
-              items={["1 Large Paneer Paratha", "Fresh Dahi (50ml)", "Homemade Achar"]}
+              items={["1 Large Paneer Paratha", "Fresh Dahi (50ml)", "Achar"]}
               extras={[{ name: "50ml Dahi", price: 15 }, { name: "100ml Dahi", price: 25 }, { name: "Extra Achar", price: 10 }]}
             />
 
@@ -65,7 +65,7 @@ export default function ParathasPage() {
               title="2 Pieces Paneer Combo"
               price={120}
               image="/images/paneer paratha.jpeg"
-              items={["2 Large Paneer Parathas", "Fresh Dahi (100ml)", "Homemade Achar"]}
+              items={["2 Large Paneer Parathas", "Fresh Dahi (100ml)", "Achar"]}
               extras={[{ name: "50ml Dahi", price: 15 }, { name: "100ml Dahi", price: 25 }, { name: "Extra Achar", price: 10 }]}
             />
 
