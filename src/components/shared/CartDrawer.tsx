@@ -117,20 +117,20 @@ export function CartDrawer() {
                     </div>
                   ) : (
                     cart.map((item) => (
-                      <div key={item.title} className="flex items-center gap-4 bg-muted/50 rounded-xl p-4 border border-border/50">
+                      <div key={item.id} className="flex items-center gap-4 bg-muted/50 rounded-xl p-4 border border-border/50">
                         <div className="flex-1">
                           <p className="font-heading font-bold text-foreground text-sm">{item.title}</p>
                           <p className="text-primary font-bold text-sm">₹{item.price} each</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => updateQuantity(item.title, item.quantity - 1)} className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                          <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
                             <Minus className="w-3 h-3" />
                           </button>
                           <span className="font-bold w-5 text-center text-sm">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.title, item.quantity + 1)} className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                          <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
                             <Plus className="w-3 h-3" />
                           </button>
-                          <button onClick={() => removeFromCart(item.title)} className="ml-1 text-red-400 hover:text-red-600 transition-colors">
+                          <button onClick={() => removeFromCart(item.id)} className="ml-1 text-red-400 hover:text-red-600 transition-colors">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -169,7 +169,7 @@ export function CartDrawer() {
                     <div className="px-4 pt-4 pb-2">
                       <p className="text-xs font-bold uppercase tracking-wider text-primary mb-2">Order Summary</p>
                       {cart.map((item) => (
-                        <div key={item.title} className="flex justify-between text-sm text-foreground/80 py-0.5">
+                        <div key={item.id} className="flex justify-between text-sm text-foreground/80 py-0.5">
                           <span>{item.quantity}x {item.title}</span>
                           <span className="font-bold">₹{item.price * item.quantity}</span>
                         </div>
