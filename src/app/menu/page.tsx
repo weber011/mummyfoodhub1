@@ -52,7 +52,7 @@ const allItems = [
     category: "Breads & Extras",
     title: "Plain Roti",
     price: 10,
-    image: "/images/plain rooti.jpeg",
+    image: "/images/plain_roti_real.jpg",
     items: ["Soft Wheat Roti, freshly made"],
   },
   {
