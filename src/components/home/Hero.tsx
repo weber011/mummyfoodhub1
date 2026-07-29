@@ -97,8 +97,11 @@ export function Hero() {
             <p className="hero-text-block text-white/85 font-subheading text-lg md:text-xl leading-relaxed mb-3 drop-shadow-lg">
               Fresh • Less Oily • Hygienic • Homemade
             </p>
-            <p className="hero-text-block text-white/85 font-subheading text-base md:text-lg leading-relaxed mb-3 drop-shadow-lg">
-              Meals Delivered Daily to Your Doorstep
+            <p className="hero-text-block text-white/90 font-subheading text-base md:text-lg leading-relaxed mb-3 drop-shadow-lg">
+              Fresh Homemade Lunch &amp; Dinner, Delivered Every Day.
+            </p>
+            <p className="hero-text-block text-white/75 font-subheading text-sm md:text-base leading-relaxed mb-3 drop-shadow-lg">
+              Healthy, home-style meals delivered fresh to your home &amp; office in Noida.
             </p>
 
             {/* Delivery charge */}
