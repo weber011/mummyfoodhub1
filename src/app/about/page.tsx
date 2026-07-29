@@ -11,7 +11,7 @@ export default function AboutPage() {
       <div className="bg-primary/10 py-16 text-center border-b border-border">
         <h1 className="text-4xl md:text-5xl font-heading font-bold text-foreground mb-4">About Us</h1>
         <div className="w-24 h-1 bg-primary mx-auto rounded-full mb-4" />
-        <p className="text-muted-foreground font-subheading text-lg max-w-2xl mx-auto">
+        <p className="text-primary font-heading text-2xl md:text-3xl font-black max-w-2xl mx-auto drop-shadow-sm uppercase tracking-wide mt-6">
           Simplicity is our Identity
         </p>
       </div>
@@ -28,8 +28,8 @@ export default function AboutPage() {
               className="relative h-[300px] rounded-2xl overflow-hidden shadow-lg"
             >
               <Image 
-                src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=2070&auto=format&fit=crop" 
-                alt="Kitchen cooking" 
+                src="/images/delux thali.jpeg" 
+                alt="Delicious Thali" 
                 fill 
                 className="object-cover" 
               />
@@ -42,8 +42,8 @@ export default function AboutPage() {
               className="relative h-[250px] mt-12 rounded-2xl overflow-hidden shadow-lg"
             >
               <Image 
-                src="https://images.unsplash.com/photo-1626779836791-7db1ccdb9909?q=80&w=2070&auto=format&fit=crop" 
-                alt="Fresh ingredients" 
+                src="/images/regular veg thali.jpeg" 
+                alt="Fresh Meals" 
                 fill 
                 className="object-cover" 
               />
@@ -92,6 +92,18 @@ export default function AboutPage() {
                 <div>
                   <h4 className="font-heading font-bold text-lg text-foreground mb-1">Our Promise</h4>
                   <p className="text-sm text-muted-foreground">Every bite you take will remind you of the love and care of a mother's cooking.</p>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="mt-8 flex gap-6">
+                <div className="p-4 bg-primary/10 rounded-xl border border-primary/20 flex-1 text-center">
+                  <p className="text-3xl font-heading font-black text-primary">100+</p>
+                  <p className="text-sm font-subheading text-foreground font-medium">Happy Clients</p>
+                </div>
+                <div className="p-4 bg-secondary/10 rounded-xl border border-secondary/20 flex-1 text-center">
+                  <p className="text-3xl font-heading font-black text-secondary">500+</p>
+                  <p className="text-sm font-subheading text-foreground font-medium">Deliveries</p>
                 </div>
               </div>
             </motion.div>

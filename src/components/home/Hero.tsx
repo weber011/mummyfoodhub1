@@ -74,7 +74,7 @@ export function Hero() {
             <div className="hero-text-block flex flex-wrap gap-3 mb-8">
               <span className="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-full bg-white/10 border border-white/25 text-white text-xs font-subheading font-medium backdrop-blur-sm">
                 <MapPin className="w-3.5 h-3.5 text-orange-400" />
-                Sectors 110 • 133 • 135, Noida
+                Sectors 106 • 133 • 135, Noida
               </span>
               <span className="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-full bg-white/10 border border-white/25 text-white text-xs font-subheading font-medium backdrop-blur-sm">
                 <Clock className="w-3.5 h-3.5 text-green-400" />
@@ -131,9 +131,9 @@ export function Hero() {
             {/* Stats */}
             <div className="hero-text-block flex gap-10">
               {[
-                { num: "500+", label: "Happy Families" },
+                { num: "500+", label: "Happy Deliveries" },
                 { num: "Daily", label: "Fresh Cooking" },
-                { num: "5 KM", label: "Delivery Radius" },
+                { num: "5-7 KM", label: "Delivery Radius" },
               ].map((stat) => (
                 <div key={stat.label} className="text-left">
                   <p className="text-2xl font-heading font-black text-orange-400 drop-shadow">{stat.num}</p>

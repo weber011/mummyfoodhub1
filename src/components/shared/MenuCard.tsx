@@ -17,24 +17,42 @@ type MenuCardProps = {
   image: string;
   badge?: string;
   isVeg?: boolean;
+  disabled?: boolean;
 };
 
 export function MenuCard({
-  title, originalPrice, price, discount, description, items, extras, image, badge, isVeg = true
+  title, originalPrice, price, discount, description, items, extras, image, badge, isVeg = true, disabled = false
 }: MenuCardProps) {
   const { addToCart } = useCart();
   const [added, setAdded] = useState(false);
+  const [showExtras, setShowExtras] = useState(false);
+  const [selectedExtras, setSelectedExtras] = useState<{ name: string; price: number }[]>([]);
 
   const handleAdd = () => {
-    addToCart({ title, price });
+    if (extras && extras.length > 0 && !showExtras) {
+      setShowExtras(true);
+      return;
+    }
+    
+    addToCart({ title, price, extras: selectedExtras });
     setAdded(true);
+    setShowExtras(false);
+    setSelectedExtras([]);
     setTimeout(() => setAdded(false), 1500);
+  };
+
+  const toggleExtra = (extra: { name: string; price: number }) => {
+    setSelectedExtras(prev => 
+      prev.some(e => e.name === extra.name)
+        ? prev.filter(e => e.name !== extra.name)
+        : [...prev, extra]
+    );
   };
 
   return (
     <motion.div
-      whileHover={{ y: -6, boxShadow: "0 20px 40px rgba(0,0,0,0.12)" }}
-      className="bg-white rounded-2xl overflow-hidden shadow-md border border-border/60 transition-all duration-300 flex flex-col h-full group"
+      whileHover={disabled ? {} : { y: -6, boxShadow: "0 20px 40px rgba(0,0,0,0.12)" }}
+      className={`bg-white rounded-2xl overflow-hidden shadow-md border border-border/60 transition-all duration-300 flex flex-col h-full group ${disabled ? "opacity-75 grayscale-[0.3]" : ""}`}
     >
       {/* Image */}
       <div className="relative h-52 w-full overflow-hidden">
@@ -42,7 +60,7 @@ export function MenuCard({
           src={image}
           alt={title}
           fill
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
+          className={`object-cover transition-transform duration-500 ${!disabled && "group-hover:scale-105"}`}
         />
         {/* Veg/Non-veg indicator */}
         <div className={`absolute top-3 left-3 w-5 h-5 border-2 flex items-center justify-center rounded-sm z-10 bg-white ${isVeg ? 'border-green-600' : 'border-red-600'}`}>
@@ -53,9 +71,16 @@ export function MenuCard({
             {badge}
           </div>
         )}
-        {discount && (
+        {discount && !disabled && (
           <div className="absolute bottom-3 right-3 bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md z-10">
             {discount} OFF
+          </div>
+        )}
+        {disabled && (
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-20">
+            <span className="bg-white/95 text-foreground px-4 py-1.5 rounded-full font-bold text-sm shadow-lg">
+              Coming Soon
+            </span>
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
@@ -106,14 +131,62 @@ export function MenuCard({
           </div>
         )}
 
+        {/* Add-ons Selector Overlay */}
+        <AnimatePresence>
+          {showExtras && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="absolute inset-x-0 bottom-0 bg-white border-t border-border shadow-[0_-10px_40px_rgba(0,0,0,0.1)] p-4 rounded-t-2xl z-30 flex flex-col"
+            >
+              <div className="flex justify-between items-center mb-3">
+                <p className="font-heading font-bold text-foreground">Select Add-ons</p>
+                <button onClick={() => setShowExtras(false)} className="text-muted-foreground hover:text-foreground text-sm font-subheading">Skip</button>
+              </div>
+              <div className="flex flex-col gap-2 mb-4 overflow-y-auto max-h-32">
+                {extras?.map((extra, idx) => {
+                  const isSelected = selectedExtras.some(e => e.name === extra.name);
+                  return (
+                    <label key={idx} className={`flex items-center justify-between p-2 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}>
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={isSelected}
+                          onChange={() => toggleExtra(extra)}
+                          className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                        <span className="text-sm font-subheading text-foreground">{extra.name}</span>
+                      </div>
+                      <span className="text-sm font-bold text-primary">+₹{extra.price}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <motion.button
+                onClick={handleAdd}
+                whileTap={{ scale: 0.95 }}
+                className="w-full bg-primary text-white font-subheading font-bold py-2.5 rounded-xl flex items-center justify-center shadow-md"
+              >
+                Confirm & Add
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Add to Order Button */}
         <motion.button
           onClick={handleAdd}
-          whileTap={{ scale: 0.95 }}
-          className={`w-full mt-auto font-subheading font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 ${
-            added
-              ? "bg-green-500 text-white"
-              : "bg-primary text-white hover:bg-primary/90 shadow-md hover:shadow-lg"
+          disabled={disabled}
+          whileTap={disabled ? {} : { scale: 0.95 }}
+          className={`w-full mt-auto font-subheading font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 relative z-20 ${
+            disabled 
+              ? "bg-muted text-muted-foreground cursor-not-allowed"
+              : added
+                ? "bg-green-500 text-white"
+                : showExtras
+                  ? "bg-transparent border-2 border-primary text-primary opacity-0 pointer-events-none"
+                  : "bg-primary text-white hover:bg-primary/90 shadow-md hover:shadow-lg"
           }`}
         >
           <AnimatePresence mode="wait">

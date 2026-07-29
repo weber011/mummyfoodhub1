@@ -23,13 +23,23 @@ export default function VegMealsPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <MenuCard
-              title="Standard Veg Thali"
+              title="Pocket Friendly Thali"
               originalPrice={90}
               price={79}
               discount="12%"
               image="/images/regular veg thali.jpeg"
               badge="Bestseller"
               items={["4 Butter Roti", "Dal of the day", "Jeera Rice", "Seasonal Sabzi", "Fresh Salad", "Pickle"]}
+              extras={[{ name: "Butter Roti", price: 10 }, { name: "Ghee Roti", price: 15 }]}
+            />
+            <MenuCard
+              title="Special Combo Thali"
+              originalPrice={129}
+              price={99}
+              discount="23%"
+              image="/images/regular veg thali.jpeg"
+              badge="Must Try"
+              items={["Pocket Friendly Thali", "250ml Boondi Raita", "1 Rasgulla"]}
               extras={[{ name: "Butter Roti", price: 10 }, { name: "Ghee Roti", price: 15 }]}
             />
           </div>
@@ -48,6 +58,7 @@ export default function VegMealsPage() {
               discount="10%"
               image="/images/delux thali.jpeg"
               badge="Premium"
+              disabled={true}
               items={["Paneer Sabzi", "Dal Makhani / Dal Fry", "Jeera Rice", "4 Butter Roti", "Fresh Salad", "Pickle", "Sweet of the day"]}
               extras={[{ name: "Butter Roti", price: 10 }, { name: "Ghee Roti", price: 15 }]}
             />
@@ -80,6 +91,12 @@ export default function VegMealsPage() {
               items={["Crispy Roasted Papad", "Perfect side for thalis"]}
             />
             <MenuCard
+              title="Plain Roti"
+              price={7}
+              image="/images/butter roti.jpeg"
+              items={["Soft Wheat Roti", "Freshly baked"]}
+            />
+            <MenuCard
               title="Butter Roti"
               price={15}
               image="/images/butter roti.jpeg"
@@ -107,10 +124,17 @@ export default function VegMealsPage() {
               items={["Soft & Spongy", "Sugar Syrup", "Cardamom Flavour"]}
             />
             <MenuCard
+              title="Rasgulla (1 Pc)"
+              price={10}
+              image="/images/rasgulla.jpeg"
+              items={["Soft & Spongy", "Sugar Syrup"]}
+            />
+            <MenuCard
               title="Kheer / Phirni"
               price={60}
               badge="Weekend Special"
               image="/images/rasgulla.jpeg"
+              disabled={true}
               items={["Basmati Rice", "Full Cream Milk", "Dry Fruits", "Saffron"]}
             />
           </div>

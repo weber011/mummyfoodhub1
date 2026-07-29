@@ -8,11 +8,59 @@ import { useCart } from "@/context/CartContext";
 export function CartDrawer() {
   const { cart, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity, clearCart, totalPrice, totalItems } = useCart();
   const [step, setStep] = useState<"cart" | "form">("cart");
-  const [form, setForm] = useState({ name: "", phone: "", address: "", landmark: "", time: "Lunch (12:30 - 2 PM)", payment: "Cash on Delivery", notes: "" });
+  const [form, setForm] = useState({ 
+    name: "", phone: "", sector: "106", address: "", floor: "", landmark: "", 
+    deliveryType: "Office Gate", time: "Lunch (12:30 - 2 PM)", payment: "Cash on Delivery", 
+    notes: "", isBulkOrder: false 
+  });
+
+  // Calculate delivery logic
+  const sectorNum = parseInt(form.sector) || 106;
+  const diff = Math.abs(sectorNum - 106);
+  const km = diff * 0.5;
+  
+  let deliveryBase = 5;
+  if (km > 3) {
+    deliveryBase = 5 + Math.ceil(km - 3) * 2;
+  }
+  if (form.deliveryType === "Doorstep") {
+    deliveryBase += 10;
+  }
+  
+  let discountRatio = 0;
+  let discountMsg = "";
+  if (totalPrice >= 400) {
+    discountRatio = 1;
+    discountMsg = "🚀 You unlocked FREE delivery!";
+  } else if (totalPrice >= 200) {
+    discountRatio = 0.5;
+    discountMsg = "🎉 Wow! You unlocked 50% off delivery!";
+  }
+  
+  const finalDeliveryCharge = Math.floor(deliveryBase * (1 - discountRatio));
+  const finalTotal = totalPrice + finalDeliveryCharge;
 
   const handleOrder = () => {
-    const itemLines = cart.map((i) => `  • ${i.quantity}x ${i.title} — ₹${i.price * i.quantity}`).join("\n");
-    const msg = `🍱 *New Order - Mummy Food Hub*\n\n👤 *Name:* ${form.name}\n📞 *Phone:* ${form.phone}\n📍 *Address:* ${form.address}\n🏠 *Landmark:* ${form.landmark}\n⏰ *Delivery:* ${form.time}\n💳 *Payment:* ${form.payment}\n\n🛒 *Items:*\n${itemLines}\n\n💰 *Total: ₹${totalPrice}*\n\n📝 *Notes:* ${form.notes || "None"}`;
+    const itemLines = cart.map((i) => `  • ${i.quantity}x ${i.title}${i.extras && i.extras.length > 0 ? ` (+ ${i.extras.map(e => e.name).join(', ')})` : ''} — ₹${(i.price + (i.extras?.reduce((s, e) => s + e.price, 0) || 0)) * i.quantity}`).join("\n");
+    const addressDetails = `${form.address}, Sector ${form.sector}${form.deliveryType === "Doorstep" ? `, Floor: ${form.floor}` : ''}`;
+    
+    const msg = `🍱 *New Order - Mummy Food Hub*
+${form.isBulkOrder ? '📦 *BULK ORDER*\n' : ''}
+👤 *Name:* ${form.name}
+📞 *Phone:* ${form.phone}
+📍 *Deliver To:* ${form.deliveryType}
+🏠 *Address:* ${addressDetails}
+🏢 *Landmark:* ${form.landmark}
+⏰ *Delivery:* ${form.time}
+💳 *Payment:* ${form.payment}
+
+🛒 *Items:*
+${itemLines}
+
+🚚 *Delivery Charge:* ₹${finalDeliveryCharge}
+💰 *Total:* ₹${finalTotal}
+
+📝 *Notes:* ${form.notes || "None"}`;
     const url = `https://wa.me/917065665988?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
     clearCart();
@@ -95,7 +143,11 @@ export function CartDrawer() {
                       <span className="font-subheading text-muted-foreground">Total ({totalItems} items)</span>
                       <span className="text-2xl font-heading font-black text-primary">₹{totalPrice}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mb-4">+ Delivery: ₹5-₹20 depending on distance</p>
+                    {discountMsg ? (
+                      <p className="text-xs text-[#25D366] font-bold mb-4">{discountMsg}</p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mb-4">+ Delivery charge calculates at checkout</p>
+                    )}
                     <button
                       onClick={() => setStep("form")}
                       className="w-full bg-primary text-white font-bold py-4 rounded-xl text-lg shadow-lg hover:bg-primary/90 transition-all active:scale-95"
@@ -118,29 +170,114 @@ export function CartDrawer() {
                         <span className="font-bold">₹{item.price * item.quantity}</span>
                       </div>
                     ))}
+                    <div className="flex justify-between text-sm text-foreground/80 border-t border-primary/10 mt-2 pt-2">
+                      <span>Delivery Charge</span>
+                      <span>
+                        {discountRatio > 0 && <span className="line-through text-muted-foreground mr-2">₹{deliveryBase}</span>}
+                        ₹{finalDeliveryCharge}
+                      </span>
+                    </div>
                     <div className="flex justify-between text-sm font-bold text-primary border-t border-primary/20 mt-2 pt-2">
-                      <span>Total</span>
-                      <span>₹{totalPrice}</span>
+                      <span>Total to Pay</span>
+                      <span>₹{finalTotal}</span>
+                    </div>
+                  </div>
+                  
+                  {discountMsg && (
+                    <div className="bg-[#25D366]/10 text-[#25D366] p-2 rounded-lg text-xs font-bold text-center border border-[#25D366]/20">
+                      {discountMsg}
+                    </div>
+                  )}
+
+                  {/* Bulk Order Checkbox */}
+                  <label className="flex items-center gap-2 p-3 bg-secondary/5 border border-secondary/20 rounded-lg cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={form.isBulkOrder}
+                      onChange={(e) => setForm({...form, isBulkOrder: e.target.checked})}
+                      className="w-4 h-4 text-secondary focus:ring-secondary rounded border-gray-300"
+                    />
+                    <span className="text-sm font-bold text-foreground">Is this a Bulk/Party Order?</span>
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { label: "Your Name *", key: "name", type: "text", placeholder: "e.g. Rahul" },
+                      { label: "Phone *", key: "phone", type: "tel", placeholder: "e.g. 9876543210" },
+                    ].map(({ label, key, type, placeholder }) => (
+                      <div key={key}>
+                        <label className="text-xs font-bold text-foreground uppercase tracking-wide mb-1 block">{label}</label>
+                        <input
+                          type={type}
+                          placeholder={placeholder}
+                          value={form[key as keyof typeof form] as string}
+                          onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                          className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors font-subheading"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-bold text-foreground uppercase tracking-wide mb-1 block">Sector *</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 106"
+                        value={form.sector}
+                        onChange={(e) => setForm({ ...form, sector: e.target.value })}
+                        className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors font-subheading"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-foreground uppercase tracking-wide mb-1 block">Deliver To</label>
+                      <select
+                        value={form.deliveryType}
+                        onChange={(e) => setForm({ ...form, deliveryType: e.target.value })}
+                        className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-subheading bg-white"
+                      >
+                        <option>Office Gate</option>
+                        <option>Doorstep (+₹10)</option>
+                      </select>
                     </div>
                   </div>
 
-                  {[
-                    { label: "Your Name *", key: "name", type: "text", placeholder: "e.g. Rahul Sharma" },
-                    { label: "Phone Number *", key: "phone", type: "tel", placeholder: "e.g. 9876543210" },
-                    { label: "Delivery Address *", key: "address", type: "text", placeholder: "House No, Street, Sector" },
-                    { label: "Landmark", key: "landmark", type: "text", placeholder: "Near school, park, etc." },
-                  ].map(({ label, key, type, placeholder }) => (
-                    <div key={key}>
-                      <label className="text-xs font-bold text-foreground uppercase tracking-wide mb-1 block">{label}</label>
-                      <input
-                        type={type}
-                        placeholder={placeholder}
-                        value={form[key as keyof typeof form]}
-                        onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                        className="w-full border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors font-subheading"
-                      />
+                  {form.deliveryType === "Doorstep" && (
+                    <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-2">
+                      <div className="col-span-2">
+                        <label className="text-xs font-bold text-foreground uppercase tracking-wide mb-1 block">Floor & Tower / Flat No. *</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 5th Floor, Tower B, Flat 501"
+                          value={form.floor}
+                          onChange={(e) => setForm({ ...form, floor: e.target.value })}
+                          className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors font-subheading"
+                        />
+                      </div>
                     </div>
-                  ))}
+                  )}
+
+                  <div>
+                    <label className="text-xs font-bold text-foreground uppercase tracking-wide mb-1 block">Building / Society Name *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. ATS Village"
+                      value={form.address}
+                      onChange={(e) => setForm({ ...form, address: e.target.value })}
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors font-subheading"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="text-xs font-bold text-foreground uppercase tracking-wide mb-1 block">Landmark</label>
+                    <input
+                      type="text"
+                      placeholder="Near school, park, etc."
+                      value={form.landmark}
+                      onChange={(e) => setForm({ ...form, landmark: e.target.value })}
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors font-subheading"
+                    />
+                  </div>
 
                   <div>
                     <label className="text-xs font-bold text-foreground uppercase tracking-wide mb-1 block">Delivery Time</label>
