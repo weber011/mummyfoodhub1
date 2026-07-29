@@ -4,7 +4,7 @@ import { useState } from "react";
 import { MenuCard } from "@/components/shared/MenuCard";
 import { motion } from "framer-motion";
 
-const categories = ["Today's Menu", "Tomorrow's Menu"];
+const categories = ["Today's Menu", "Tomorrow's Menu", "Breads & Extras"];
 
 const allItems = [
   // ─── Today's Menu ───────────────────────────────────────────────
@@ -45,6 +45,22 @@ const allItems = [
     badge: "Dinner Menu",
     items: ["Menu updating soon..."],
     disabled: true,
+  },
+
+  // ─── Breads & Extras ───────────────────────────────────────────────
+  {
+    category: "Breads & Extras",
+    title: "Plain Roti",
+    price: 10,
+    image: "/images/plain rooti.jpeg",
+    items: ["Soft Wheat Roti, freshly made"],
+  },
+  {
+    category: "Breads & Extras",
+    title: "Butter Roti",
+    price: 15,
+    image: "/images/butter roti.jpeg",
+    items: ["Soft Wheat Roti", "Amul Butter Spread"],
   },
 ];
 
