@@ -30,7 +30,7 @@ export default function VegMealsPage() {
               image="/images/regular veg thali.jpeg"
               badge="Bestseller"
               items={["4 Butter Roti", "Dal of the day", "Jeera Rice", "Seasonal Sabzi", "Fresh Salad", "Pickle"]}
-              extras={[{ name: "Butter Roti", price: 10 }, { name: "Ghee Roti", price: 15 }]}
+              extras={[{ name: "Butter Roti", price: 10 }, { name: "Ghee Roti", price: 15 }, { name: "250ml Raita", price: 20 }, { name: "Rasgulla", price: 10 }]}
             />
             <MenuCard
               title="Special Combo Thali"
