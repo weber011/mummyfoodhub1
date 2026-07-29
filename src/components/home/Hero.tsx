@@ -129,14 +129,14 @@ export function Hero() {
             </div>
 
             {/* Stats */}
-            <div className="hero-text-block flex gap-10">
+            <div className="hero-text-block flex flex-wrap gap-x-8 gap-y-4">
               {[
-                { num: "500+", label: "Happy Deliveries" },
-                { num: "Daily", label: "Fresh Cooking" },
-                { num: "5-7 KM", label: "Delivery Radius" },
+                { num: "🏠 Homemade", label: "Cooked Fresh Daily" },
+                { num: "🍲 Daily Fresh", label: "No Frozen Food" },
+                { num: "❤️ Made with Love", label: "Maa Jaisa Taste" },
               ].map((stat) => (
                 <div key={stat.label} className="text-left">
-                  <p className="text-2xl font-heading font-black text-orange-400 drop-shadow">{stat.num}</p>
+                  <p className="text-lg md:text-xl font-heading font-black text-orange-400 drop-shadow">{stat.num}</p>
                   <p className="text-xs text-white/55 font-subheading mt-0.5">{stat.label}</p>
                 </div>
               ))}
