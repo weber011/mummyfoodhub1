@@ -52,7 +52,7 @@ const allItems = [
     category: "Breads & Extras",
     title: "Plain Roti",
     price: 10,
-    image: "/images/plain_roti_real.jpg",
+    image: "/images/plain roti 1.jpeg",
     items: ["Soft Wheat Roti, freshly made"],
   },
   {
@@ -74,7 +74,7 @@ const allItems = [
     title: "Boondi Raita (250ml)",
     price: 20,
     badge: "Family Size",
-    image: "/images/raita rs 10 img.jpeg",
+    image: "/images/boondi raita2.jpeg",
     items: ["Fresh Dahi", "Crispy Boondi", "Roasted Jeera", "Black Salt"],
   },
 ];
