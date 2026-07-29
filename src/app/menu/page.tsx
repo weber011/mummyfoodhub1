@@ -62,6 +62,21 @@ const allItems = [
     image: "/images/butter roti.jpeg",
     items: ["Soft Wheat Roti", "Amul Butter Spread"],
   },
+  {
+    category: "Breads & Extras",
+    title: "Boondi Raita (100ml)",
+    price: 10,
+    image: "/images/raita rs 10 img.jpeg",
+    items: ["Fresh Dahi", "Crispy Boondi", "Roasted Jeera", "Black Salt"],
+  },
+  {
+    category: "Breads & Extras",
+    title: "Boondi Raita (250ml)",
+    price: 20,
+    badge: "Family Size",
+    image: "/images/raita rs 10 img.jpeg",
+    items: ["Fresh Dahi", "Crispy Boondi", "Roasted Jeera", "Black Salt"],
+  },
 ];
 
 export default function FullMenuPage() {
