@@ -132,6 +132,42 @@ export default function SubscriptionPage() {
           ))}
         </div>
 
+        {/* Benefits Section */}
+        <div className="max-w-5xl mx-auto mb-16">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-heading font-bold text-foreground mb-3">Why Subscribe?</h2>
+            <div className="w-20 h-1 bg-primary mx-auto rounded-full" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { icon: "🍛", text: "Fresh, hygienic home-cooked meals every day" },
+              { icon: "💰", text: "Save up to 10–20% compared to daily orders" },
+              { icon: "🚚", text: "Free delivery within the service area" },
+              { icon: "⏰", text: "On-time delivery for lunch and dinner" },
+              { icon: "📅", text: "No need to order every day – automatic meal delivery" },
+              { icon: "🍚", text: "Healthy, balanced meals prepared with fresh ingredients" },
+              { icon: "🥗", text: "Different menu every day to avoid repetition" },
+              { icon: "❤️", text: "Homemade taste just like your mother's cooking" },
+              { icon: "📞", text: "Priority customer support for subscribers" },
+              { icon: "🔄", text: "Flexible – pause or resume your subscription anytime" },
+              { icon: "🎁", text: "Exclusive subscriber-only festival offers and discounts" },
+              { icon: "👨‍👩‍👧", text: "Perfect for students, office workers, bachelors, and families" },
+            ].map((benefit, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                className="flex items-start gap-3 bg-white border border-border rounded-xl p-4 shadow-sm hover:shadow-md hover:border-primary/30 transition-all"
+              >
+                <span className="text-2xl shrink-0">{benefit.icon}</span>
+                <p className="text-sm font-subheading text-foreground/80 leading-relaxed">{benefit.text}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
         {/* Info Section */}
         <div className="max-w-4xl mx-auto bg-muted p-8 rounded-2xl border border-border">
           <div className="flex items-start gap-4">
