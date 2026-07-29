@@ -28,14 +28,14 @@ export function SubscriptionBanner() {
 
             <p className="text-muted-foreground font-subheading mb-8">
               Tired of cooking daily? Get healthy, less oily, homemade food delivered every day across{" "}
-              <strong>Noida Sectors 110, 133 &amp; 135</strong>. Perfect for students, PGs, and corporate employees.
+              <strong>Noida Sectors 106, 133 &amp; 135</strong>. Perfect for students, PGs, and corporate employees.
             </p>
 
             <ul className="space-y-3 mb-8">
               {[
                 "Different menu every day",
                 "Fresh ingredients & hygienic kitchen",
-                "Delivery in Sectors 110, 133 & 135",
+                "Delivery in Sectors 106, 133 & 135",
                 "Save up to ₹511 per month",
               ].map((benefit, i) => (
                 <li key={i} className="flex items-center gap-3 text-foreground font-subheading text-sm">

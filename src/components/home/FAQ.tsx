@@ -19,7 +19,7 @@ const faqs = [
   },
   {
     question: "How much are the delivery charges?",
-    answer: "Delivery charges range between ₹5 to ₹20 depending on your exact distance from our kitchen in Sector 110, Noida."
+    answer: "Delivery charges range between ₹5 to ₹20 depending on your exact distance from our kitchen in Sector 106, Noida."
   },
   {
     question: "How can I pay for my order?",

@@ -81,7 +81,7 @@ export function Footer() {
               </li>
               <li className="flex items-start gap-3 text-white/70 text-sm">
                 <MapPin className="w-5 h-5 text-primary shrink-0" />
-                <span>Noida Sector 110, UP</span>
+                <span>Noida Sector 106, UP</span>
               </li>
             </ul>
             

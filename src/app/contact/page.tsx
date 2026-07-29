@@ -52,7 +52,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <h3 className="font-subheading font-bold text-foreground mb-1">Location</h3>
-                <p className="text-muted-foreground font-subheading">Sector 110, Noida, UP</p>
+                <p className="text-muted-foreground font-subheading">Sector 106, Noida, UP</p>
               </div>
             </div>
 
@@ -77,7 +77,7 @@ export default function ContactPage() {
             <div className="text-center p-8">
               <MapPin className="w-12 h-12 text-primary mx-auto mb-4 opacity-50" />
               <h3 className="font-heading font-bold text-xl text-foreground mb-2">Mummy Food Hub</h3>
-              <p className="text-muted-foreground font-subheading text-sm">Sector 110, Noida</p>
+              <p className="text-muted-foreground font-subheading text-sm">Sector 106, Noida</p>
               <p className="text-xs text-muted-foreground/60 mt-4">(Google Maps integration placeholder)</p>
             </div>
           </motion.div>
