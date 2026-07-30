@@ -53,7 +53,7 @@ export function Footer() {
             <ul className="space-y-2">
               {[
                 { name: "Veg Meals", href: "/menu/veg-meals" },
-                { name: "Food Combos", href: "/menu/food-combos" },
+                { name: "Rice Together", href: "/menu/food-combos" },
                 { name: "Parathas", href: "/menu/parathas" },
                 { name: "Non Veg (Coming Soon)", href: "/menu/non-veg" },
                 { name: "Mumma Chinese (Coming Soon)", href: "/menu/mumma-chinese" },

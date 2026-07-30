@@ -11,7 +11,7 @@ import { useCart } from "@/context/CartContext";
 const menuLinks = [
   { name: "Full Menu", href: "/menu" },
   { name: "Veg Meals", href: "/menu/veg-meals" },
-  { name: "Food Combos", href: "/menu/food-combos" },
+  { name: "Rice Together", href: "/menu/food-combos" },
   { name: "Parathas", href: "/menu/parathas" },
   { name: "Diet Foods", href: "/menu/diet-foods" },
   { name: "Non-Veg (Soon)", href: "/menu/non-veg" },
