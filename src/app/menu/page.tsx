@@ -3,90 +3,25 @@
 import { useState } from "react";
 import { MenuCard } from "@/components/shared/MenuCard";
 import { motion } from "framer-motion";
+import { useSiteData } from "@/context/SiteContext";
 
 const categories = ["Today's Menu", "Tomorrow's Menu", "Breads & Extras"];
 
-const allItems = [
-  // ─── Today's Menu ───────────────────────────────────────────────
-  {
-    category: "Today's Menu",
-    title: "Lunch - Premium Thali",
-    price: 120,
-    image: "/images/delux thali.jpeg",
-    badge: "Lunch Menu",
-    items: ["Menu updating soon..."],
-    disabled: true,
-  },
-  {
-    category: "Today's Menu",
-    title: "Dinner - Light Thali",
-    price: 100,
-    image: "/images/regular veg thali.jpeg",
-    badge: "Dinner Menu",
-    items: ["Menu updating soon..."],
-    disabled: true,
-  },
-
-  // ─── Tomorrow's Menu ───────────────────────────────────────────────
-  {
-    category: "Tomorrow's Menu",
-    title: "Lunch - Premium Thali",
-    price: 120,
-    image: "/images/delux thali.jpeg",
-    badge: "Lunch Menu",
-    items: ["Menu updating soon..."],
-    disabled: true,
-  },
-  {
-    category: "Tomorrow's Menu",
-    title: "Dinner - Light Thali",
-    price: 100,
-    image: "/images/regular veg thali.jpeg",
-    badge: "Dinner Menu",
-    items: ["Menu updating soon..."],
-    disabled: true,
-  },
-
-  // ─── Breads & Extras ───────────────────────────────────────────────
-  {
-    category: "Breads & Extras",
-    title: "Plain Roti",
-    price: 10,
-    image: "/images/plain roti 1.jpeg",
-    items: ["Soft Wheat Roti, freshly made"],
-  },
-  {
-    category: "Breads & Extras",
-    title: "Butter Roti",
-    price: 15,
-    image: "/images/butter roti.jpeg",
-    items: ["Soft Wheat Roti", "Amul Butter Spread"],
-  },
-  {
-    category: "Breads & Extras",
-    title: "Boondi Raita (100ml)",
-    price: 10,
-    image: "/images/raita rs 10 img.jpeg",
-    items: ["Fresh Dahi", "Crispy Boondi", "Roasted Jeera", "Black Salt"],
-  },
-  {
-    category: "Breads & Extras",
-    title: "Boondi Raita (250ml)",
-    price: 20,
-    badge: "Family Size",
-    image: "/images/boondi raita2.jpeg",
-    items: ["Fresh Dahi", "Crispy Boondi", "Roasted Jeera", "Black Salt"],
-  },
-];
-
 export default function FullMenuPage() {
+  const { siteData } = useSiteData();
   const [activeCategory, setActiveCategory] = useState("Today's Menu");
+
+  // Combine items from siteData
+  const allItems = [
+    ...(siteData.todayMenu || []).map(item => ({ ...item, category: "Today's Menu" })),
+    ...(siteData.tomorrowMenu || []).map(item => ({ ...item, category: "Tomorrow's Menu" })),
+    ...((siteData as any).menuSections?.breadsExtras || []).map((item: any) => ({ ...item, category: "Breads & Extras" }))
+  ];
 
   const filtered = allItems.filter((item) => item.category === activeCategory);
 
   return (
     <div className="pt-20 pb-20 bg-background min-h-screen">
-
       {/* Header */}
       <div className="bg-gradient-to-r from-primary/10 via-background to-secondary/10 py-16 text-center border-b border-border">
         <h1 className="text-3xl md:text-5xl font-heading font-bold text-foreground mb-4">Full Menu</h1>
@@ -127,11 +62,10 @@ export default function FullMenuPage() {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
         >
           {filtered.map((item) => (
-            <MenuCard key={item.title} {...item} />
+            <MenuCard key={item.id || item.title} {...item} />
           ))}
         </motion.div>
       </div>
-
     </div>
   );
 }

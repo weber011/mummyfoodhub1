@@ -18,7 +18,7 @@ export default function FoodCombosPage() {
 
           {/* Chhole Rice — show chhole (chickpea curry) clearly */}
           <MenuCard
-            title="Chhole Rice Combo"
+            title="Chhole Chawal"
             originalPrice={99}
             price={89}
             discount="10%"
@@ -29,7 +29,7 @@ export default function FoodCombosPage() {
 
           {/* Kadhi Chawal — newly added */}
           <MenuCard
-            title="Kadhi Chawal Combo"
+            title="Kadhi Chawal"
             originalPrice={99}
             price={89}
             discount="10%"
@@ -41,7 +41,7 @@ export default function FoodCombosPage() {
 
           {/* Rajma Rice — show kidney beans curry with rice */}
           <MenuCard
-            title="Rajma Rice Combo"
+            title="Rajma Chawal"
             originalPrice={99}
             price={89}
             discount="10%"

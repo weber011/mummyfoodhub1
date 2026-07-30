@@ -3,65 +3,12 @@
 import { motion } from "framer-motion";
 import { CheckCircle, Info } from "lucide-react";
 import Link from "next/link";
-
-const plans = [
-  {
-    id: "trial",
-    name: "Trial Plan (6 Meals)",
-    price: 500,
-    duration: "6 Meals",
-    features: [
-      "Try before committing",
-      "Any 6 meals (Lunch/Dinner)",
-      "Different menu every day",
-      "Valid for 10 days"
-    ],
-    recommended: false,
-  },
-  {
-    id: "lunch",
-    name: "Lunch Only Plan",
-    price: 2100,
-    duration: "Monthly",
-    features: [
-      "Daily Lunch Delivery",
-      "Different menu every day",
-      "Freshly prepared by 11 AM",
-      "Delivery between 12:30 PM - 2:00 PM"
-    ],
-    recommended: false,
-  },
-  {
-    id: "complete",
-    name: "Complete Monthly Plan",
-    price: 4400,
-    savings: "₹200",
-    duration: "Monthly",
-    features: [
-      "Lunch & Dinner Delivery",
-      "Different menu for both meals",
-      "Maximum nutritional balance",
-      "Priority delivery",
-      "Special weekend surprise meal"
-    ],
-    recommended: true,
-  },
-  {
-    id: "dinner",
-    name: "Dinner Only Plan",
-    price: 2500,
-    duration: "Monthly",
-    features: [
-      "Daily Dinner Delivery",
-      "Lighter, digestion-friendly meals",
-      "Freshly prepared by 6 PM",
-      "Delivery between 8:00 PM - 9:30 PM"
-    ],
-    recommended: false,
-  }
-];
+import { useSiteData } from "@/context/SiteContext";
 
 export default function SubscriptionPage() {
+  const { siteData } = useSiteData();
+  const plans = siteData.subscriptionPlans;
+
   return (
     <div className="pt-20 pb-20 bg-background min-h-screen">
       <div className="bg-primary/10 py-16 text-center border-b border-border">
@@ -152,6 +99,7 @@ export default function SubscriptionPage() {
               { icon: "🔄", text: "Flexible – pause or resume your subscription anytime" },
               { icon: "🎁", text: "Exclusive subscriber-only festival offers and discounts" },
               { icon: "👨‍👩‍👧", text: "Perfect for students, office workers, bachelors, and families" },
+              { icon: "⏭️", text: "If usage in a month is less than 26 days (or as per the subscription plan), the remaining meals will be seamlessly carried forward to the next month." },
             ].map((benefit, i) => (
               <motion.div
                 key={i}

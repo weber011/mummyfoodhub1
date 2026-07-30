@@ -6,8 +6,10 @@ import Image from "next/image";
 import { gsap } from "gsap";
 import { motion } from "framer-motion";
 import { MapPin, Clock, ChevronDown, Star } from "lucide-react";
+import { useSiteData } from "@/context/SiteContext";
 
 export function Hero() {
+  const { siteData } = useSiteData();
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -86,27 +88,27 @@ export function Hero() {
             <h1 className="hero-text-block font-heading font-bold text-white leading-[1.08] mb-6 drop-shadow-2xl"
               style={{ fontSize: "clamp(2.4rem, 5.5vw, 5rem)" }}
             >
-              Har Bite Me{" "}
+              {siteData.hero.headline}{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-red-400 to-primary">
-                Maa Ka Pyaar
+                {siteData.hero.headlineHighlight}
               </span>{" "}
               <span style={{ fontSize: "0.7em" }}>❤️</span>
             </h1>
 
             {/* Tagline */}
             <p className="hero-text-block text-white/85 font-subheading text-lg md:text-xl leading-relaxed mb-3 drop-shadow-lg">
-              Fresh • Less Oily • Hygienic • Homemade
+              {siteData.hero.tagline1}
             </p>
             <p className="hero-text-block text-white/90 font-subheading text-base md:text-lg leading-relaxed mb-3 drop-shadow-lg">
-              Fresh Homemade Lunch &amp; Dinner, Delivered Every Day.
+              {siteData.hero.tagline2}
             </p>
             <p className="hero-text-block text-white/75 font-subheading text-sm md:text-base leading-relaxed mb-3 drop-shadow-lg">
-              Healthy, home-style meals delivered fresh to your home &amp; office in Noida.
+              {siteData.hero.tagline3}
             </p>
 
             {/* Delivery charge */}
             <p className="hero-text-block text-white/60 text-sm font-subheading mb-10 drop-shadow-lg">
-              Delivery: ₹5 – ₹20 depending on distance
+              {siteData.hero.deliveryNote}
             </p>
 
             {/* CTA Buttons */}
@@ -115,7 +117,7 @@ export function Hero() {
                 href="/menu"
                 className="group w-full sm:w-auto px-8 py-4 bg-primary text-white font-subheading font-bold rounded-full text-base shadow-[0_0_30px_rgba(178,58,58,0.5)] hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
               >
-                🍱 View Full Menu
+                🍱 Today's Menu
                 <ChevronDown className="w-4 h-4 rotate-[-90deg] group-hover:translate-x-1 transition-transform" />
               </Link>
 

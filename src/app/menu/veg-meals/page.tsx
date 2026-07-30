@@ -87,6 +87,7 @@ export default function VegMealsPage() {
             <MenuCard
               title="Roasted Papad (1 Pc)"
               price={7}
+              disabled={true}
               image="/images/papad 7 rupee per piece.jpeg"
               items={["Crispy Roasted Papad", "Perfect side for thalis"]}
             />

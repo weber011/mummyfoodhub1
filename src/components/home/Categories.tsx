@@ -5,64 +5,7 @@ import Image from "next/image";
 import { motion, Variants } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 
-const categories = [
-  {
-    title: "Veg Meals",
-    desc: "Wholesome thalis & combos",
-    // Full Indian thali plate with roti, dal, sabzi, rice
-    image: "/images/regular veg thali.jpeg",
-    href: "/menu/veg-meals",
-    badge: "Popular"
-  },
-  {
-    title: "Parathas",
-    desc: "Stuffed and buttery",
-    // Golden stuffed paratha on tawa
-    image: "/images/aalu parata comboo.jpeg",
-    href: "/menu/parathas",
-    disabled: true
-  },
-  {
-    title: "Diet Foods",
-    desc: "Healthy sprouts & fruit salads",
-    // Mixed sprouts & veggies salad bowl
-    image: "/images/sprouts salad.jpeg",
-    href: "/menu/diet-foods",
-    badge: "10% OFF",
-    disabled: true
-  },
-  {
-    title: "Rice Together",
-    desc: "Chhole Rice, Rajma Rice & more",
-    // Punjabi chhole chickpea curry
-    image: "/images/chhole chawal combo.jpeg",
-    href: "/menu/food-combos"
-  },
-  {
-    title: "Monthly Subscription",
-    desc: "Daily tiffin at best price",
-    // Tiffin box / meal box
-    image: "/images/regular veg thali.jpeg",
-    href: "/subscription",
-    badge: "Save ₹511"
-  },
-  {
-    title: "Mumma Chinese",
-    desc: "Desi style noodles & more",
-    // Desi noodles / chow mein
-    image: "/images/chinese platter.jpeg",
-    href: "/menu/mumma-chinese",
-    disabled: true
-  },
-  {
-    title: "Non Veg",
-    desc: "Chicken & Mutton curries",
-    // Chicken curry in a bowl
-    image: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?q=80&w=2070&auto=format&fit=crop",
-    href: "/menu/non-veg",
-    disabled: true
-  }
-];
+import { useSiteData } from "@/context/SiteContext";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -78,6 +21,9 @@ const itemVariants: Variants = {
 };
 
 export function Categories() {
+  const { siteData } = useSiteData();
+  const categories = siteData.categories;
+
   return (
     <section className="py-20 bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">

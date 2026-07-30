@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Minus, Plus, ShoppingBag, Trash2, MapPin, ChevronDown } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { useSiteData } from "@/context/SiteContext";
 
 // Sector → base delivery charge mapping
 const SECTOR_CHARGES: Record<string, number> = {
@@ -31,12 +32,14 @@ const SECTOR_OPTIONS = [
 ];
 
 export function CartDrawer() {
+  const { siteData } = useSiteData();
   const { cart, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity, clearCart, totalPrice, totalItems } = useCart();
   const [step, setStep] = useState<"cart" | "form">("cart");
   const [form, setForm] = useState({
     name: "", phone: "", sector: "106", address: "", floor: "", landmark: "",
     deliveryType: "Office Gate", time: "Lunch (12:30 - 2 PM)", payment: "Cash on Delivery",
-    notes: "", isBulkOrder: false
+    notes: "", isBulkOrder: false,
+    customFields: {} as Record<string, string>
   });
 
   // Sector-based delivery charge lookup
@@ -62,9 +65,12 @@ export function CartDrawer() {
     const sectorLabel = SECTOR_OPTIONS.find(s => s.value === form.sector)?.label ?? `Sector ${form.sector}`;
     const deliveryTypeLabel = form.deliveryType;
     const addressDetails = `${form.address}, ${sectorLabel}${form.deliveryType === "Doorstep (+₹10)" ? `, Floor/Flat: ${form.floor}` : ''}`;
+    
+    // Add custom fields to message
+    const customFieldsText = Object.entries(form.customFields).filter(([_, v]) => v).map(([k, v]) => `\n🔹 *${k}:* ${v}`).join('');
 
-    const msg = `🍱 *New Order - Mummy Food Hub*\n${form.isBulkOrder ? '\n📦 *BULK ORDER*' : ''}\n\n👤 *Name:* ${form.name}\n📞 *Phone:* ${form.phone}\n📍 *Deliver To:* ${deliveryTypeLabel}\n🏠 *Address:* ${addressDetails}\n🏢 *Landmark:* ${form.landmark}\n⏰ *Delivery Time:* ${form.time}\n💳 *Payment:* ${form.payment}\n\n🛒 *Items:*\n${itemLines}\n\n🚚 *Delivery Charge:* ₹${finalDeliveryCharge}\n💰 *Total to Pay:* ₹${finalTotal}\n\n📝 *Notes:* ${form.notes || "None"}`;
-    const url = `https://wa.me/917065665988?text=${encodeURIComponent(msg)}`;
+    const msg = `🍱 *New Order - Mummy Food Hub*\n${form.isBulkOrder ? '\n📦 *BULK ORDER*' : ''}\n\n👤 *Name:* ${form.name}\n📞 *Phone:* ${form.phone}\n📍 *Deliver To:* ${deliveryTypeLabel}\n🏠 *Address:* ${addressDetails}\n🏢 *Landmark:* ${form.landmark}\n⏰ *Delivery Time:* ${form.time}\n💳 *Payment:* ${form.payment}${customFieldsText}\n\n🛒 *Items:*\n${itemLines}\n\n🚚 *Delivery Charge:* ₹${finalDeliveryCharge}\n💰 *Total to Pay:* ₹${finalTotal}\n\n📝 *Notes:* ${form.notes || "None"}`;
+    const url = `https://wa.me/${siteData.settings?.whatsapp || "917065665988"}?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
     clearCart();
     setIsCartOpen(false);
@@ -358,6 +364,40 @@ export function CartDrawer() {
                       className="w-full border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary font-subheading resize-none"
                     />
                   </div>
+                  
+                  {/* Custom Admin Fields */}
+                  {siteData.orderForm?.fields?.filter(f => !['name', 'phone', 'address', 'instructions', 'mealType'].includes(f.id)).map((field: any) => (
+                    <div key={field.id}>
+                      <label className="text-xs font-bold text-foreground uppercase tracking-wide mb-1 block">{field.label} {field.required && '*'}</label>
+                      {field.type === 'textarea' ? (
+                        <textarea
+                          placeholder={field.placeholder}
+                          value={form.customFields[field.label] || ""}
+                          onChange={(e) => setForm({ ...form, customFields: { ...form.customFields, [field.label]: e.target.value } })}
+                          className="w-full border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary font-subheading resize-none"
+                        />
+                      ) : field.type === 'select' ? (
+                        <select
+                          value={form.customFields[field.label] || ""}
+                          onChange={(e) => setForm({ ...form, customFields: { ...form.customFields, [field.label]: e.target.value } })}
+                          className="w-full border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary font-subheading bg-white"
+                        >
+                          <option value="">Select option</option>
+                          {field.options?.map((opt: string) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type={field.type}
+                          placeholder={field.placeholder}
+                          value={form.customFields[field.label] || ""}
+                          onChange={(e) => setForm({ ...form, customFields: { ...form.customFields, [field.label]: e.target.value } })}
+                          className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-subheading"
+                        />
+                      )}
+                    </div>
+                  ))}
                 </div>
 
                 <div className="px-6 py-5 border-t border-border space-y-3">

@@ -34,6 +34,8 @@ export const metadata: Metadata = {
   keywords: "Homemade Food Noida, Healthy Tiffin, Veg Meals, Lunch Delivery, Dinner Delivery, Monthly Tiffin, Food Subscription, Noida Sector 106",
 };
 
+import { SiteProvider } from "@/context/SiteContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -45,15 +47,17 @@ export default function RootLayout({
       className={`${inter.variable} ${playfair.variable} ${poppins.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        <CartProvider>
-          <Navbar />
-          <main className="flex-grow">{children}</main>
-          <Footer />
-          <FloatingWhatsApp />
-          <CartDrawer />
-          <CartFAB />
-          <Toaster position="bottom-center" />
-        </CartProvider>
+        <SiteProvider>
+          <CartProvider>
+            <Navbar />
+            <main className="flex-grow">{children}</main>
+            <Footer />
+            <FloatingWhatsApp />
+            <CartDrawer />
+            <CartFAB />
+            <Toaster position="bottom-center" />
+          </CartProvider>
+        </SiteProvider>
       </body>
     </html>
   );

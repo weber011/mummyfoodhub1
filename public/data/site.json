@@ -1,0 +1,53 @@
+{
+  "hero": {
+    "headline": "Har Bite Me",
+    "headlineHighlight": "Maa Ka Pyaar",
+    "tagline1": "Fresh • Less Oily • Hygienic • Homemade",
+    "tagline2": "Fresh Homemade Lunch & Dinner, Delivered Every Day.",
+    "tagline3": "Healthy, home-style meals delivered fresh to your home & office in Noida.",
+    "deliveryNote": "Delivery: ₹5 – ₹20 depending on distance"
+  },
+  "settings": {
+    "phone": "917065665988",
+    "whatsapp": "917065665988",
+    "location": "Sector 106, Noida, UP",
+    "hours": "9 AM – 10 PM Daily",
+    "deliveryRange": "₹5 – ₹20",
+    "deliveryRadius": "5-7 KM",
+    "serviceAreas": "Sectors 106, 133, 135"
+  },
+  "orderForm": {
+    "title": "Place Your Order",
+    "subtitle": "Fill in your details and we will confirm via WhatsApp",
+    "fields": [
+      { "id": "name", "label": "Full Name", "type": "text", "placeholder": "Your full name", "required": true },
+      { "id": "phone", "label": "Phone Number", "type": "tel", "placeholder": "10-digit mobile number", "required": true },
+      { "id": "address", "label": "Delivery Address", "type": "textarea", "placeholder": "House/Flat no, Street, Sector, Noida", "required": true },
+      { "id": "mealType", "label": "Meal Type", "type": "select", "options": ["Lunch", "Dinner", "Both"], "required": true },
+      { "id": "instructions", "label": "Special Instructions", "type": "textarea", "placeholder": "Any special requests or dietary restrictions", "required": false }
+    ]
+  },
+  "categories": [
+    { "id": "veg-meals", "title": "Veg Meals", "desc": "Dal, Sabzi, Rice, Roti & more", "href": "/menu/veg-meals", "image": "/images/regular veg thali.jpeg", "badge": "Popular", "disabled": false },
+    { "id": "food-combos", "title": "Food Combos", "desc": "Value combos at great prices", "href": "/menu/food-combos", "image": "/images/chhole chawal combo.jpeg", "disabled": false },
+    { "id": "mumma-chinese", "title": "Mumma's Chinese", "desc": "Desi twist on Chinese classics", "href": "/menu/mumma-chinese", "image": "/images/chinese platter.jpeg", "disabled": false },
+    { "id": "non-veg", "title": "Non-Veg", "desc": "Egg & chicken dishes", "href": "/menu/non-veg", "image": "/images/regular veg thali.jpeg", "disabled": false },
+    { "id": "parathas", "title": "Parathas", "desc": "Stuffed & fresh parathas", "href": "/menu/parathas", "image": "/images/aalu parata comboo.jpeg", "disabled": true },
+    { "id": "diet-foods", "title": "Diet Foods", "desc": "Healthy salads & bowls", "href": "/menu/diet-foods", "image": "/images/sprouts salad.jpeg", "disabled": true },
+    { "id": "subscription", "title": "Monthly Subscription", "desc": "Subscribe & save every month", "href": "/subscription", "image": "/images/regular veg thali.jpeg", "badge": "Save 20%", "disabled": false }
+  ],
+  "todayMenu": [
+    { "id": "today-lunch", "title": "Lunch - Premium Thali", "price": 120, "image": "/images/delux thali.jpeg", "badge": "Lunch Menu", "items": ["Menu updating soon..."], "disabled": true },
+    { "id": "today-dinner", "title": "Dinner - Light Thali", "price": 100, "image": "/images/regular veg thali.jpeg", "badge": "Dinner Menu", "items": ["Menu updating soon..."], "disabled": true }
+  ],
+  "tomorrowMenu": [
+    { "id": "tomorrow-lunch", "title": "Lunch - Premium Thali", "price": 120, "image": "/images/delux thali.jpeg", "badge": "Lunch Menu", "items": ["Menu updating soon..."], "disabled": true },
+    { "id": "tomorrow-dinner", "title": "Dinner - Light Thali", "price": 100, "image": "/images/regular veg thali.jpeg", "badge": "Dinner Menu", "items": ["Menu updating soon..."], "disabled": true }
+  ],
+  "subscriptionPlans": [
+    { "id": "trial", "name": "Trial Plan (6 Meals)", "price": 500, "duration": "6 Meals", "features": ["Try before committing", "Any 6 meals (Lunch/Dinner)", "Different menu every day", "Valid for 10 days"], "recommended": false },
+    { "id": "lunch", "name": "Lunch Only Plan", "price": 2100, "duration": "Monthly", "features": ["Daily Lunch Delivery", "Different menu every day", "Freshly prepared by 11 AM", "Delivery between 12:30 PM - 2:00 PM"], "recommended": false },
+    { "id": "complete", "name": "Complete Monthly Plan", "price": 4400, "savings": "₹200", "duration": "Monthly", "features": ["Lunch & Dinner Delivery", "Different menu for both meals", "Maximum nutritional balance", "Priority delivery", "Special weekend surprise meal"], "recommended": true },
+    { "id": "dinner", "name": "Dinner Only Plan", "price": 2500, "duration": "Monthly", "features": ["Daily Dinner Delivery", "Lighter, digestion-friendly meals", "Freshly prepared by 6 PM", "Delivery between 8:00 PM - 9:30 PM"], "recommended": false }
+  ]
+}
