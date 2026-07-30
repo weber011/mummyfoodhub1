@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Minus, Plus, ShoppingBag, Trash2, MapPin, ChevronDown } from "lucide-react";
+import QRCode from "react-qr-code";
+import { X, Minus, Plus, ShoppingBag, Trash2, MapPin, ChevronDown, CheckCircle } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useSiteData } from "@/context/SiteContext";
 
@@ -349,10 +350,40 @@ export function CartDrawer() {
                       className="w-full border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary font-subheading bg-white"
                     >
                       <option>Cash on Delivery</option>
-                      <option>UPI / GPay / PhonePe</option>
-                      <option>Paytm</option>
+                      <option>Online Payment (UPI)</option>
                     </select>
                   </div>
+
+                  <AnimatePresence>
+                    {form.payment === "Online Payment (UPI)" && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="bg-primary/5 p-4 border border-primary/20 rounded-xl text-center space-y-4 shadow-sm mb-4">
+                          <p className="text-sm font-bold text-foreground">Scan to Pay: <span className="text-primary text-lg">₹{finalTotal}</span></p>
+                          <div className="bg-white p-3 inline-block rounded-xl shadow-sm border border-border">
+                            <QRCode
+                              value={`upi://pay?pa=${siteData.settings?.upiId || 'mummyfoodhubnoida@okicici'}&pn=Mummy%20Food%20Hub&am=${finalTotal}&cu=INR`}
+                              size={150}
+                            />
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground font-subheading mb-2">After payment, enter your Transaction ID (UTR):</p>
+                            <input
+                              type="text"
+                              placeholder="Enter 12-digit UTR No."
+                              value={form.customFields["UTR Number"] || ""}
+                              onChange={(e) => setForm({ ...form, customFields: { ...form.customFields, ["UTR Number"]: e.target.value } })}
+                              className="w-full border border-primary/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors font-subheading text-center bg-white"
+                            />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                   <div>
                     <label className="text-xs font-bold text-foreground uppercase tracking-wide mb-1 block">Special Notes</label>

@@ -557,6 +557,7 @@ export default function AdminPage() {
                   <Field label="Delivery Charge Range (e.g. ₹5 – ₹20)" value={data.settings?.deliveryRange || ""} onChange={v => setData((d: SiteData) => ({ ...d, settings: { ...d.settings, deliveryRange: v } }))} />
                   <Field label="Delivery Radius (e.g. 5-7 KM)" value={data.settings?.deliveryRadius || ""} onChange={v => setData((d: SiteData) => ({ ...d, settings: { ...d.settings, deliveryRadius: v } }))} />
                   <Field label="Service Areas (e.g. Sectors 106, 133, 135)" value={data.settings?.serviceAreas || ""} onChange={v => setData((d: SiteData) => ({ ...d, settings: { ...d.settings, serviceAreas: v } }))} />
+                  <Field label="UPI ID (for online payments)" value={data.settings?.upiId || ""} onChange={v => setData((d: SiteData) => ({ ...d, settings: { ...d.settings, upiId: v } }))} />
                 </div>
               </div>
             )}
