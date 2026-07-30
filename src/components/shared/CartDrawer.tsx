@@ -44,8 +44,8 @@ export function CartDrawer() {
 
   // Sector-based delivery charge lookup
   const sectorBaseCharge = SECTOR_CHARGES[form.sector] ?? 10;
-  let deliveryBase = sectorBaseCharge;
-  if (form.deliveryType === "Doorstep (+₹10)") deliveryBase += 10;
+  const perPlateCharge = sectorBaseCharge + (form.deliveryType === "Doorstep (+₹10/item)" ? 10 : 0);
+  const deliveryBase = perPlateCharge * (totalItems > 0 ? totalItems : 1);
 
   let discountRatio = 0;
   let discountMsg = "";
@@ -64,7 +64,7 @@ export function CartDrawer() {
     const itemLines = cart.map((i) => `  • ${i.quantity}x ${i.title}${i.extras && i.extras.length > 0 ? ` (+ ${i.extras.map(e => e.name).join(', ')})` : ''} — ₹${(i.price + (i.extras?.reduce((s, e) => s + e.price, 0) || 0)) * i.quantity}`).join("\n");
     const sectorLabel = SECTOR_OPTIONS.find(s => s.value === form.sector)?.label ?? `Sector ${form.sector}`;
     const deliveryTypeLabel = form.deliveryType;
-    const addressDetails = `${form.address}, ${sectorLabel}${form.deliveryType === "Doorstep (+₹10)" ? `, Floor/Flat: ${form.floor}` : ''}`;
+    const addressDetails = `${form.address}, ${sectorLabel}${form.deliveryType === "Doorstep (+₹10/item)" ? `, Floor/Flat: ${form.floor}` : ''}`;
     
     // Add custom fields to message
     const customFieldsText = Object.entries(form.customFields).filter(([_, v]) => v).map(([k, v]) => `\n🔹 *${k}:* ${v}`).join('');
@@ -254,14 +254,14 @@ export function CartDrawer() {
                         >
                           {SECTOR_OPTIONS.map(s => (
                             <option key={s.value} value={s.value}>
-                              {s.label} — ₹{s.charge}
+                              {s.label} — ₹{s.charge}/item
                             </option>
                           ))}
                         </select>
                         <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       </div>
                       <p className="text-xs text-primary font-semibold mt-1 pl-0.5">
-                        Delivery: ₹{SECTOR_CHARGES[form.sector] ?? 10}
+                        Base Delivery: ₹{SECTOR_CHARGES[form.sector] ?? 10}/item
                       </p>
                     </div>
                     {/* Deliver To */}
@@ -275,7 +275,7 @@ export function CartDrawer() {
                         >
                           <option value="Office Gate">Office Gate</option>
                           <option value="Main Gate of House">Main Gate of House</option>
-                          <option value="Doorstep (+₹10)">Doorstep (+₹10)</option>
+                          <option value="Doorstep (+₹10/item)">Doorstep (+₹10/item)</option>
                         </select>
                         <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       </div>
@@ -283,7 +283,7 @@ export function CartDrawer() {
                   </div>
 
                   <AnimatePresence>
-                    {form.deliveryType === "Doorstep (+₹10)" && (
+                    {form.deliveryType === "Doorstep (+₹10/item)" && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
@@ -296,7 +296,7 @@ export function CartDrawer() {
                           </label>
                           <input
                             type="text"
-                            placeholder="e.g. 5th Floor, Tower B, Flat 501"
+                            placeholder="E.g., 3rd Floor, Flat 302"
                             value={form.floor}
                             onChange={(e) => setForm({ ...form, floor: e.target.value })}
                             className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors font-subheading"

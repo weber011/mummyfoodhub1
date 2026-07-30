@@ -88,18 +88,15 @@ export default function SubscriptionPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
               { icon: "🍛", text: "Fresh, hygienic home-cooked meals every day" },
+              { icon: "🫓", text: "Twice a week, you'll receive extra rotis, or raita once a week." },
+              { icon: "🥗", text: "Daily changing menu (no repetition)" },
+              { icon: "🚚", text: "Reliable service for office & home" },
               { icon: "💰", text: "Save up to 10–20% compared to daily orders" },
-              { icon: "🚚", text: "Free delivery within the service area" },
               { icon: "⏰", text: "On-time delivery for lunch and dinner" },
               { icon: "📅", text: "No need to order every day – automatic meal delivery" },
-              { icon: "🍚", text: "Healthy, balanced meals prepared with fresh ingredients" },
-              { icon: "🥗", text: "Different menu every day to avoid repetition" },
               { icon: "❤️", text: "Homemade taste just like your mother's cooking" },
-              { icon: "📞", text: "Priority customer support for subscribers" },
               { icon: "🔄", text: "Flexible – pause or resume your subscription anytime" },
-              { icon: "🎁", text: "Exclusive subscriber-only festival offers and discounts" },
               { icon: "👨‍👩‍👧", text: "Perfect for students, office workers, bachelors, and families" },
-              { icon: "⏭️", text: "If usage in a month is less than 26 days (or as per the subscription plan), the remaining meals will be seamlessly carried forward to the next month." },
             ].map((benefit, i) => (
               <motion.div
                 key={i}
@@ -121,13 +118,13 @@ export default function SubscriptionPage() {
           <div className="flex items-start gap-4">
             <Info className="w-6 h-6 text-primary shrink-0 mt-1" />
             <div>
-              <h4 className="text-xl font-heading font-bold text-foreground mb-2">Delivery Policy & Terms</h4>
+              <h4 className="text-xl font-heading font-bold text-foreground mb-2">Delivery Policy & Terms (T&C)</h4>
               <ul className="list-disc pl-5 space-y-2 text-muted-foreground text-sm font-subheading">
+                <li><strong className="text-foreground">Important Note:</strong> If you wish to skip any meal, please inform us at least one day in advance. Only then the meal will be adjusted or carried forward. Otherwise, the meal will be counted.</li>
+                <li>If usage in a month is less than 26 days (or as per the subscription plan), the remaining meals will be seamlessly carried forward to the next month.</li>
                 <li>Delivery is free within 5-7 KM radius of Sector 106, Noida.</li>
                 <li>Beyond 7 KM, nominal delivery charges (₹5-₹20/day) may apply.</li>
                 <li>Subscription amount is payable in advance at the start of the month.</li>
-                <li>You can pause your subscription for up to 5 days in a month with 24 hours prior notice.</li>
-                <li>Meals are delivered in high-quality food-grade disposable containers or reusable tiffins based on your preference.</li>
               </ul>
             </div>
           </div>
