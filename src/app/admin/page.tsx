@@ -1,10 +1,10 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LogOut, Save, Plus, Trash2, Edit2, ChevronDown, ChevronUp,
   Menu, Settings, ShoppingBag, Home, CreditCard, Phone, Eye, EyeOff,
-  CheckCircle, AlertCircle, Loader2, ToggleLeft, ToggleRight, X
+  CheckCircle, AlertCircle, Loader2, ToggleLeft, ToggleRight, X, Upload, ImageIcon
 } from "lucide-react";
 
 const TABS = [
@@ -268,6 +268,7 @@ export default function AdminPage() {
                         <MenuItemEditor
                           key={item.id}
                           item={item}
+                          creds={creds}
                           onChange={(updated: any) => {
                             setData((d: SiteData) => {
                               const arr = [...d[dayKey]];
@@ -315,6 +316,7 @@ export default function AdminPage() {
                               <CatalogItemEditor
                                 key={item.id}
                                 item={item}
+                                creds={creds}
                                 onChange={(updated: any) => {
                                   setData((d: SiteData) => {
                                     const arr = [...d.allMenuItems];
@@ -581,8 +583,73 @@ function Field({ label, value, onChange, type = "text" }: { label: string; value
   );
 }
 
+// ── Image Upload Field ──
+function ImageUploadField({ label, value, onChange, creds }: { label: string; value: string; onChange: (v: string) => void; creds: { u: string; p: string } }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch(`/api/upload?username=${encodeURIComponent(creds.u)}&password=${encodeURIComponent(creds.p)}`, {
+        method: "POST",
+        body: form,
+      });
+      const json = await res.json();
+      if (json.success) {
+        onChange(json.url);
+      } else {
+        setError(json.error || "Upload failed");
+      }
+    } catch {
+      setError("Upload failed. Check connection.");
+    }
+    setUploading(false);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  return (
+    <div>
+      <label className="block text-xs font-subheading font-medium text-foreground mb-1">{label}</label>
+      <div className="flex gap-2 items-start">
+        <div className="flex-1">
+          <input
+            type="text"
+            className="w-full border border-border rounded-lg px-3 py-2 text-sm font-subheading focus:outline-none focus:ring-2 focus:ring-primary/30"
+            value={value}
+            placeholder="Paste URL or upload photo →"
+            onChange={e => onChange(e.target.value)}
+          />
+          {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+        </div>
+        {value && (
+          <img src={value} alt="preview" className="w-10 h-10 rounded-lg object-cover border border-border shrink-0" />
+        )}
+        <div className="shrink-0">
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            className="flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-2 rounded-lg text-xs font-subheading font-bold hover:bg-primary/20 transition-colors whitespace-nowrap"
+          >
+            {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+            {uploading ? "Uploading..." : "Upload Photo"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Menu Item Editor ──
-function MenuItemEditor({ item, onChange, onDelete }: { item: any; onChange: (v: any) => void; onDelete: () => void }) {
+function MenuItemEditor({ item, onChange, onDelete, creds }: { item: any; onChange: (v: any) => void; onDelete: () => void; creds: { u: string; p: string } }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="border border-border rounded-xl overflow-hidden">
@@ -608,9 +675,9 @@ function MenuItemEditor({ item, onChange, onDelete }: { item: any; onChange: (v:
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <Field label="Title" value={item.title} onChange={v => onChange({ ...item, title: v })} />
                 <Field label="Price (₹)" value={String(item.price)} type="number" onChange={v => onChange({ ...item, price: Number(v) })} />
-                <Field label="Image URL" value={item.image || ""} onChange={v => onChange({ ...item, image: v })} />
                 <Field label="Badge (optional)" value={item.badge || ""} onChange={v => onChange({ ...item, badge: v })} />
               </div>
+              <ImageUploadField label="Item Photo" value={item.image || ""} onChange={v => onChange({ ...item, image: v })} creds={creds} />
               <div>
                 <label className="block text-xs font-subheading font-medium text-foreground mb-1">What&apos;s Included (one item per line)</label>
                 <textarea
@@ -638,7 +705,7 @@ function MenuItemEditor({ item, onChange, onDelete }: { item: any; onChange: (v:
 }
 
 // ── Catalog Item Editor ──
-function CatalogItemEditor({ item, onChange, onDelete }: { item: any; onChange: (v: any) => void; onDelete: () => void }) {
+function CatalogItemEditor({ item, onChange, onDelete, creds }: { item: any; onChange: (v: any) => void; onDelete: () => void; creds: { u: string; p: string } }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="border border-border rounded-xl overflow-hidden">
@@ -671,9 +738,9 @@ function CatalogItemEditor({ item, onChange, onDelete }: { item: any; onChange: 
                 <Field label="Price (₹)" value={String(item.price)} type="number" onChange={v => onChange({ ...item, price: Number(v) })} />
                 <Field label="Original Price (₹)" value={String(item.originalPrice || "")} type="number" onChange={v => onChange({ ...item, originalPrice: Number(v) })} />
                 <Field label="Discount (e.g. 15%)" value={item.discount || ""} onChange={v => onChange({ ...item, discount: v })} />
-                <Field label="Image URL" value={item.image || ""} onChange={v => onChange({ ...item, image: v })} />
                 <Field label="Badge (e.g. Bestseller)" value={item.badge || ""} onChange={v => onChange({ ...item, badge: v })} />
               </div>
+              <ImageUploadField label="Item Photo" value={item.image || ""} onChange={v => onChange({ ...item, image: v })} creds={creds} />
               <div>
                 <label className="block text-xs font-subheading font-medium text-foreground mb-1">What&apos;s Included (one item per line)</label>
                 <textarea
