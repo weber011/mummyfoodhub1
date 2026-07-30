@@ -8,7 +8,8 @@ import {
 } from "lucide-react";
 
 const TABS = [
-  { id: "menu", label: "Today / Tomorrow Menu", icon: Menu },
+  { id: "menu", label: "Daily Menu", icon: Menu },
+  { id: "catalog", label: "Full Menu Catalog", icon: Menu },
   { id: "categories", label: "Categories", icon: Home },
   { id: "hero", label: "Hero Section", icon: Home },
   { id: "subscription", label: "Subscription Plans", icon: CreditCard },
@@ -282,6 +283,56 @@ export default function AdminPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* ── CATALOG TAB ── */}
+            {activeTab === "catalog" && (
+              <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-heading font-bold text-foreground">📚 Full Menu Catalog</h2>
+                  <button
+                    onClick={() => {
+                      const newItem = { id: `item-${Date.now()}`, section: "veg-meals", subcategory: "", title: "New Item", price: 100, originalPrice: 0, discount: "", image: "", badge: "", items: ["Item 1"], extras: [], disabled: false };
+                      setData((d: SiteData) => ({ ...d, allMenuItems: [...(d.allMenuItems || []), newItem] }));
+                    }}
+                    className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-lg text-sm font-subheading font-bold hover:bg-primary/20 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" /> Add Item
+                  </button>
+                </div>
+                <div className="space-y-8">
+                  {["veg-meals", "food-combos", "mumma-chinese", "non-veg", "parathas", "diet-foods"].map(sectionKey => {
+                    const sectionItems = (data.allMenuItems || []).filter((item: any) => item.section === sectionKey);
+                    if (sectionItems.length === 0) return null;
+                    return (
+                      <div key={sectionKey} className="border border-border rounded-xl p-4">
+                        <h3 className="font-heading font-bold text-foreground mb-4 capitalize bg-gray-100 px-3 py-2 rounded-lg">Section: {sectionKey.replace("-", " ")}</h3>
+                        <div className="space-y-4">
+                          {sectionItems.map((item: any) => {
+                            const originalIdx = data.allMenuItems.findIndex((x: any) => x.id === item.id);
+                            return (
+                              <CatalogItemEditor
+                                key={item.id}
+                                item={item}
+                                onChange={(updated: any) => {
+                                  setData((d: SiteData) => {
+                                    const arr = [...d.allMenuItems];
+                                    arr[originalIdx] = updated;
+                                    return { ...d, allMenuItems: arr };
+                                  });
+                                }}
+                                onDelete={() => {
+                                  setData((d: SiteData) => ({ ...d, allMenuItems: d.allMenuItems.filter((_: any, i: number) => i !== originalIdx) }));
+                                }}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -570,6 +621,69 @@ function MenuItemEditor({ item, onChange, onDelete }: { item: any; onChange: (v:
                 />
               </div>
               <div className="flex items-center gap-2">
+                <span className="text-sm font-subheading text-foreground">Coming Soon (disables ordering)</span>
+                <button onClick={() => onChange({ ...item, disabled: !item.disabled })}>
+                  {item.disabled ? <ToggleRight className="w-7 h-7 text-primary" /> : <ToggleLeft className="w-7 h-7 text-muted-foreground" />}
+                </button>
+                <span className={`text-xs font-subheading ${item.disabled ? "text-primary font-bold" : "text-muted-foreground"}`}>
+                  {item.disabled ? "Coming Soon" : "Active"}
+                </span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ── Catalog Item Editor ──
+function CatalogItemEditor({ item, onChange, onDelete }: { item: any; onChange: (v: any) => void; onDelete: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border border-border rounded-xl overflow-hidden">
+      <div className="flex items-center justify-between p-4 bg-gray-50 cursor-pointer" onClick={() => setOpen(!open)}>
+        <div className="flex items-center gap-3">
+          {item.image && <img src={item.image} className="w-10 h-10 rounded-lg object-cover" alt="" />}
+          <div>
+            <p className="font-subheading font-bold text-foreground text-sm">{item.title || "Untitled"}</p>
+            <p className="text-xs text-muted-foreground font-subheading">
+              ₹{item.price} {item.originalPrice ? <span className="line-through text-gray-400">₹{item.originalPrice}</span> : null}
+              {" "}{item.disabled ? "• Coming Soon" : "• Active"}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={e => { e.stopPropagation(); onDelete(); }} className="text-red-400 hover:text-red-600 p-1">
+            <Trash2 className="w-4 h-4" />
+          </button>
+          {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+        </div>
+      </div>
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden">
+            <div className="p-4 space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                <Field label="Section (do not change)" value={item.section} onChange={v => onChange({ ...item, section: v })} />
+                <Field label="Subcategory / Group Name" value={item.subcategory || ""} onChange={v => onChange({ ...item, subcategory: v })} />
+                <Field label="Title" value={item.title} onChange={v => onChange({ ...item, title: v })} />
+                <Field label="Price (₹)" value={String(item.price)} type="number" onChange={v => onChange({ ...item, price: Number(v) })} />
+                <Field label="Original Price (₹)" value={String(item.originalPrice || "")} type="number" onChange={v => onChange({ ...item, originalPrice: Number(v) })} />
+                <Field label="Discount (e.g. 15%)" value={item.discount || ""} onChange={v => onChange({ ...item, discount: v })} />
+                <Field label="Image URL" value={item.image || ""} onChange={v => onChange({ ...item, image: v })} />
+                <Field label="Badge (e.g. Bestseller)" value={item.badge || ""} onChange={v => onChange({ ...item, badge: v })} />
+              </div>
+              <div>
+                <label className="block text-xs font-subheading font-medium text-foreground mb-1">What&apos;s Included (one item per line)</label>
+                <textarea
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm font-subheading focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                  rows={4}
+                  value={(item.items || []).join("\n")}
+                  onChange={e => onChange({ ...item, items: e.target.value.split("\n") })}
+                />
+              </div>
+              <div className="flex items-center gap-2 mt-4">
                 <span className="text-sm font-subheading text-foreground">Coming Soon (disables ordering)</span>
                 <button onClick={() => onChange({ ...item, disabled: !item.disabled })}>
                   {item.disabled ? <ToggleRight className="w-7 h-7 text-primary" /> : <ToggleLeft className="w-7 h-7 text-muted-foreground" />}

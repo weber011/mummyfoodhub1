@@ -20,34 +20,673 @@
     "title": "Place Your Order",
     "subtitle": "Fill in your details and we will confirm via WhatsApp",
     "fields": [
-      { "id": "name", "label": "Full Name", "type": "text", "placeholder": "Your full name", "required": true },
-      { "id": "phone", "label": "Phone Number", "type": "tel", "placeholder": "10-digit mobile number", "required": true },
-      { "id": "address", "label": "Delivery Address", "type": "textarea", "placeholder": "House/Flat no, Street, Sector, Noida", "required": true },
-      { "id": "mealType", "label": "Meal Type", "type": "select", "options": ["Lunch", "Dinner", "Both"], "required": true },
-      { "id": "instructions", "label": "Special Instructions", "type": "textarea", "placeholder": "Any special requests or dietary restrictions", "required": false }
+      {
+        "id": "name",
+        "label": "Full Name",
+        "type": "text",
+        "placeholder": "Your full name",
+        "required": true
+      },
+      {
+        "id": "phone",
+        "label": "Phone Number",
+        "type": "tel",
+        "placeholder": "10-digit mobile number",
+        "required": true
+      },
+      {
+        "id": "address",
+        "label": "Delivery Address",
+        "type": "textarea",
+        "placeholder": "House/Flat no, Street, Sector, Noida",
+        "required": true
+      },
+      {
+        "id": "mealType",
+        "label": "Meal Type",
+        "type": "select",
+        "options": [
+          "Lunch",
+          "Dinner",
+          "Both"
+        ],
+        "required": true
+      },
+      {
+        "id": "instructions",
+        "label": "Special Instructions",
+        "type": "textarea",
+        "placeholder": "Any special requests or dietary restrictions",
+        "required": false
+      }
     ]
   },
   "categories": [
-    { "id": "veg-meals", "title": "Veg Meals", "desc": "Dal, Sabzi, Rice, Roti & more", "href": "/menu/veg-meals", "image": "/images/regular veg thali.jpeg", "badge": "Popular", "disabled": false },
-    { "id": "food-combos", "title": "Rice Together", "desc": "Value combos at great prices", "href": "/menu/food-combos", "image": "/images/chhole chawal combo.jpeg", "disabled": false },
-    { "id": "mumma-chinese", "title": "Mumma's Chinese", "desc": "Desi twist on Chinese classics", "href": "/menu/mumma-chinese", "image": "/images/chinese platter.jpeg", "disabled": true },
-    { "id": "non-veg", "title": "Non-Veg", "desc": "Egg & chicken dishes", "href": "/menu/non-veg", "image": "/images/regular veg thali.jpeg", "disabled": true },
-    { "id": "parathas", "title": "Parathas", "desc": "Stuffed & fresh parathas", "href": "/menu/parathas", "image": "/images/aalu parata comboo.jpeg", "disabled": true },
-    { "id": "diet-foods", "title": "Diet Foods", "desc": "Healthy salads & bowls", "href": "/menu/diet-foods", "image": "/images/sprouts salad.jpeg", "disabled": true },
-    { "id": "subscription", "title": "Monthly Subscription", "desc": "Subscribe & save every month", "href": "/subscription", "image": "/images/regular veg thali.jpeg", "badge": "Save 20%", "disabled": false }
+    {
+      "id": "veg-meals",
+      "title": "Veg Meals",
+      "desc": "Dal, Sabzi, Rice, Roti & more",
+      "href": "/menu/veg-meals",
+      "image": "/images/regular veg thali.jpeg",
+      "badge": "Popular",
+      "disabled": false
+    },
+    {
+      "id": "food-combos",
+      "title": "Rice Together",
+      "desc": "Value combos at great prices",
+      "href": "/menu/food-combos",
+      "image": "/images/chhole chawal combo.jpeg",
+      "disabled": false
+    },
+    {
+      "id": "mumma-chinese",
+      "title": "Mumma's Chinese",
+      "desc": "Desi twist on Chinese classics",
+      "href": "/menu/mumma-chinese",
+      "image": "/images/chinese platter.jpeg",
+      "disabled": true
+    },
+    {
+      "id": "non-veg",
+      "title": "Non-Veg",
+      "desc": "Egg & chicken dishes",
+      "href": "/menu/non-veg",
+      "image": "/images/regular veg thali.jpeg",
+      "disabled": true
+    },
+    {
+      "id": "parathas",
+      "title": "Parathas",
+      "desc": "Stuffed & fresh parathas",
+      "href": "/menu/parathas",
+      "image": "/images/aalu parata comboo.jpeg",
+      "disabled": true
+    },
+    {
+      "id": "diet-foods",
+      "title": "Diet Foods",
+      "desc": "Healthy salads & bowls",
+      "href": "/menu/diet-foods",
+      "image": "/images/sprouts salad.jpeg",
+      "disabled": true
+    },
+    {
+      "id": "subscription",
+      "title": "Monthly Subscription",
+      "desc": "Subscribe & save every month",
+      "href": "/subscription",
+      "image": "/images/regular veg thali.jpeg",
+      "badge": "Save 20%",
+      "disabled": false
+    }
   ],
   "todayMenu": [
-    { "id": "today-lunch", "title": "Lunch - Premium Thali", "price": 120, "image": "/images/delux thali.jpeg", "badge": "Lunch Menu", "items": ["Menu updating soon..."], "disabled": true },
-    { "id": "today-dinner", "title": "Dinner - Light Thali", "price": 100, "image": "/images/regular veg thali.jpeg", "badge": "Dinner Menu", "items": ["Menu updating soon..."], "disabled": true }
+    {
+      "id": "today-lunch",
+      "title": "Lunch - Premium Thali",
+      "price": 120,
+      "image": "/images/delux thali.jpeg",
+      "badge": "Lunch Menu",
+      "items": [
+        "Menu updating soon..."
+      ],
+      "disabled": true
+    },
+    {
+      "id": "today-dinner",
+      "title": "Dinner - Light Thali",
+      "price": 100,
+      "image": "/images/regular veg thali.jpeg",
+      "badge": "Dinner Menu",
+      "items": [
+        "Menu updating soon..."
+      ],
+      "disabled": true
+    }
   ],
   "tomorrowMenu": [
-    { "id": "tomorrow-lunch", "title": "Lunch - Premium Thali", "price": 120, "image": "/images/delux thali.jpeg", "badge": "Lunch Menu", "items": ["Menu updating soon..."], "disabled": true },
-    { "id": "tomorrow-dinner", "title": "Dinner - Light Thali", "price": 100, "image": "/images/regular veg thali.jpeg", "badge": "Dinner Menu", "items": ["Menu updating soon..."], "disabled": true }
+    {
+      "id": "tomorrow-lunch",
+      "title": "Lunch - Premium Thali",
+      "price": 120,
+      "image": "/images/delux thali.jpeg",
+      "badge": "Lunch Menu",
+      "items": [
+        "Menu updating soon..."
+      ],
+      "disabled": true
+    },
+    {
+      "id": "tomorrow-dinner",
+      "title": "Dinner - Light Thali",
+      "price": 100,
+      "image": "/images/regular veg thali.jpeg",
+      "badge": "Dinner Menu",
+      "items": [
+        "Menu updating soon..."
+      ],
+      "disabled": true
+    }
   ],
   "subscriptionPlans": [
-    { "id": "trial", "name": "Trial Plan (6 Meals)", "price": 500, "duration": "6 Meals", "features": ["Try before committing", "Any 6 meals (Lunch/Dinner)", "Different menu every day", "Valid for 10 days"], "recommended": false },
-    { "id": "lunch", "name": "Lunch Only Plan", "price": 2100, "duration": "Monthly", "features": ["Daily Lunch Delivery", "Different menu every day", "Freshly prepared by 11 AM", "Delivery between 12:30 PM - 2:00 PM"], "recommended": false },
-    { "id": "complete", "name": "Complete Monthly Plan", "price": 4400, "savings": "₹200", "duration": "Monthly", "features": ["Lunch & Dinner Delivery", "Different menu for both meals", "Maximum nutritional balance", "Priority delivery", "Special weekend surprise meal"], "recommended": true },
-    { "id": "dinner", "name": "Dinner Only Plan", "price": 2500, "duration": "Monthly", "features": ["Daily Dinner Delivery", "Lighter, digestion-friendly meals", "Freshly prepared by 6 PM", "Delivery between 8:00 PM - 9:30 PM"], "recommended": false }
+    {
+      "id": "trial",
+      "name": "Trial Plan (6 Meals)",
+      "price": 500,
+      "duration": "6 Meals",
+      "features": [
+        "Try before committing",
+        "Any 6 meals (Lunch/Dinner)",
+        "Different menu every day",
+        "Valid for 10 days"
+      ],
+      "recommended": false
+    },
+    {
+      "id": "lunch",
+      "name": "Lunch Only Plan",
+      "price": 2100,
+      "duration": "Monthly",
+      "features": [
+        "Daily Lunch Delivery",
+        "Different menu every day",
+        "Freshly prepared by 11 AM",
+        "Delivery between 12:30 PM - 2:00 PM"
+      ],
+      "recommended": false
+    },
+    {
+      "id": "complete",
+      "name": "Complete Monthly Plan",
+      "price": 4400,
+      "savings": "₹200",
+      "duration": "Monthly",
+      "features": [
+        "Lunch & Dinner Delivery",
+        "Different menu for both meals",
+        "Maximum nutritional balance",
+        "Priority delivery",
+        "Special weekend surprise meal"
+      ],
+      "recommended": true
+    },
+    {
+      "id": "dinner",
+      "name": "Dinner Only Plan",
+      "price": 2500,
+      "duration": "Monthly",
+      "features": [
+        "Daily Dinner Delivery",
+        "Lighter, digestion-friendly meals",
+        "Freshly prepared by 6 PM",
+        "Delivery between 8:00 PM - 9:30 PM"
+      ],
+      "recommended": false
+    }
+  ],
+  "allMenuItems": [
+    {
+      "id": "vm-1",
+      "section": "veg-meals",
+      "subcategory": "Pocket Friendly Meals",
+      "title": "Pocket Friendly Thali",
+      "originalPrice": 90,
+      "price": 79,
+      "discount": "12%",
+      "image": "/images/regular veg thali.jpeg",
+      "badge": "Bestseller",
+      "items": [
+        "4 Butter Roti",
+        "Dal of the day",
+        "Rice",
+        "Seasonal Sabzi",
+        "Fresh Salad",
+        "Pickle"
+      ],
+      "extras": [
+        {
+          "name": "Butter Roti",
+          "price": 10
+        },
+        {
+          "name": "Ghee Roti",
+          "price": 15
+        },
+        {
+          "name": "250ml Raita",
+          "price": 20
+        },
+        {
+          "name": "Rasgulla",
+          "price": 10
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "id": "vm-2",
+      "section": "veg-meals",
+      "subcategory": "Pocket Friendly Meals",
+      "title": "Special Combo Thali",
+      "originalPrice": 129,
+      "price": 99,
+      "discount": "23%",
+      "image": "/images/regular veg thali.jpeg",
+      "badge": "Must Try",
+      "items": [
+        "Pocket Friendly Thali",
+        "250ml Boondi Raita",
+        "1 Rasgulla"
+      ],
+      "extras": [
+        {
+          "name": "Butter Roti",
+          "price": 10
+        },
+        {
+          "name": "Ghee Roti",
+          "price": 15
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "id": "vm-3",
+      "section": "veg-meals",
+      "subcategory": "Deluxe Meals",
+      "title": "Deluxe Veg Thali",
+      "originalPrice": 150,
+      "price": 135,
+      "discount": "10%",
+      "image": "/images/delux thali.jpeg",
+      "badge": "Premium",
+      "items": [
+        "Paneer Sabzi",
+        "Dal Makhani / Dal Fry",
+        "Rice",
+        "4 Butter Roti",
+        "Fresh Salad",
+        "Pickle",
+        "Sweet of the day"
+      ],
+      "extras": [
+        {
+          "name": "Butter Roti",
+          "price": 10
+        },
+        {
+          "name": "Ghee Roti",
+          "price": 15
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "id": "vm-4",
+      "section": "veg-meals",
+      "subcategory": "Breads, Raitas & Sides",
+      "title": "Boondi Raita (100ml)",
+      "price": 10,
+      "image": "/images/raita rs 10 img.jpeg",
+      "items": [
+        "Fresh Dahi",
+        "Crispy Boondi",
+        "Roasted Jeera",
+        "Black Salt"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "vm-5",
+      "section": "veg-meals",
+      "subcategory": "Breads, Raitas & Sides",
+      "title": "Boondi Raita (250ml)",
+      "price": 20,
+      "badge": "Family Size",
+      "image": "/images/boondi raita2.jpeg",
+      "items": [
+        "Fresh Dahi",
+        "Crispy Boondi",
+        "Roasted Jeera",
+        "Black Salt"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "vm-6",
+      "section": "veg-meals",
+      "subcategory": "Breads, Raitas & Sides",
+      "title": "Roasted Papad (1 Pc)",
+      "price": 7,
+      "image": "/images/papad 7 rupee per piece.jpeg",
+      "items": [
+        "Crispy Roasted Papad",
+        "Perfect side for thalis"
+      ],
+      "disabled": true
+    },
+    {
+      "id": "vm-7",
+      "section": "veg-meals",
+      "subcategory": "Breads, Raitas & Sides",
+      "title": "Plain Roti",
+      "price": 7,
+      "image": "/images/plain roti 1.jpeg",
+      "items": [
+        "Soft Wheat Roti",
+        "Freshly baked"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "vm-8",
+      "section": "veg-meals",
+      "subcategory": "Breads, Raitas & Sides",
+      "title": "Butter Roti",
+      "price": 15,
+      "image": "/images/butter roti.jpeg",
+      "items": [
+        "Soft Wheat Roti",
+        "Amul Butter Spread"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "vm-9",
+      "section": "veg-meals",
+      "subcategory": "Breads, Raitas & Sides",
+      "title": "Ghee Roti",
+      "price": 20,
+      "image": "/images/ghee roti.jpeg",
+      "items": [
+        "Soft Wheat Roti",
+        "Pure Desi Ghee"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "vm-10",
+      "section": "veg-meals",
+      "subcategory": "Sweets & Desserts",
+      "title": "Gulab Jamun (2 Pcs)",
+      "price": 40,
+      "image": "/images/gulab jamun.jpeg",
+      "items": [
+        "Soft & Spongy",
+        "Sugar Syrup",
+        "Cardamom Flavour"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "vm-11",
+      "section": "veg-meals",
+      "subcategory": "Sweets & Desserts",
+      "title": "Rasgulla (1 Pc)",
+      "price": 10,
+      "image": "/images/rasgulla.jpeg",
+      "items": [
+        "Soft & Spongy",
+        "Sugar Syrup"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "fc-1",
+      "section": "food-combos",
+      "subcategory": "",
+      "title": "Chhole Chawal Combo",
+      "originalPrice": 110,
+      "price": 90,
+      "discount": "18%",
+      "image": "/images/chhole chawal combo.jpeg",
+      "badge": "Popular",
+      "items": [
+        "Punjabi Chhole",
+        "Steamed Rice",
+        "Onion Salad",
+        "Pickle"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "fc-2",
+      "section": "food-combos",
+      "subcategory": "",
+      "title": "Rajma Chawal Combo",
+      "originalPrice": 110,
+      "price": 90,
+      "discount": "18%",
+      "image": "/images/rajma chawal.jpeg",
+      "badge": "Comfort Food",
+      "items": [
+        "Delhi Style Rajma",
+        "Steamed Rice",
+        "Onion Salad",
+        "Pickle"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "fc-3",
+      "section": "food-combos",
+      "subcategory": "",
+      "title": "Kadhi Chawal Combo",
+      "originalPrice": 110,
+      "price": 90,
+      "discount": "18%",
+      "image": "/images/khadi chawal.jpeg",
+      "items": [
+        "Punjabi Pakora Kadhi",
+        "Steamed Rice",
+        "Onion Salad",
+        "Pickle"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "fc-4",
+      "section": "food-combos",
+      "subcategory": "",
+      "title": "Dal Makhani Chawal Combo",
+      "originalPrice": 130,
+      "price": 110,
+      "discount": "15%",
+      "image": "/images/dal makhni chawal combo.jpeg",
+      "badge": "Premium",
+      "items": [
+        "Creamy Dal Makhani",
+        "Steamed Rice",
+        "Onion Salad",
+        "Pickle"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "mc-1",
+      "section": "mumma-chinese",
+      "subcategory": "",
+      "title": "Veg Chowmein",
+      "originalPrice": 90,
+      "price": 70,
+      "discount": "22%",
+      "image": "/images/chinese platter.jpeg",
+      "badge": "Street Style",
+      "items": [
+        "Wok tossed noodles",
+        "Fresh crunchy veggies",
+        "Desi Chinese sauces"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "mc-2",
+      "section": "mumma-chinese",
+      "subcategory": "",
+      "title": "Chilli Paneer Dry",
+      "originalPrice": 150,
+      "price": 120,
+      "discount": "20%",
+      "image": "/images/chilli paneer.jpeg",
+      "badge": "Spicy",
+      "items": [
+        "Crispy paneer cubes",
+        "Capsicum & onions",
+        "Spicy soy-chilli glaze"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "mc-3",
+      "section": "mumma-chinese",
+      "subcategory": "",
+      "title": "Spring Rolls",
+      "originalPrice": 80,
+      "price": 60,
+      "discount": "25%",
+      "image": "/images/spring roll.jpeg",
+      "items": [
+        "Crispy fried rolls",
+        "Mixed veg filling",
+        "Sweet chilli dip"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "nv-1",
+      "section": "non-veg",
+      "subcategory": "",
+      "title": "Egg Curry Thali",
+      "originalPrice": 140,
+      "price": 120,
+      "discount": "14%",
+      "image": "/images/regular veg thali.jpeg",
+      "badge": "High Protein",
+      "items": [
+        "2 Egg Curry",
+        "4 Butter Roti",
+        "Rice",
+        "Onion Salad"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "nv-2",
+      "section": "non-veg",
+      "subcategory": "",
+      "title": "Chicken Curry Thali",
+      "originalPrice": 180,
+      "price": 160,
+      "discount": "11%",
+      "image": "/images/delux thali.jpeg",
+      "badge": "Sunday Special",
+      "items": [
+        "Homestyle Chicken Curry",
+        "4 Butter Roti",
+        "Rice",
+        "Onion Salad"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "p-1",
+      "section": "parathas",
+      "subcategory": "",
+      "title": "Aloo Paratha",
+      "originalPrice": 50,
+      "price": 40,
+      "discount": "20%",
+      "image": "/images/aalu parata comboo.jpeg",
+      "badge": "Breakfast Special",
+      "items": [
+        "2 Stuffed Aloo Parathas",
+        "Butter/Curd",
+        "Pickle"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "p-2",
+      "section": "parathas",
+      "subcategory": "",
+      "title": "Paneer Paratha",
+      "originalPrice": 70,
+      "price": 60,
+      "discount": "14%",
+      "image": "/images/aalu parata comboo.jpeg",
+      "items": [
+        "2 Stuffed Paneer Parathas",
+        "Butter/Curd",
+        "Pickle"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "p-3",
+      "section": "parathas",
+      "subcategory": "",
+      "title": "Gobi Paratha",
+      "originalPrice": 60,
+      "price": 50,
+      "discount": "16%",
+      "image": "/images/aalu parata comboo.jpeg",
+      "items": [
+        "2 Stuffed Gobi Parathas",
+        "Butter/Curd",
+        "Pickle"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "df-1",
+      "section": "diet-foods",
+      "subcategory": "",
+      "title": "Protein Sprouts Salad",
+      "originalPrice": 100,
+      "price": 80,
+      "discount": "20%",
+      "image": "/images/sprouts salad.jpeg",
+      "badge": "Post Workout",
+      "items": [
+        "Mixed sprouts",
+        "Chopped veggies",
+        "Tangy lemon dressing"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "df-2",
+      "section": "diet-foods",
+      "subcategory": "",
+      "title": "Paneer Tikka Salad",
+      "originalPrice": 150,
+      "price": 120,
+      "discount": "20%",
+      "image": "/images/paneer salad.jpeg",
+      "badge": "Keto Friendly",
+      "items": [
+        "Grilled paneer cubes",
+        "Lettuce & veggies",
+        "Mint yoghurt dressing"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "df-3",
+      "section": "diet-foods",
+      "subcategory": "",
+      "title": "Oats Chilla",
+      "originalPrice": 80,
+      "price": 60,
+      "discount": "25%",
+      "image": "/images/oats chilla.jpeg",
+      "items": [
+        "2 Oats & Veggie Chillas",
+        "Green Chutney",
+        "Curd"
+      ],
+      "disabled": false
+    }
   ]
 }
