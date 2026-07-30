@@ -357,16 +357,17 @@ export function CartDrawer() {
                   <AnimatePresence>
                     {form.payment === "Online Payment (UPI)" && (
                       <motion.div
+                        key="qr-section"
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
                         className="overflow-hidden"
                       >
-                        <div className="bg-primary/5 p-4 border border-primary/20 rounded-xl text-center space-y-4 shadow-sm mb-4">
+                        <div className="bg-primary/5 p-4 border border-primary/20 rounded-xl text-center space-y-4 shadow-sm mb-4 mt-2">
                           <p className="text-sm font-bold text-foreground">Scan to Pay: <span className="text-primary text-lg">₹{finalTotal}</span></p>
                           <div className="bg-white p-3 inline-block rounded-xl shadow-sm border border-border">
                             <QRCode
-                              value={`upi://pay?pa=${siteData.settings?.upiId || 'mummyfoodhubnoida@okicici'}&pn=Mummy%20Food%20Hub&am=${finalTotal}&cu=INR`}
+                              value={`upi://pay?pa=${siteData.settings?.upiId || 'anmol.srivastava01@kotak'}&pn=ANMOL%20RANJAN%20SRIVASTAVA&am=${finalTotal}&cu=INR`}
                               size={150}
                             />
                           </div>
