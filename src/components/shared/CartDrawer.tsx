@@ -371,6 +371,24 @@ export function CartDrawer() {
                               size={150}
                             />
                           </div>
+                          
+                          <div className="pt-2">
+                            <p className="text-xs text-muted-foreground font-subheading mb-2">Or tap to pay via app (Mobile only):</p>
+                            <div className="flex flex-wrap justify-center gap-2 mb-2">
+                              <a href={`gpay://upi/pay?pa=${siteData.settings?.upiId || 'anmol.srivastava01@kotak'}&pn=ANMOL%20RANJAN%20SRIVASTAVA&am=${finalTotal}&cu=INR`} className="px-3 py-1.5 bg-white hover:bg-gray-50 border border-border rounded-lg text-xs font-bold text-gray-700 shadow-sm transition-colors">
+                                GPay
+                              </a>
+                              <a href={`phonepe://pay?pa=${siteData.settings?.upiId || 'anmol.srivastava01@kotak'}&pn=ANMOL%20RANJAN%20SRIVASTAVA&am=${finalTotal}&cu=INR`} className="px-3 py-1.5 bg-white hover:bg-gray-50 border border-border rounded-lg text-xs font-bold text-gray-700 shadow-sm transition-colors">
+                                PhonePe
+                              </a>
+                              <a href={`paytmmp://pay?pa=${siteData.settings?.upiId || 'anmol.srivastava01@kotak'}&pn=ANMOL%20RANJAN%20SRIVASTAVA&am=${finalTotal}&cu=INR`} className="px-3 py-1.5 bg-white hover:bg-gray-50 border border-border rounded-lg text-xs font-bold text-gray-700 shadow-sm transition-colors">
+                                Paytm
+                              </a>
+                              <a href={`upi://pay?pa=${siteData.settings?.upiId || 'anmol.srivastava01@kotak'}&pn=ANMOL%20RANJAN%20SRIVASTAVA&am=${finalTotal}&cu=INR`} className="px-3 py-1.5 bg-white hover:bg-gray-50 border border-border rounded-lg text-xs font-bold text-gray-700 shadow-sm transition-colors">
+                                Any UPI App
+                              </a>
+                            </div>
+                          </div>
                           <div>
                             <p className="text-xs text-muted-foreground font-subheading mb-2">After payment, enter your Transaction ID (UTR):</p>
                             <input
