@@ -36,7 +36,6 @@ export function SubscriptionBanner() {
                 "Different menu every day",
                 "Fresh ingredients & hygienic kitchen",
                 "Delivery up to 5-7 km radius",
-                "Save up to ₹511 per month",
               ].map((benefit, i) => (
                 <li key={i} className="flex items-center gap-3 text-foreground font-subheading text-sm">
                   <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />

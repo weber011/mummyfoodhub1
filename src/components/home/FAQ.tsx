@@ -15,7 +15,7 @@ const faqs = [
   },
   {
     question: "Do you deliver daily?",
-    answer: "Yes, we deliver daily. You can order single meals or subscribe to our monthly tiffin service where we deliver lunch and/or dinner daily to your doorstep."
+    answer: "Yes, we deliver daily. You can order single meals or subscribe to our monthly tiffin service where we deliver lunch and/or dinner daily to your address."
   },
   {
     question: "How much are the delivery charges?",
