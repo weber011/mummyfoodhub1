@@ -14,7 +14,7 @@
     "hours": "9 AM – 10 PM Daily",
     "deliveryRange": "₹5 – ₹20",
     "deliveryRadius": "5-7 KM",
-    "serviceAreas": "Sectors 106, 133, 135",
+    "serviceAreas": "Sector 106 & Up to 10km radius",
     "upiId": "anmol.srivastava01@kotak"
   },
   "orderForm": {
@@ -459,7 +459,7 @@
       "originalPrice": 110,
       "price": 90,
       "discount": "18%",
-      "image": "/images/rajma chawal.jpeg",
+      "image": "/images/rajma chawal combo.jpeg",
       "badge": "Comfort Food",
       "items": [
         "Delhi Style Rajma",
@@ -477,7 +477,7 @@
       "originalPrice": 110,
       "price": 90,
       "discount": "18%",
-      "image": "/images/khadi chawal.jpeg",
+      "image": "/images/kadhi chawal.jpeg",
       "items": [
         "Punjabi Pakora Kadhi",
         "Steamed Rice",
@@ -494,7 +494,7 @@
       "originalPrice": 130,
       "price": 110,
       "discount": "15%",
-      "image": "/images/dal makhni chawal combo.jpeg",
+      "image": "/images/delux thali.jpeg",
       "badge": "Premium",
       "items": [
         "Creamy Dal Makhani",
@@ -529,7 +529,7 @@
       "originalPrice": 150,
       "price": 120,
       "discount": "20%",
-      "image": "/images/chilli paneer.jpeg",
+      "image": "/images/chinese platter.jpeg",
       "badge": "Spicy",
       "items": [
         "Crispy paneer cubes",
@@ -546,7 +546,7 @@
       "originalPrice": 80,
       "price": 60,
       "discount": "25%",
-      "image": "/images/spring roll.jpeg",
+      "image": "/images/chinese platter.jpeg",
       "items": [
         "Crispy fried rolls",
         "Mixed veg filling",
@@ -664,7 +664,7 @@
       "originalPrice": 150,
       "price": 120,
       "discount": "20%",
-      "image": "/images/paneer salad.jpeg",
+      "image": "/images/sprouts salad.jpeg",
       "badge": "Keto Friendly",
       "items": [
         "Grilled paneer cubes",
@@ -681,7 +681,7 @@
       "originalPrice": 80,
       "price": 60,
       "discount": "25%",
-      "image": "/images/oats chilla.jpeg",
+      "image": "/images/sprouts salad.jpeg",
       "items": [
         "2 Oats & Veggie Chillas",
         "Green Chutney",

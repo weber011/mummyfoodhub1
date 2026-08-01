@@ -122,7 +122,7 @@ export default function SubscriptionPage() {
               <ul className="list-disc pl-5 space-y-2 text-muted-foreground text-sm font-subheading">
                 <li><strong className="text-foreground">Important Note:</strong> If you wish to skip any meal, please inform us at least one day in advance. Only then the meal will be adjusted or carried forward. Otherwise, the meal will be counted.</li>
                 <li>If usage in a month is less than 26 days (or as per the subscription plan), the remaining meals will be seamlessly carried forward to the next month.</li>
-                <li>Delivery is free within 5-7 KM radius of Sector 106, Noida.</li>
+                <li>Delivery is free within 4 KM radius of Sector 106, Noida. Nominal charges apply up to 10 KM.</li>
                 <li>Beyond 7 KM, nominal delivery charges (₹5-₹20/day) may apply.</li>
                 <li>Subscription amount is payable in advance at the start of the month.</li>
               </ul>

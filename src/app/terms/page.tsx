@@ -7,7 +7,7 @@ export default function Terms() {
       <div className="prose prose-lg text-muted-foreground font-subheading">
         <p>Welcome to Mummy Food Hub. By accessing or using our services, you agree to be bound by these terms.</p>
         <h2>Orders & Delivery</h2>
-        <p>Orders are subject to availability and delivery radius. We currently deliver within 5-7 KM of Sector 106, Noida.</p>
+        <p>Orders are subject to availability and delivery radius. We currently deliver up to 10 KM from Sector 106, Noida.</p>
         <h2>Subscriptions</h2>
         <p>Monthly subscriptions must be paid in advance. Cancellations require 24 hours prior notice to pause the service for up to 5 days in a month.</p>
         <Link href="/" className="text-primary hover:underline mt-8 inline-block">Return to Home</Link>

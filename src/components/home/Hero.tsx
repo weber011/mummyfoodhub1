@@ -76,7 +76,7 @@ export function Hero() {
             <div className="hero-text-block flex flex-wrap gap-3 mb-8">
               <span className="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-full bg-white/10 border border-white/25 text-white text-xs font-subheading font-medium backdrop-blur-sm">
                 <MapPin className="w-3.5 h-3.5 text-orange-400" />
-                Sectors 106 • 133 • 135, Noida
+                Sector 106 & Up to 10km, Noida
               </span>
               <span className="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-full bg-white/10 border border-white/25 text-white text-xs font-subheading font-medium backdrop-blur-sm">
                 <Clock className="w-3.5 h-3.5 text-green-400" />
@@ -131,6 +131,16 @@ export function Hero() {
                 </svg>
                 Order on WhatsApp
               </Link>
+              
+              <a
+                href="https://www.google.com/search?sca_esv=f807a6330220bb73&sxsrf=APpeQntsgbMR4rLI55XPnStVeag8tZVMOA:1785599090422&si=APenkKm7iecQ4G6P-TsbSMFKIQtv3EFIqRAFw-i8uEbk55Z-__UGNBlMjSJq_tbdYlJTtr7pBM66TUU0nnFqmhYumCn7a6eDoCSZV4rTa49qhiXNJfOrvoVYhFLG0JEBhGoy1Yt16SBD&q=Mummy+food+hub+Reviews&sa=X&ved=2ahUKEwiaqfv74v-VAxUezTgGHUCBCCEQ0bkNegQIMhAF&biw=1280&bih=665&dpr=1.5#lrd=0x390ce9391b3ac4e7:0x1b1a4f388a3221de,3,,,,"
+                target="_blank"
+                rel="noreferrer"
+                className="w-full sm:w-auto px-8 py-4 bg-white text-primary font-subheading font-bold rounded-full text-base shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:bg-gray-100 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+              >
+                ⭐ Write a Google Review
+              </a>
+
             </div>
 
             {/* Stats */}
@@ -139,7 +149,7 @@ export function Hero() {
                 { num: "🏠 Homemade", label: "Cooked Fresh Daily" },
                 { num: "🍲 Daily Fresh", label: "No Frozen Food" },
                 { num: "🚚 5–7 KM", label: "Fast Delivery" },
-                { num: "❤️ Made with Love", label: "Maa Jaisa Taste" },
+                { num: "❤️ Made with Love", label: "Maa ka pyar jaisa taste wesa" },
               ].map((stat) => (
                 <div key={stat.label} className="text-left">
                   <p className="text-lg md:text-xl font-heading font-black text-orange-400 drop-shadow">{stat.num}</p>

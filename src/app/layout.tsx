@@ -30,7 +30,7 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: "Mummy Food Hub | Homemade Food Delivery in Noida",
-  description: "Fresh Homemade Food Delivery in Noida Sectors 106, 133, 135. Healthy Meals, Tiffin Service, Monthly Subscription, Bulk Orders.",
+  description: "Fresh Homemade Food Delivery in Noida Sector 106 & up to 10km radius. Healthy Meals, Tiffin Service, Monthly Subscription, Bulk Orders.",
   keywords: "Homemade Food Noida, Healthy Tiffin, Veg Meals, Lunch Delivery, Dinner Delivery, Monthly Tiffin, Food Subscription, Noida Sector 106",
 };
 

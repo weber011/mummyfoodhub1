@@ -9,22 +9,22 @@ const services = [
   {
     title: "Daily Tiffin",
     desc: "Wholesome meals delivered daily to your home. Perfect for families, students, and PGs.",
-    image: "https://images.unsplash.com/photo-1546833998-877b37c2e5c4?q=80&w=1974&auto=format&fit=crop"
+    image: "/images/regular veg thali.jpeg"
   },
   {
     title: "Office Lunch Supply",
     desc: "Keep your employees healthy and productive with our bulk office lunch subscriptions.",
-    image: "https://images.unsplash.com/photo-1577906236962-d9611db93901?q=80&w=2070&auto=format&fit=crop"
+    image: "/images/delux thali.jpeg"
   },
   {
     title: "Party & Birthday Catering",
     desc: "Delicious homemade food for your house parties, birthdays, and small gatherings.",
-    image: "https://images.unsplash.com/photo-1555244162-803834f70033?q=80&w=2070&auto=format&fit=crop"
+    image: "/images/chinese platter.jpeg"
   },
   {
     title: "Hostel & PG Food",
     desc: "Affordable and nutritious meal plans tailored specifically for students living away from home.",
-    image: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=2070&auto=format&fit=crop"
+    image: "/images/chhole chawal combo.jpeg"
   }
 ];
 
@@ -35,8 +35,18 @@ export default function ServicesPage() {
         <h1 className="text-3xl md:text-5xl font-heading font-bold text-foreground mb-4">Our Services</h1>
         <div className="w-24 h-1 bg-primary mx-auto rounded-full mb-4" />
         <p className="text-muted-foreground font-subheading text-lg max-w-2xl mx-auto px-4">
-          From daily tiffins to bulk corporate orders, we cater to all your food needs with the same motherly love.
+          From daily tiffins to bulk corporate orders, we cater to all your food needs with the same mother's love.
         </p>
+        <div className="mt-6 flex justify-center">
+          <a
+            href="https://www.google.com/search?sca_esv=f807a6330220bb73&sxsrf=APpeQntsgbMR4rLI55XPnStVeag8tZVMOA:1785599090422&si=APenkKm7iecQ4G6P-TsbSMFKIQtv3EFIqRAFw-i8uEbk55Z-__UGNBlMjSJq_tbdYlJTtr7pBM66TUU0nnFqmhYumCn7a6eDoCSZV4rTa49qhiXNJfOrvoVYhFLG0JEBhGoy1Yt16SBD&q=Mummy+food+hub+Reviews&sa=X&ved=2ahUKEwiaqfv74v-VAxUezTgGHUCBCCEQ0bkNegQIMhAF&biw=1280&bih=665&dpr=1.5#lrd=0x390ce9391b3ac4e7:0x1b1a4f388a3221de,3,,,,"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 bg-white text-primary border border-primary px-6 py-2 rounded-full font-bold shadow-sm hover:shadow-md transition-all hover:-translate-y-1"
+          >
+            ⭐ Write a Google Review
+          </a>
+        </div>
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
