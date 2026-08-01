@@ -82,7 +82,7 @@ export function SubscriptionBanner() {
               className="absolute top-8 right-8 lg:top-12 lg:right-12 bg-white p-4 rounded-2xl shadow-2xl border-4 border-primary z-10"
             >
               <p className="text-muted-foreground text-xs font-bold uppercase text-center mb-1">Starts at</p>
-              <p className="text-3xl font-heading font-black text-primary">₹1999</p>
+              <p className="text-3xl font-heading font-black text-primary">₹2099</p>
               <p className="text-muted-foreground text-xs text-center font-medium">/ month</p>
             </motion.div>
           </div>
