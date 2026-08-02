@@ -132,7 +132,13 @@
       "items": [
         "Menu updating soon..."
       ],
-      "disabled": true
+      "disabled": true,
+      "sabjiOptions": [
+        "Aloo Gobi",
+        "Paneer Butter Masala",
+        "Dal Makhani",
+        "Mix Veg"
+      ]
     },
     {
       "id": "today-dinner",
@@ -143,7 +149,57 @@
       "items": [
         "Menu updating soon..."
       ],
-      "disabled": true
+      "disabled": true,
+      "sabjiOptions": [
+        "Aloo Gobi",
+        "Paneer Butter Masala",
+        "Dal Makhani",
+        "Mix Veg"
+      ]
+    },
+    {
+      "id": "combo-99-lunch",
+      "title": "Lunch - ₹99 Combo Thali",
+      "price": 99,
+      "image": "/images/regular veg thali.jpeg",
+      "badge": "Special",
+      "items": [
+        "2 Sabjis",
+        "4 Butter Roti / Rice",
+        "Dal",
+        "Salad & Pickle",
+        "Raita",
+        "1 Rasgulla"
+      ],
+      "sabjiOptions": [
+        "Aloo Gobi",
+        "Paneer Butter Masala",
+        "Dal Makhani",
+        "Mix Veg"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "combo-99-dinner",
+      "title": "Dinner - ₹99 Combo Thali",
+      "price": 99,
+      "image": "/images/regular veg thali.jpeg",
+      "badge": "Special",
+      "items": [
+        "2 Sabjis",
+        "4 Butter Roti / Rice",
+        "Dal",
+        "Salad & Pickle",
+        "Raita",
+        "1 Rasgulla"
+      ],
+      "sabjiOptions": [
+        "Aloo Gobi",
+        "Paneer Butter Masala",
+        "Dal Makhani",
+        "Mix Veg"
+      ],
+      "disabled": false
     }
   ],
   "tomorrowMenu": [
@@ -156,7 +212,13 @@
       "items": [
         "Menu updating soon..."
       ],
-      "disabled": true
+      "disabled": true,
+      "sabjiOptions": [
+        "Aloo Gobi",
+        "Paneer Butter Masala",
+        "Dal Makhani",
+        "Mix Veg"
+      ]
     },
     {
       "id": "tomorrow-dinner",
@@ -167,7 +229,57 @@
       "items": [
         "Menu updating soon..."
       ],
-      "disabled": true
+      "disabled": true,
+      "sabjiOptions": [
+        "Aloo Gobi",
+        "Paneer Butter Masala",
+        "Dal Makhani",
+        "Mix Veg"
+      ]
+    },
+    {
+      "id": "combo-99-lunch",
+      "title": "Lunch - ₹99 Combo Thali",
+      "price": 99,
+      "image": "/images/regular veg thali.jpeg",
+      "badge": "Special",
+      "items": [
+        "2 Sabjis",
+        "4 Butter Roti / Rice",
+        "Dal",
+        "Salad & Pickle",
+        "Raita",
+        "1 Rasgulla"
+      ],
+      "sabjiOptions": [
+        "Aloo Gobi",
+        "Paneer Butter Masala",
+        "Dal Makhani",
+        "Mix Veg"
+      ],
+      "disabled": false
+    },
+    {
+      "id": "combo-99-dinner",
+      "title": "Dinner - ₹99 Combo Thali",
+      "price": 99,
+      "image": "/images/regular veg thali.jpeg",
+      "badge": "Special",
+      "items": [
+        "2 Sabjis",
+        "4 Butter Roti / Rice",
+        "Dal",
+        "Salad & Pickle",
+        "Raita",
+        "1 Rasgulla"
+      ],
+      "sabjiOptions": [
+        "Aloo Gobi",
+        "Paneer Butter Masala",
+        "Dal Makhani",
+        "Mix Veg"
+      ],
+      "disabled": false
     }
   ],
   "subscriptionPlans": [
@@ -263,7 +375,13 @@
           "price": 10
         }
       ],
-      "disabled": false
+      "disabled": false,
+      "sabjiOptions": [
+        "Aloo Gobi",
+        "Paneer Butter Masala",
+        "Dal Makhani",
+        "Mix Veg"
+      ]
     },
     {
       "id": "vm-2",
@@ -290,7 +408,13 @@
           "price": 15
         }
       ],
-      "disabled": false
+      "disabled": false,
+      "sabjiOptions": [
+        "Aloo Gobi",
+        "Paneer Butter Masala",
+        "Dal Makhani",
+        "Mix Veg"
+      ]
     },
     {
       "id": "vm-3",

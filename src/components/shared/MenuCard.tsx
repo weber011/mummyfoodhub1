@@ -13,6 +13,7 @@ type MenuCardProps = {
   discount?: string;
   description?: string;
   items: string[];
+  sabjiOptions?: string[];
   extras?: { name: string; price: number }[];
   image: string;
   badge?: string;
@@ -21,30 +22,61 @@ type MenuCardProps = {
 };
 
 export function MenuCard({
-  title, originalPrice, price, discount, description, items, extras, image, badge, isVeg = true, disabled = false
+  title, originalPrice, price, discount, description, items, sabjiOptions, extras, image, badge, isVeg = true, disabled = false
 }: MenuCardProps) {
   const { addToCart } = useCart();
   const [added, setAdded] = useState(false);
   const [showExtras, setShowExtras] = useState(false);
+  const [showSabji, setShowSabji] = useState(false);
   const [selectedExtras, setSelectedExtras] = useState<{ name: string; price: number }[]>([]);
+  const [selectedSabjis, setSelectedSabjis] = useState<string[]>([]);
 
-  const handleAdd = () => {
-    if (extras && extras.length > 0 && !showExtras) {
+  const handleInitialAdd = () => {
+    if (sabjiOptions && sabjiOptions.length > 0) {
+      setShowSabji(true);
+      return;
+    }
+    if (extras && extras.length > 0) {
       setShowExtras(true);
       return;
     }
     
-    addToCart({ title, price, extras: selectedExtras });
-    setAdded(true);
-    setShowExtras(false);
-    setSelectedExtras([]);
-    setTimeout(() => setAdded(false), 1500);
+    addToCart({ title, price, extras: [] });
+    triggerAdded();
   };
 
-  const handleSkipAddons = () => {
-    addToCart({ title, price, extras: [] });
-    setAdded(true);
+  const handleSabjiContinue = () => {
+    if (selectedSabjis.length !== 2) return;
+    setShowSabji(false);
+    if (extras && extras.length > 0) {
+      setShowExtras(true);
+    } else {
+      const combinedExtras = selectedSabjis.map(s => ({ name: s, price: 0 }));
+      addToCart({ title, price, extras: combinedExtras });
+      triggerAdded();
+    }
+  };
+
+  const handleExtrasFinish = () => {
+    const combinedExtras = [
+      ...selectedSabjis.map(s => ({ name: s, price: 0 })),
+      ...selectedExtras
+    ];
+    addToCart({ title, price, extras: combinedExtras });
     setShowExtras(false);
+    triggerAdded();
+  };
+
+  const handleSkipExtras = () => {
+    const combinedExtras = selectedSabjis.map(s => ({ name: s, price: 0 }));
+    addToCart({ title, price, extras: combinedExtras });
+    setShowExtras(false);
+    triggerAdded();
+  };
+
+  const triggerAdded = () => {
+    setAdded(true);
+    setSelectedSabjis([]);
     setSelectedExtras([]);
     setTimeout(() => setAdded(false), 1500);
   };
@@ -60,6 +92,18 @@ export function MenuCard({
         const newExtras = [...prev];
         newExtras.splice(idx, 1);
         return newExtras;
+      }
+      return prev;
+    });
+  };
+
+  const toggleSabji = (option: string) => {
+    setSelectedSabjis(prev => {
+      if (prev.includes(option)) {
+        return prev.filter(s => s !== option);
+      }
+      if (prev.length < 2) {
+        return [...prev, option];
       }
       return prev;
     });
@@ -133,23 +177,75 @@ export function MenuCard({
           </div>
         </div>
 
-        {/* Add-ons */}
-        {extras && extras.length > 0 && (
+        {/* Sabji Options Note */}
+        {sabjiOptions && sabjiOptions.length > 0 && (
           <div className="mb-4 pt-3 border-t border-dashed border-border">
-            <p className="text-xs font-bold text-foreground/60 uppercase tracking-wider mb-2">Add-ons</p>
+            <p className="text-xs font-bold text-foreground/60 uppercase tracking-wider mb-2 text-primary">Choice of 2 Sabjis Included</p>
             <div className="flex flex-wrap gap-2">
-              {extras.map((extra, idx) => (
-                <span key={idx} className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full border border-border">
-                  {extra.name} +₹{extra.price}
+              {sabjiOptions.map((opt, idx) => (
+                <span key={idx} className="text-[10px] bg-orange-50 text-orange-700 px-2 py-1 rounded-full border border-orange-200">
+                  {opt}
                 </span>
               ))}
             </div>
           </div>
         )}
 
-        {/* Add-ons Selector Overlay */}
+        {/* Add-ons Note */}
+        {extras && extras.length > 0 && (
+          <div className="mb-4 pt-3 border-t border-dashed border-border">
+            <p className="text-xs font-bold text-foreground/60 uppercase tracking-wider mb-2">Add-ons Available</p>
+          </div>
+        )}
+
+        {/* OVERLAYS */}
         <AnimatePresence>
-          {showExtras && (
+          {/* Sabji Selection Overlay */}
+          {showSabji && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="absolute inset-x-0 bottom-0 bg-white border-t border-border shadow-[0_-10px_40px_rgba(0,0,0,0.1)] p-4 rounded-t-2xl z-40 flex flex-col"
+            >
+              <div className="flex justify-between items-center mb-3">
+                <div>
+                  <p className="font-heading font-bold text-foreground">Select Sabjis</p>
+                  <p className="text-xs text-primary font-bold">Pick exactly 2</p>
+                </div>
+                <button onClick={() => setShowSabji(false)} className="text-muted-foreground hover:text-foreground text-sm font-subheading">✕ Close</button>
+              </div>
+              <div className="flex flex-col gap-2 mb-4 overflow-y-auto max-h-48">
+                {sabjiOptions?.map((opt, idx) => {
+                  const isSelected = selectedSabjis.includes(opt);
+                  const isDisabled = !isSelected && selectedSabjis.length >= 2;
+                  return (
+                    <div 
+                      key={idx} 
+                      onClick={() => !isDisabled && toggleSabji(opt)}
+                      className={`flex items-center justify-between p-3 rounded-lg border transition-colors cursor-pointer ${isSelected ? 'border-primary bg-primary/5' : isDisabled ? 'opacity-50 cursor-not-allowed bg-muted/30' : 'border-border hover:bg-muted/50'}`}
+                    >
+                      <span className="text-sm font-subheading font-medium text-foreground">{opt}</span>
+                      <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${isSelected ? 'bg-primary border-primary' : 'border-gray-300'}`}>
+                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <motion.button
+                onClick={handleSabjiContinue}
+                disabled={selectedSabjis.length !== 2}
+                whileTap={{ scale: 0.95 }}
+                className={`w-full font-subheading font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all ${selectedSabjis.length === 2 ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}
+              >
+                Continue
+              </motion.button>
+            </motion.div>
+          )}
+
+          {/* Extras Selection Overlay */}
+          {showExtras && !showSabji && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -191,15 +287,15 @@ export function MenuCard({
               </div>
               <div className="flex flex-col gap-2">
                 <motion.button
-                  onClick={handleAdd}
+                  onClick={handleExtrasFinish}
                   whileTap={{ scale: 0.95 }}
                   className="w-full bg-primary text-white font-subheading font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-md"
                 >
                   <Plus className="w-4 h-4" />
-                  Add with Extras · ₹{price + selectedExtras.reduce((s, e) => s + e.price, 0)}
+                  Add to Order · ₹{price + selectedExtras.reduce((s, e) => s + e.price, 0)}
                 </motion.button>
                 <motion.button
-                  onClick={handleSkipAddons}
+                  onClick={handleSkipExtras}
                   whileTap={{ scale: 0.97 }}
                   className="w-full bg-muted border border-border text-foreground/70 font-subheading font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-muted/80 transition-colors"
                 >
@@ -212,7 +308,7 @@ export function MenuCard({
 
         {/* Add to Order Button */}
         <motion.button
-          onClick={handleAdd}
+          onClick={handleInitialAdd}
           disabled={disabled}
           whileTap={disabled ? {} : { scale: 0.95 }}
           className={`w-full mt-auto font-subheading font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 relative z-20 ${
@@ -220,7 +316,7 @@ export function MenuCard({
               ? "bg-muted text-muted-foreground cursor-not-allowed"
               : added
                 ? "bg-green-500 text-white"
-                : showExtras
+                : (showExtras || showSabji)
                   ? "bg-transparent border-2 border-primary text-primary opacity-0 pointer-events-none"
                   : "bg-primary text-white hover:bg-primary/90 shadow-md hover:shadow-lg"
           }`}
@@ -245,3 +341,4 @@ export function MenuCard({
     </motion.div>
   );
 }
+

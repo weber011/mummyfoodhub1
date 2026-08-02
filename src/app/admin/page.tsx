@@ -688,6 +688,16 @@ function MenuItemEditor({ item, onChange, onDelete, creds }: { item: any; onChan
                   onChange={e => onChange({ ...item, items: e.target.value.split("\n") })}
                 />
               </div>
+              <div>
+                <label className="block text-xs font-subheading font-medium text-foreground mb-1">Sabji Options (User must select 2. One option per line)</label>
+                <textarea
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm font-subheading focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                  rows={3}
+                  value={(item.sabjiOptions || []).join("\n")}
+                  onChange={e => onChange({ ...item, sabjiOptions: e.target.value.split("\n").filter(Boolean) })}
+                  placeholder="e.g. Aloo Gobi\nPaneer Butter Masala"
+                />
+              </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-subheading text-foreground">Coming Soon (disables ordering)</span>
                 <button onClick={() => onChange({ ...item, disabled: !item.disabled })}>
@@ -749,6 +759,16 @@ function CatalogItemEditor({ item, onChange, onDelete, creds }: { item: any; onC
                   rows={4}
                   value={(item.items || []).join("\n")}
                   onChange={e => onChange({ ...item, items: e.target.value.split("\n") })}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-subheading font-medium text-foreground mb-1">Sabji Options (User must select 2. One option per line)</label>
+                <textarea
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm font-subheading focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                  rows={3}
+                  value={(item.sabjiOptions || []).join("\n")}
+                  onChange={e => onChange({ ...item, sabjiOptions: e.target.value.split("\n").filter(Boolean) })}
+                  placeholder="e.g. Aloo Gobi\nPaneer Butter Masala"
                 />
               </div>
               <div className="flex items-center gap-2 mt-4">
