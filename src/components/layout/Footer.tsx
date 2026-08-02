@@ -122,9 +122,12 @@ export function Footer() {
         </div>
 
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-white/50 text-sm">
-            © {currentYear} Mummy Food Hub. All rights reserved.
-          </p>
+          <div className="text-white/50 text-sm flex flex-col gap-1">
+            <p>© {currentYear} Mummy Food Hub. All rights reserved.</p>
+            <p>
+              Built by <a href="https://webbybuilder.com" target="_blank" rel="noreferrer" className="text-white/80 hover:text-primary transition-colors font-medium hover:underline">WebbyBuilder</a>
+            </p>
+          </div>
           <div className="flex items-center gap-6 text-sm">
             <Link href="/privacy-policy" className="text-white/50 hover:text-primary transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="text-white/50 hover:text-primary transition-colors">Terms of Service</Link>

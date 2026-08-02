@@ -350,12 +350,10 @@
       "image": "/images/regular veg thali.jpeg",
       "badge": "Bestseller",
       "items": [
-        "4 Butter Roti",
-        "Dal of the day",
-        "Rice",
-        "Seasonal Sabzi",
-        "Fresh Salad",
-        "Pickle"
+        "2 Sabjis",
+        "4 Butter Roti / Rice",
+        "Dal",
+        "Salad & Pickle"
       ],
       "extras": [
         {
@@ -394,8 +392,11 @@
       "image": "/images/regular veg thali.jpeg",
       "badge": "Must Try",
       "items": [
-        "Pocket Friendly Thali",
-        "FREE 250ml Boondi Raita",
+        "2 Sabjis",
+        "4 Butter Roti / Rice",
+        "Dal",
+        "Salad & Pickle",
+        "FREE Raita",
         "FREE 1 Rasgulla"
       ],
       "extras": [
