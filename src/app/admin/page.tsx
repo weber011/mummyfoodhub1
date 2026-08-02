@@ -680,23 +680,52 @@ function MenuItemEditor({ item, onChange, onDelete, creds }: { item: any; onChan
               </div>
               <ImageUploadField label="Item Photo" value={item.image || ""} onChange={v => onChange({ ...item, image: v })} creds={creds} />
               <div>
-                <label className="block text-xs font-subheading font-medium text-foreground mb-1">What&apos;s Included (one item per line)</label>
-                <textarea
-                  className="w-full border border-border rounded-lg px-3 py-2 text-sm font-subheading focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-                  rows={4}
-                  value={(item.items || []).join("\n")}
-                  onChange={e => onChange({ ...item, items: e.target.value.split("\n") })}
-                />
+                <label className="block text-xs font-subheading font-medium text-foreground mb-1">What&apos;s Included</label>
+                <div className="space-y-2">
+                  {(item.items || []).map((inc: string, idx: number) => (
+                    <div key={idx} className="flex gap-2">
+                      <input
+                        className="flex-1 border border-border rounded-lg px-3 py-1.5 text-sm font-subheading focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        value={inc}
+                        onChange={(e) => {
+                          const newItems = [...(item.items || [])];
+                          newItems[idx] = e.target.value;
+                          onChange({ ...item, items: newItems });
+                        }}
+                      />
+                      <button onClick={() => {
+                        const newItems = [...(item.items || [])];
+                        newItems.splice(idx, 1);
+                        onChange({ ...item, items: newItems });
+                      }} className="text-red-400 hover:text-red-600 px-2">✕</button>
+                    </div>
+                  ))}
+                  <button onClick={() => onChange({ ...item, items: [...(item.items || []), ""] })} className="text-xs text-primary font-bold hover:underline">+ Add Item</button>
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-subheading font-medium text-foreground mb-1">Sabji Options (User must select 2. One option per line)</label>
-                <textarea
-                  className="w-full border border-border rounded-lg px-3 py-2 text-sm font-subheading focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-                  rows={3}
-                  value={(item.sabjiOptions || []).join("\n")}
-                  onChange={e => onChange({ ...item, sabjiOptions: e.target.value.split("\n").filter(Boolean) })}
-                  placeholder="e.g. Aloo Gobi\nPaneer Butter Masala"
-                />
+              <div className="mt-4">
+                <label className="block text-xs font-subheading font-medium text-foreground mb-1">Sabji Options (User must select 2)</label>
+                <div className="space-y-2">
+                  {(item.sabjiOptions || []).map((opt: string, idx: number) => (
+                    <div key={idx} className="flex gap-2">
+                      <input
+                        className="flex-1 border border-border rounded-lg px-3 py-1.5 text-sm font-subheading focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        value={opt}
+                        onChange={(e) => {
+                          const newOpts = [...(item.sabjiOptions || [])];
+                          newOpts[idx] = e.target.value;
+                          onChange({ ...item, sabjiOptions: newOpts });
+                        }}
+                      />
+                      <button onClick={() => {
+                        const newOpts = [...(item.sabjiOptions || [])];
+                        newOpts.splice(idx, 1);
+                        onChange({ ...item, sabjiOptions: newOpts });
+                      }} className="text-red-400 hover:text-red-600 px-2">✕</button>
+                    </div>
+                  ))}
+                  <button onClick={() => onChange({ ...item, sabjiOptions: [...(item.sabjiOptions || []), ""] })} className="text-xs text-primary font-bold hover:underline">+ Add Sabji Option</button>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-subheading text-foreground">Coming Soon (disables ordering)</span>
@@ -753,23 +782,52 @@ function CatalogItemEditor({ item, onChange, onDelete, creds }: { item: any; onC
               </div>
               <ImageUploadField label="Item Photo" value={item.image || ""} onChange={v => onChange({ ...item, image: v })} creds={creds} />
               <div>
-                <label className="block text-xs font-subheading font-medium text-foreground mb-1">What&apos;s Included (one item per line)</label>
-                <textarea
-                  className="w-full border border-border rounded-lg px-3 py-2 text-sm font-subheading focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-                  rows={4}
-                  value={(item.items || []).join("\n")}
-                  onChange={e => onChange({ ...item, items: e.target.value.split("\n") })}
-                />
+                <label className="block text-xs font-subheading font-medium text-foreground mb-1">What&apos;s Included</label>
+                <div className="space-y-2">
+                  {(item.items || []).map((inc: string, idx: number) => (
+                    <div key={idx} className="flex gap-2">
+                      <input
+                        className="flex-1 border border-border rounded-lg px-3 py-1.5 text-sm font-subheading focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        value={inc}
+                        onChange={(e) => {
+                          const newItems = [...(item.items || [])];
+                          newItems[idx] = e.target.value;
+                          onChange({ ...item, items: newItems });
+                        }}
+                      />
+                      <button onClick={() => {
+                        const newItems = [...(item.items || [])];
+                        newItems.splice(idx, 1);
+                        onChange({ ...item, items: newItems });
+                      }} className="text-red-400 hover:text-red-600 px-2">✕</button>
+                    </div>
+                  ))}
+                  <button onClick={() => onChange({ ...item, items: [...(item.items || []), ""] })} className="text-xs text-primary font-bold hover:underline">+ Add Item</button>
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-subheading font-medium text-foreground mb-1">Sabji Options (User must select 2. One option per line)</label>
-                <textarea
-                  className="w-full border border-border rounded-lg px-3 py-2 text-sm font-subheading focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-                  rows={3}
-                  value={(item.sabjiOptions || []).join("\n")}
-                  onChange={e => onChange({ ...item, sabjiOptions: e.target.value.split("\n").filter(Boolean) })}
-                  placeholder="e.g. Aloo Gobi\nPaneer Butter Masala"
-                />
+              <div className="mt-4">
+                <label className="block text-xs font-subheading font-medium text-foreground mb-1">Sabji Options (User must select 2)</label>
+                <div className="space-y-2">
+                  {(item.sabjiOptions || []).map((opt: string, idx: number) => (
+                    <div key={idx} className="flex gap-2">
+                      <input
+                        className="flex-1 border border-border rounded-lg px-3 py-1.5 text-sm font-subheading focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        value={opt}
+                        onChange={(e) => {
+                          const newOpts = [...(item.sabjiOptions || [])];
+                          newOpts[idx] = e.target.value;
+                          onChange({ ...item, sabjiOptions: newOpts });
+                        }}
+                      />
+                      <button onClick={() => {
+                        const newOpts = [...(item.sabjiOptions || [])];
+                        newOpts.splice(idx, 1);
+                        onChange({ ...item, sabjiOptions: newOpts });
+                      }} className="text-red-400 hover:text-red-600 px-2">✕</button>
+                    </div>
+                  ))}
+                  <button onClick={() => onChange({ ...item, sabjiOptions: [...(item.sabjiOptions || []), ""] })} className="text-xs text-primary font-bold hover:underline">+ Add Sabji Option</button>
+                </div>
               </div>
               <div className="flex items-center gap-2 mt-4">
                 <span className="text-sm font-subheading text-foreground">Coming Soon (disables ordering)</span>
