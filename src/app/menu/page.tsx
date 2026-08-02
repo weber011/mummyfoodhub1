@@ -53,6 +53,14 @@ export default function FullMenuPage() {
 
       {/* Grid */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {activeCategory === "Today's Menu" && (
+          <div className="mb-8 bg-orange-50 border border-orange-200 rounded-xl p-4 text-center shadow-sm">
+            <p className="text-orange-800 font-subheading font-bold">
+              🎉 <span className="text-primary text-lg">Special Offer:</span> Add 100ml Raita and 1 Sweet to any Today's Menu Thali and get the Special Combo for exactly <span className="text-2xl font-heading text-primary">₹99</span>!
+            </p>
+          </div>
+        )}
+
         <motion.div
           key={activeCategory}
           initial={{ opacity: 0, y: 10 }}
