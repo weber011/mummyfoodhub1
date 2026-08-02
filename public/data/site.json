@@ -138,6 +138,28 @@
         "Paneer Butter Masala",
         "Dal Makhani",
         "Mix Veg"
+      ],
+      "extras": [
+        {
+          "name": "Butter Roti",
+          "price": 10
+        },
+        {
+          "name": "Ghee Roti",
+          "price": 15
+        },
+        {
+          "name": "100ml Raita",
+          "price": 10
+        },
+        {
+          "name": "250ml Raita",
+          "price": 20
+        },
+        {
+          "name": "1 Rasgulla",
+          "price": 10
+        }
       ]
     },
     {
@@ -155,6 +177,28 @@
         "Paneer Butter Masala",
         "Dal Makhani",
         "Mix Veg"
+      ],
+      "extras": [
+        {
+          "name": "Butter Roti",
+          "price": 10
+        },
+        {
+          "name": "Ghee Roti",
+          "price": 15
+        },
+        {
+          "name": "100ml Raita",
+          "price": 10
+        },
+        {
+          "name": "250ml Raita",
+          "price": 20
+        },
+        {
+          "name": "1 Rasgulla",
+          "price": 10
+        }
       ]
     },
     {
@@ -177,7 +221,29 @@
         "Dal Makhani",
         "Mix Veg"
       ],
-      "disabled": false
+      "disabled": false,
+      "extras": [
+        {
+          "name": "Butter Roti",
+          "price": 10
+        },
+        {
+          "name": "Ghee Roti",
+          "price": 15
+        },
+        {
+          "name": "100ml Raita",
+          "price": 10
+        },
+        {
+          "name": "250ml Raita",
+          "price": 20
+        },
+        {
+          "name": "1 Rasgulla",
+          "price": 10
+        }
+      ]
     },
     {
       "id": "combo-99-dinner",
@@ -199,7 +265,29 @@
         "Dal Makhani",
         "Mix Veg"
       ],
-      "disabled": false
+      "disabled": false,
+      "extras": [
+        {
+          "name": "Butter Roti",
+          "price": 10
+        },
+        {
+          "name": "Ghee Roti",
+          "price": 15
+        },
+        {
+          "name": "100ml Raita",
+          "price": 10
+        },
+        {
+          "name": "250ml Raita",
+          "price": 20
+        },
+        {
+          "name": "1 Rasgulla",
+          "price": 10
+        }
+      ]
     }
   ],
   "tomorrowMenu": [
