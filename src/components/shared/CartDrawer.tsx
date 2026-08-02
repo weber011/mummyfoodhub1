@@ -170,27 +170,42 @@ export function CartDrawer() {
                       <p className="text-sm text-muted-foreground/70">Add items from the menu to get started</p>
                     </div>
                   ) : (
-                    cart.map((item) => (
-                      <div key={item.id} className="flex items-center gap-4 bg-muted/50 rounded-xl p-4 border border-border/50">
-                        <div className="flex-1">
-                          <p className="font-heading font-bold text-foreground text-sm">{item.title}</p>
-                          <p className="text-primary font-bold text-sm">₹{item.price} each</p>
+                    cart.map((item) => {
+                      const extrasTotal = item.extras?.reduce((sum, ex) => sum + ex.price, 0) || 0;
+                      const itemTotal = (item.price + extrasTotal) * item.quantity;
+                      return (
+                      <div key={item.id} className="flex flex-col gap-2 bg-muted/50 rounded-xl p-4 border border-border/50">
+                        <div className="flex items-center gap-4">
+                          <div className="flex-1">
+                            <p className="font-heading font-bold text-foreground text-sm">{item.title}</p>
+                            <p className="text-primary font-bold text-sm">₹{item.price + extrasTotal} each</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="font-bold w-5 text-center text-sm">{item.quantity}</span>
+                            <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                              <Plus className="w-3 h-3" />
+                            </button>
+                            <button onClick={() => removeFromCart(item.id)} className="ml-1 text-red-400 hover:text-red-600 transition-colors">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <p className="font-bold text-foreground text-sm w-16 text-right">₹{itemTotal}</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="font-bold w-5 text-center text-sm">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
-                            <Plus className="w-3 h-3" />
-                          </button>
-                          <button onClick={() => removeFromCart(item.id)} className="ml-1 text-red-400 hover:text-red-600 transition-colors">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                        <p className="font-bold text-foreground text-sm w-16 text-right">₹{item.price * item.quantity}</p>
+                        {item.extras && item.extras.length > 0 && (
+                          <div className="pl-2 border-l-2 border-primary/20 flex flex-col gap-1 mt-1">
+                            {item.extras.map((ex, idx) => (
+                              <div key={idx} className="flex justify-between text-xs text-muted-foreground">
+                                <span>+ {ex.name}</span>
+                                {ex.price > 0 && <span>₹{ex.price * item.quantity}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    ))
+                    )})
                   )}
                 </div>
 
@@ -222,12 +237,28 @@ export function CartDrawer() {
                   <div className="bg-primary/5 rounded-xl border border-primary/20 overflow-hidden">
                     <div className="px-4 pt-4 pb-2">
                       <p className="text-xs font-bold uppercase tracking-wider text-primary mb-2">Order Summary</p>
-                      {cart.map((item) => (
-                        <div key={item.id} className="flex justify-between text-sm text-foreground/80 py-0.5">
-                          <span>{item.quantity}x {item.title}</span>
-                          <span className="font-bold">₹{item.price * item.quantity}</span>
-                        </div>
-                      ))}
+                      {cart.map((item) => {
+                        const extrasTotal = item.extras?.reduce((sum, ex) => sum + ex.price, 0) || 0;
+                        const itemTotal = (item.price + extrasTotal) * item.quantity;
+                        return (
+                          <div key={item.id} className="flex flex-col py-1 border-b border-primary/5 last:border-0">
+                            <div className="flex justify-between text-sm text-foreground/80">
+                              <span>{item.quantity}x {item.title}</span>
+                              <span className="font-bold">₹{itemTotal}</span>
+                            </div>
+                            {item.extras && item.extras.length > 0 && (
+                              <div className="pl-4 text-xs text-muted-foreground flex flex-col gap-0.5 mt-0.5">
+                                {item.extras.filter(ex => ex.price > 0).map((ex, idx) => (
+                                  <div key={idx} className="flex justify-between">
+                                    <span>+ {ex.name}</span>
+                                    <span>₹{ex.price * item.quantity}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                     {/* Live Delivery Charge Row */}
                     <div className="mx-4 border-t border-primary/10 py-2 flex justify-between text-sm text-foreground/70">

@@ -365,11 +365,15 @@
           "price": 15
         },
         {
+          "name": "100ml Raita",
+          "price": 10
+        },
+        {
           "name": "250ml Raita",
           "price": 20
         },
         {
-          "name": "Rasgulla",
+          "name": "1 Rasgulla",
           "price": 10
         }
       ],
