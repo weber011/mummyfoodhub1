@@ -147,7 +147,7 @@ export default function AdminPage() {
                   className="w-full border border-border rounded-xl px-4 py-3 text-sm font-subheading focus:outline-none focus:ring-2 focus:ring-primary/30 pr-12"
                   required
                 />
-                <button type="button" onClick={() => setShowPass(!showPass)}
+                <button type='button' type="button" onClick={() => setShowPass(!showPass)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                   {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -215,7 +215,7 @@ export default function AdminPage() {
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               {saving ? "Saving..." : "Save Changes"}
             </button>
-            <button onClick={handleLogout} className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm font-subheading px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+            <button type='button' onClick={handleLogout} className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm font-subheading px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
               <LogOut className="w-4 h-4" /> Logout
             </button>
           </div>
@@ -364,7 +364,7 @@ export default function AdminPage() {
                         <Field label="Badge (optional)" value={cat.badge || ""} onChange={v => updateArr("categories", idx, "badge", v, setData)} />
                         <div className="flex items-center gap-3">
                           <span className="text-sm font-subheading text-foreground">Coming Soon</span>
-                          <button onClick={() => updateArr("categories", idx, "disabled", !cat.disabled, setData)}>
+                          <button type='button' onClick={() => updateArr("categories", idx, "disabled", !cat.disabled, setData)}>
                             {cat.disabled
                               ? <ToggleRight className="w-8 h-8 text-primary" />
                               : <ToggleLeft className="w-8 h-8 text-muted-foreground" />}
@@ -435,7 +435,7 @@ export default function AdminPage() {
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-subheading">Recommended (Best Value badge)</span>
-                          <button onClick={() => updateArr("subscriptionPlans", idx, "recommended", !plan.recommended, setData)}>
+                          <button type='button' onClick={() => updateArr("subscriptionPlans", idx, "recommended", !plan.recommended, setData)}>
                             {plan.recommended ? <ToggleRight className="w-7 h-7 text-primary" /> : <ToggleLeft className="w-7 h-7 text-muted-foreground" />}
                           </button>
                         </div>
@@ -508,7 +508,7 @@ export default function AdminPage() {
                           <div className="flex items-end gap-3 pb-1">
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-subheading text-foreground">Required</span>
-                              <button onClick={() => {
+                              <button type='button' onClick={() => {
                                 const fields = [...data.orderForm.fields];
                                 fields[idx] = { ...fields[idx], required: !fields[idx].required };
                                 setData((d: SiteData) => ({ ...d, orderForm: { ...d.orderForm, fields } }));
@@ -516,7 +516,7 @@ export default function AdminPage() {
                                 {field.required ? <ToggleRight className="w-6 h-6 text-primary" /> : <ToggleLeft className="w-6 h-6 text-muted-foreground" />}
                               </button>
                             </div>
-                            <button onClick={() => {
+                            <button type='button' onClick={() => {
                               const fields = data.orderForm.fields.filter((_: any, i: number) => i !== idx);
                               setData((d: SiteData) => ({ ...d, orderForm: { ...d.orderForm, fields } }));
                             }} className="text-red-500 hover:text-red-600">
@@ -663,7 +663,7 @@ function MenuItemEditor({ item, onChange, onDelete, creds }: { item: any; onChan
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={e => { e.stopPropagation(); onDelete(); }} className="text-red-400 hover:text-red-600 p-1">
+          <button type='button' onClick={e => { e.stopPropagation(); onDelete(); }} className="text-red-400 hover:text-red-600 p-1">
             <Trash2 className="w-4 h-4" />
           </button>
           {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
@@ -693,14 +693,14 @@ function MenuItemEditor({ item, onChange, onDelete, creds }: { item: any; onChan
                           onChange({ ...item, items: newItems });
                         }}
                       />
-                      <button onClick={() => {
+                      <button type='button' onClick={() => {
                         const newItems = [...(item.items || [])];
                         newItems.splice(idx, 1);
                         onChange({ ...item, items: newItems });
                       }} className="text-red-400 hover:text-red-600 px-2">✕</button>
                     </div>
                   ))}
-                  <button onClick={() => onChange({ ...item, items: [...(item.items || []), ""] })} className="text-xs text-primary font-bold hover:underline">+ Add Item</button>
+                  <button type='button' onClick={() => onChange({ ...item, items: [...(item.items || []), ""] })} className="text-xs text-primary font-bold hover:underline">+ Add Item</button>
                 </div>
               </div>
               <div className="mt-4">
@@ -717,19 +717,55 @@ function MenuItemEditor({ item, onChange, onDelete, creds }: { item: any; onChan
                           onChange({ ...item, sabjiOptions: newOpts });
                         }}
                       />
-                      <button onClick={() => {
+                      <button type='button' onClick={() => {
                         const newOpts = [...(item.sabjiOptions || [])];
                         newOpts.splice(idx, 1);
                         onChange({ ...item, sabjiOptions: newOpts });
                       }} className="text-red-400 hover:text-red-600 px-2">✕</button>
                     </div>
                   ))}
-                  <button onClick={() => onChange({ ...item, sabjiOptions: [...(item.sabjiOptions || []), ""] })} className="text-xs text-primary font-bold hover:underline">+ Add Sabji Option</button>
+                  <button type='button' onClick={() => onChange({ ...item, sabjiOptions: [...(item.sabjiOptions || []), ""] })} className="text-xs text-primary font-bold hover:underline">+ Add Sabji Option</button>
+                </div>
+              </div>
+              <div className="mt-4">
+                <label className="block text-xs font-subheading font-medium text-foreground mb-1">Add-Ons / Extras</label>
+                <div className="space-y-2">
+                  {(item.extras || []).map((ext: any, idx: number) => (
+                    <div key={idx} className="flex gap-2">
+                      <input
+                        className="flex-[2] border border-border rounded-lg px-3 py-1.5 text-sm font-subheading focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        placeholder="Name (e.g. Butter Roti)"
+                        value={ext.name}
+                        onChange={(e) => {
+                          const newExt = [...(item.extras || [])];
+                          newExt[idx] = { ...newExt[idx], name: e.target.value };
+                          onChange({ ...item, extras: newExt });
+                        }}
+                      />
+                      <input
+                        className="flex-1 min-w-[80px] border border-border rounded-lg px-3 py-1.5 text-sm font-subheading focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        placeholder="Price"
+                        type="number"
+                        value={ext.price}
+                        onChange={(e) => {
+                          const newExt = [...(item.extras || [])];
+                          newExt[idx] = { ...newExt[idx], price: Number(e.target.value) };
+                          onChange({ ...item, extras: newExt });
+                        }}
+                      />
+                      <button type='button' onClick={() => {
+                        const newExt = [...(item.extras || [])];
+                        newExt.splice(idx, 1);
+                        onChange({ ...item, extras: newExt });
+                      }} className="text-red-400 hover:text-red-600 px-2">✕</button>
+                    </div>
+                  ))}
+                  <button type='button' onClick={() => onChange({ ...item, extras: [...(item.extras || []), { name: "", price: 0 }] })} className="text-xs text-primary font-bold hover:underline">+ Add Extra</button>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-subheading text-foreground">Coming Soon (disables ordering)</span>
-                <button onClick={() => onChange({ ...item, disabled: !item.disabled })}>
+                <button type='button' onClick={() => onChange({ ...item, disabled: !item.disabled })}>
                   {item.disabled ? <ToggleRight className="w-7 h-7 text-primary" /> : <ToggleLeft className="w-7 h-7 text-muted-foreground" />}
                 </button>
                 <span className={`text-xs font-subheading ${item.disabled ? "text-primary font-bold" : "text-muted-foreground"}`}>
@@ -761,7 +797,7 @@ function CatalogItemEditor({ item, onChange, onDelete, creds }: { item: any; onC
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={e => { e.stopPropagation(); onDelete(); }} className="text-red-400 hover:text-red-600 p-1">
+          <button type='button' onClick={e => { e.stopPropagation(); onDelete(); }} className="text-red-400 hover:text-red-600 p-1">
             <Trash2 className="w-4 h-4" />
           </button>
           {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
@@ -795,14 +831,14 @@ function CatalogItemEditor({ item, onChange, onDelete, creds }: { item: any; onC
                           onChange({ ...item, items: newItems });
                         }}
                       />
-                      <button onClick={() => {
+                      <button type='button' onClick={() => {
                         const newItems = [...(item.items || [])];
                         newItems.splice(idx, 1);
                         onChange({ ...item, items: newItems });
                       }} className="text-red-400 hover:text-red-600 px-2">✕</button>
                     </div>
                   ))}
-                  <button onClick={() => onChange({ ...item, items: [...(item.items || []), ""] })} className="text-xs text-primary font-bold hover:underline">+ Add Item</button>
+                  <button type='button' onClick={() => onChange({ ...item, items: [...(item.items || []), ""] })} className="text-xs text-primary font-bold hover:underline">+ Add Item</button>
                 </div>
               </div>
               <div className="mt-4">
@@ -819,19 +855,55 @@ function CatalogItemEditor({ item, onChange, onDelete, creds }: { item: any; onC
                           onChange({ ...item, sabjiOptions: newOpts });
                         }}
                       />
-                      <button onClick={() => {
+                      <button type='button' onClick={() => {
                         const newOpts = [...(item.sabjiOptions || [])];
                         newOpts.splice(idx, 1);
                         onChange({ ...item, sabjiOptions: newOpts });
                       }} className="text-red-400 hover:text-red-600 px-2">✕</button>
                     </div>
                   ))}
-                  <button onClick={() => onChange({ ...item, sabjiOptions: [...(item.sabjiOptions || []), ""] })} className="text-xs text-primary font-bold hover:underline">+ Add Sabji Option</button>
+                  <button type='button' onClick={() => onChange({ ...item, sabjiOptions: [...(item.sabjiOptions || []), ""] })} className="text-xs text-primary font-bold hover:underline">+ Add Sabji Option</button>
+                </div>
+              </div>
+              <div className="mt-4">
+                <label className="block text-xs font-subheading font-medium text-foreground mb-1">Add-Ons / Extras</label>
+                <div className="space-y-2">
+                  {(item.extras || []).map((ext: any, idx: number) => (
+                    <div key={idx} className="flex gap-2">
+                      <input
+                        className="flex-[2] border border-border rounded-lg px-3 py-1.5 text-sm font-subheading focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        placeholder="Name (e.g. Butter Roti)"
+                        value={ext.name}
+                        onChange={(e) => {
+                          const newExt = [...(item.extras || [])];
+                          newExt[idx] = { ...newExt[idx], name: e.target.value };
+                          onChange({ ...item, extras: newExt });
+                        }}
+                      />
+                      <input
+                        className="flex-1 min-w-[80px] border border-border rounded-lg px-3 py-1.5 text-sm font-subheading focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        placeholder="Price"
+                        type="number"
+                        value={ext.price}
+                        onChange={(e) => {
+                          const newExt = [...(item.extras || [])];
+                          newExt[idx] = { ...newExt[idx], price: Number(e.target.value) };
+                          onChange({ ...item, extras: newExt });
+                        }}
+                      />
+                      <button type='button' onClick={() => {
+                        const newExt = [...(item.extras || [])];
+                        newExt.splice(idx, 1);
+                        onChange({ ...item, extras: newExt });
+                      }} className="text-red-400 hover:text-red-600 px-2">✕</button>
+                    </div>
+                  ))}
+                  <button type='button' onClick={() => onChange({ ...item, extras: [...(item.extras || []), { name: "", price: 0 }] })} className="text-xs text-primary font-bold hover:underline">+ Add Extra</button>
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-4">
                 <span className="text-sm font-subheading text-foreground">Coming Soon (disables ordering)</span>
-                <button onClick={() => onChange({ ...item, disabled: !item.disabled })}>
+                <button type='button' onClick={() => onChange({ ...item, disabled: !item.disabled })}>
                   {item.disabled ? <ToggleRight className="w-7 h-7 text-primary" /> : <ToggleLeft className="w-7 h-7 text-muted-foreground" />}
                 </button>
                 <span className={`text-xs font-subheading ${item.disabled ? "text-primary font-bold" : "text-muted-foreground"}`}>

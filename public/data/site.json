@@ -159,7 +159,7 @@
     },
     {
       "id": "combo-99-lunch",
-      "title": "Lunch - ₹99 Combo Thali",
+      "title": "Lunch - Special Combo Thali (with FREE Raita & Rasgulla)",
       "price": 99,
       "image": "/images/regular veg thali.jpeg",
       "badge": "Special",
@@ -168,8 +168,8 @@
         "4 Butter Roti / Rice",
         "Dal",
         "Salad & Pickle",
-        "Raita",
-        "1 Rasgulla"
+        "FREE Raita",
+        "FREE 1 Rasgulla"
       ],
       "sabjiOptions": [
         "Aloo Gobi",
@@ -181,7 +181,7 @@
     },
     {
       "id": "combo-99-dinner",
-      "title": "Dinner - ₹99 Combo Thali",
+      "title": "Dinner - Special Combo Thali (with FREE Raita & Rasgulla)",
       "price": 99,
       "image": "/images/regular veg thali.jpeg",
       "badge": "Special",
@@ -190,8 +190,8 @@
         "4 Butter Roti / Rice",
         "Dal",
         "Salad & Pickle",
-        "Raita",
-        "1 Rasgulla"
+        "FREE Raita",
+        "FREE 1 Rasgulla"
       ],
       "sabjiOptions": [
         "Aloo Gobi",
@@ -239,7 +239,7 @@
     },
     {
       "id": "combo-99-lunch",
-      "title": "Lunch - ₹99 Combo Thali",
+      "title": "Lunch - Special Combo Thali (with FREE Raita & Rasgulla)",
       "price": 99,
       "image": "/images/regular veg thali.jpeg",
       "badge": "Special",
@@ -248,8 +248,8 @@
         "4 Butter Roti / Rice",
         "Dal",
         "Salad & Pickle",
-        "Raita",
-        "1 Rasgulla"
+        "FREE Raita",
+        "FREE 1 Rasgulla"
       ],
       "sabjiOptions": [
         "Aloo Gobi",
@@ -261,7 +261,7 @@
     },
     {
       "id": "combo-99-dinner",
-      "title": "Dinner - ₹99 Combo Thali",
+      "title": "Dinner - Special Combo Thali (with FREE Raita & Rasgulla)",
       "price": 99,
       "image": "/images/regular veg thali.jpeg",
       "badge": "Special",
@@ -270,8 +270,8 @@
         "4 Butter Roti / Rice",
         "Dal",
         "Salad & Pickle",
-        "Raita",
-        "1 Rasgulla"
+        "FREE Raita",
+        "FREE 1 Rasgulla"
       ],
       "sabjiOptions": [
         "Aloo Gobi",
@@ -387,7 +387,7 @@
       "id": "vm-2",
       "section": "veg-meals",
       "subcategory": "Pocket Friendly Meals",
-      "title": "Special Combo Thali",
+      "title": "Special Combo Thali (with FREE Raita & Rasgulla)",
       "originalPrice": 129,
       "price": 99,
       "discount": "23%",
@@ -395,8 +395,8 @@
       "badge": "Must Try",
       "items": [
         "Pocket Friendly Thali",
-        "250ml Boondi Raita",
-        "1 Rasgulla"
+        "FREE 250ml Boondi Raita",
+        "FREE 1 Rasgulla"
       ],
       "extras": [
         {
