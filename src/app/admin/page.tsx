@@ -247,11 +247,11 @@ export default function AdminPage() {
             {/* ── MENU TAB ── */}
             {activeTab === "menu" && (
               <div className="space-y-8">
-                {(["todayMenu", "tomorrowMenu"] as const).map((dayKey) => (
+                {(["todayMenu"] as const).map((dayKey) => (
                   <div key={dayKey} className="bg-white rounded-2xl border border-border p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-6">
                       <h2 className="text-xl font-heading font-bold text-foreground">
-                        {dayKey === "todayMenu" ? "📅 Today's Menu" : "📆 Tomorrow's Menu"}
+                        {dayKey === "todayMenu" ? "📅 Today's Menu" : ""}
                       </h2>
                       <button
                         onClick={() => {

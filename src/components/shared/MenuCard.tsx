@@ -30,6 +30,7 @@ export function MenuCard({
   const [showSabji, setShowSabji] = useState(false);
   const [selectedExtras, setSelectedExtras] = useState<{ name: string; price: number }[]>([]);
   const [selectedSabjis, setSelectedSabjis] = useState<string[]>([]);
+  const [upgradedToCombo, setUpgradedToCombo] = useState(false);
 
   const handleInitialAdd = () => {
     if (sabjiOptions && sabjiOptions.length > 0) {
@@ -58,11 +59,40 @@ export function MenuCard({
   };
 
   const handleExtrasFinish = () => {
+    let finalTitle = title;
+    let finalPrice = price;
+    let finalExtras = [...selectedExtras];
+
+    const hasRaita = selectedExtras.some(e => e.name.toLowerCase().includes("raita"));
+    const hasSweet = selectedExtras.some(e => e.name.toLowerCase().includes("rasgulla") || e.name.toLowerCase().includes("gulab jamun"));
+
+    if (title.toLowerCase().includes("pocket friendly thali") && hasRaita && hasSweet) {
+      finalTitle = "Special Combo Thali (with FREE Raita & Rasgulla)";
+      finalPrice = 99;
+      
+      let foundRaita = false;
+      let foundSweet = false;
+      finalExtras = finalExtras.map(e => {
+        if (!foundRaita && e.name.toLowerCase().includes("raita")) {
+          foundRaita = true;
+          return { ...e, price: 0 };
+        }
+        if (!foundSweet && (e.name.toLowerCase().includes("rasgulla") || e.name.toLowerCase().includes("gulab jamun"))) {
+          foundSweet = true;
+          return { ...e, price: 0 };
+        }
+        return e;
+      });
+      
+      setUpgradedToCombo(true);
+      setTimeout(() => setUpgradedToCombo(false), 3000);
+    }
+
     const combinedExtras = [
       ...selectedSabjis.map(s => ({ name: s, price: 0 })),
-      ...selectedExtras
+      ...finalExtras
     ];
-    addToCart({ title, price, extras: combinedExtras });
+    addToCart({ title: finalTitle, price: finalPrice, extras: combinedExtras });
     setShowExtras(false);
     triggerAdded();
   };
@@ -289,10 +319,32 @@ export function MenuCard({
                 <motion.button
                   onClick={handleExtrasFinish}
                   whileTap={{ scale: 0.95 }}
-                  className="w-full bg-primary text-white font-subheading font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-md"
+                  className="w-full bg-primary text-white font-subheading font-bold py-2.5 rounded-xl flex flex-col items-center justify-center gap-1 shadow-md"
                 >
-                  <Plus className="w-4 h-4" />
-                  Add to Order · ₹{price + selectedExtras.reduce((s, e) => s + e.price, 0)}
+                  <div className="flex items-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    Add to Order · ₹{
+                      title.toLowerCase().includes("pocket friendly thali") && 
+                      selectedExtras.some(e => e.name.toLowerCase().includes("raita")) && 
+                      selectedExtras.some(e => e.name.toLowerCase().includes("rasgulla") || e.name.toLowerCase().includes("gulab jamun"))
+                      ? (() => {
+                          let cost = 99;
+                          let fR = false; let fS = false;
+                          selectedExtras.forEach(e => {
+                            if (!fR && e.name.toLowerCase().includes("raita")) fR = true;
+                            else if (!fS && (e.name.toLowerCase().includes("rasgulla") || e.name.toLowerCase().includes("gulab jamun"))) fS = true;
+                            else cost += e.price;
+                          });
+                          return cost;
+                      })()
+                      : price + selectedExtras.reduce((s, e) => s + e.price, 0)
+                    }
+                  </div>
+                  {title.toLowerCase().includes("pocket friendly thali") && 
+                   selectedExtras.some(e => e.name.toLowerCase().includes("raita")) && 
+                   selectedExtras.some(e => e.name.toLowerCase().includes("rasgulla") || e.name.toLowerCase().includes("gulab jamun")) && (
+                    <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full">🎉 Upgraded to Special Combo!</span>
+                  )}
                 </motion.button>
                 <motion.button
                   onClick={handleSkipExtras}
@@ -328,7 +380,7 @@ export function MenuCard({
               </motion.span>
             ) : added ? (
               <motion.span key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="flex items-center gap-2">
-                <Check className="w-4 h-4" /> Added to Cart!
+                <Check className="w-4 h-4" /> {upgradedToCombo ? "Upgraded to Special Combo!" : "Added to Cart!"}
               </motion.span>
             ) : (
               <motion.span key="add" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="flex items-center gap-2">
