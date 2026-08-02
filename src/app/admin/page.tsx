@@ -147,7 +147,7 @@ export default function AdminPage() {
                   className="w-full border border-border rounded-xl px-4 py-3 text-sm font-subheading focus:outline-none focus:ring-2 focus:ring-primary/30 pr-12"
                   required
                 />
-                <button type='button' type="button" onClick={() => setShowPass(!showPass)}
+                <button type="button" onClick={() => setShowPass(!showPass)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                   {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
