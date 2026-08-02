@@ -63,10 +63,10 @@ export function MenuCard({
     let finalPrice = price;
     let finalExtras = [...selectedExtras];
 
-    const hasRaita = selectedExtras.some(e => e.name.toLowerCase().includes("raita"));
+    const hasRaita = selectedExtras.some(e => e.name.toLowerCase().includes("raita") && !e.name.toLowerCase().includes("250ml"));
     const hasSweet = selectedExtras.some(e => e.name.toLowerCase().includes("rasgulla") || e.name.toLowerCase().includes("gulab jamun"));
 
-    if (title.toLowerCase().includes("pocket friendly thali") && hasRaita && hasSweet) {
+    if (price === 79 && hasRaita && hasSweet) {
       finalTitle = "Special Combo Thali (with FREE Raita & Rasgulla)";
       finalPrice = 99;
       
@@ -324,8 +324,8 @@ export function MenuCard({
                   <div className="flex items-center gap-2">
                     <Plus className="w-4 h-4" />
                     Add to Order · ₹{
-                      title.toLowerCase().includes("pocket friendly thali") && 
-                      selectedExtras.some(e => e.name.toLowerCase().includes("raita")) && 
+                      price === 79 && 
+                      selectedExtras.some(e => e.name.toLowerCase().includes("raita") && !e.name.toLowerCase().includes("250ml")) && 
                       selectedExtras.some(e => e.name.toLowerCase().includes("rasgulla") || e.name.toLowerCase().includes("gulab jamun"))
                       ? (() => {
                           let cost = 99;
@@ -340,8 +340,8 @@ export function MenuCard({
                       : price + selectedExtras.reduce((s, e) => s + e.price, 0)
                     }
                   </div>
-                  {title.toLowerCase().includes("pocket friendly thali") && 
-                   selectedExtras.some(e => e.name.toLowerCase().includes("raita")) && 
+                  {price === 79 && 
+                   selectedExtras.some(e => e.name.toLowerCase().includes("raita") && !e.name.toLowerCase().includes("250ml")) && 
                    selectedExtras.some(e => e.name.toLowerCase().includes("rasgulla") || e.name.toLowerCase().includes("gulab jamun")) && (
                     <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full">🎉 Upgraded to Special Combo!</span>
                   )}
