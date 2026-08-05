@@ -13,9 +13,9 @@ export default function FullMenuPage() {
 
   // Combine items from siteData
   const allItems = [
-    ...(siteData.yesterdayMenu || []).map(item => ({ ...item, category: "Yesterday's Menu" })),
-    ...(siteData.todayMenu || []).map(item => ({ ...item, category: "Today's Menu" })),
-    ...(siteData.tomorrowMenu || []).map(item => ({ ...item, category: "Tomorrow's Menu" })),
+    ...(siteData.yesterdayMenu || []).map((item: any) => ({ ...item, category: "Yesterday's Menu" })),
+    ...(siteData.todayMenu || []).map((item: any) => ({ ...item, category: "Today's Menu" })),
+    ...(siteData.tomorrowMenu || []).map((item: any) => ({ ...item, category: "Tomorrow's Menu" })),
     ...((siteData as any).menuSections?.breadsExtras || []).map((item: any) => ({ ...item, category: "Breads & Extras" }))
   ];
 
