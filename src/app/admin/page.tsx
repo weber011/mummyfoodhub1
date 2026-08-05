@@ -563,17 +563,56 @@ export default function AdminPage() {
                   {/* Paneer Availability */}
                   <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
                     <h2 className="text-xl font-heading font-bold text-foreground mb-6">Special Options</h2>
-                    <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border">
-                      <div>
-                        <h3 className="font-heading font-bold text-foreground">Premium Paneer Option</h3>
-                        <p className="text-sm text-muted-foreground mt-1">If enabled, 'Paneer' appears as a sabji option. Selecting it changes the meal price to ₹99.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Lunch Paneer */}
+                      <div className="flex flex-col gap-3 p-4 bg-muted/30 rounded-xl border border-border">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-heading font-bold text-foreground">Paneer (Lunch)</h3>
+                            <p className="text-xs text-muted-foreground mt-1">Available for Lunch thalis (₹99)</p>
+                          </div>
+                          <button
+                            onClick={() => setData((d: SiteData) => ({ ...d, settings: { ...d.settings, paneerAvailableLunch: !d.settings?.paneerAvailableLunch } }))}
+                            className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${data.settings?.paneerAvailableLunch ? 'bg-primary' : 'bg-gray-300'}`}
+                          >
+                            <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${data.settings?.paneerAvailableLunch ? 'translate-x-6' : ''}`} />
+                          </button>
+                        </div>
+                        {data.settings?.paneerAvailableLunch && (
+                          <input 
+                            type="text" 
+                            placeholder="e.g. Shahi Paneer" 
+                            value={data.settings?.paneerNameLunch || ""}
+                            onChange={e => setData((d: SiteData) => ({ ...d, settings: { ...d.settings, paneerNameLunch: e.target.value } }))}
+                            className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                          />
+                        )}
                       </div>
-                      <button
-                        onClick={() => setData((d: SiteData) => ({ ...d, settings: { ...d.settings, paneerAvailable: !d.settings?.paneerAvailable } }))}
-                        className={`w-12 h-6 rounded-full transition-colors relative ${data.settings?.paneerAvailable ? 'bg-primary' : 'bg-gray-300'}`}
-                      >
-                        <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${data.settings?.paneerAvailable ? 'translate-x-6' : ''}`} />
-                      </button>
+                      
+                      {/* Dinner Paneer */}
+                      <div className="flex flex-col gap-3 p-4 bg-muted/30 rounded-xl border border-border">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-heading font-bold text-foreground">Paneer (Dinner)</h3>
+                            <p className="text-xs text-muted-foreground mt-1">Available for Dinner thalis (₹99)</p>
+                          </div>
+                          <button
+                            onClick={() => setData((d: SiteData) => ({ ...d, settings: { ...d.settings, paneerAvailableDinner: !d.settings?.paneerAvailableDinner } }))}
+                            className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${data.settings?.paneerAvailableDinner ? 'bg-primary' : 'bg-gray-300'}`}
+                          >
+                            <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${data.settings?.paneerAvailableDinner ? 'translate-x-6' : ''}`} />
+                          </button>
+                        </div>
+                        {data.settings?.paneerAvailableDinner && (
+                          <input 
+                            type="text" 
+                            placeholder="e.g. Kadai Paneer" 
+                            value={data.settings?.paneerNameDinner || ""}
+                            onChange={e => setData((d: SiteData) => ({ ...d, settings: { ...d.settings, paneerNameDinner: e.target.value } }))}
+                            className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
 

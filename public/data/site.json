@@ -14,7 +14,11 @@
     "hours": "9 AM – 10 PM Daily",
     "deliveryRange": "₹5 – ₹20",
     "deliveryRadius": "5-7 KM",
-    "serviceAreas": "Sector 106 & Up to 10km radius",
+    "serviceAreas": "Sectors 106, 133, 135",
+    "paneerAvailableLunch": false,
+    "paneerAvailableDinner": false,
+    "paneerNameLunch": "",
+    "paneerNameDinner": "",
     "upiId": "anmol.srivastava01@kotak",
     "menuDate": "2026-08-05",
     "paneerAvailable": false

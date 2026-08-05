@@ -27,11 +27,26 @@ export function MenuCard({
 }: MenuCardProps) {
   const { addToCart } = useCart();
   const { siteData } = useSiteData();
-  const paneerAvailable = siteData?.settings?.paneerAvailable || false;
-  const isTodayMenuCategory = true; // For now we assume if sabjiOptions exist it's today's menu. We can also check category if passed.
+  
+  const isLunch = title.toLowerCase().includes("lunch") || badge?.toLowerCase().includes("lunch");
+  const isDinner = title.toLowerCase().includes("dinner") || badge?.toLowerCase().includes("dinner");
+  
+  let paneerAvailable = false;
+  let paneerName = "Paneer";
+  
+  if (isLunch) {
+    paneerAvailable = siteData?.settings?.paneerAvailableLunch || false;
+    paneerName = siteData?.settings?.paneerNameLunch || "Paneer";
+  } else if (isDinner) {
+    paneerAvailable = siteData?.settings?.paneerAvailableDinner || false;
+    paneerName = siteData?.settings?.paneerNameDinner || "Paneer";
+  } else {
+    paneerAvailable = siteData?.settings?.paneerAvailableLunch || siteData?.settings?.paneerAvailableDinner || false;
+    paneerName = siteData?.settings?.paneerNameLunch || siteData?.settings?.paneerNameDinner || "Paneer";
+  }
 
   const finalSabjiOptions = sabjiOptions && paneerAvailable 
-    ? (sabjiOptions.includes("Paneer") ? sabjiOptions : [...sabjiOptions, "Paneer"])
+    ? (sabjiOptions.includes(paneerName) ? sabjiOptions : [...sabjiOptions, paneerName])
     : sabjiOptions;
 
   const [added, setAdded] = useState(false);
@@ -41,7 +56,7 @@ export function MenuCard({
   const [selectedSabjis, setSelectedSabjis] = useState<string[]>([]);
   const [upgradedToCombo, setUpgradedToCombo] = useState(false);
 
-  const isPaneerSelected = selectedSabjis.some(s => s.toLowerCase() === "paneer");
+  const isPaneerSelected = selectedSabjis.includes(paneerName);
   const effectiveBasePrice = isPaneerSelected ? 99 : price;
 
   const handleInitialAdd = () => {
@@ -253,7 +268,7 @@ export function MenuCard({
               <div className="flex justify-between items-center mb-3">
                 <div>
                   <p className="font-heading font-bold text-foreground">Select Sabjis</p>
-                  <p className="text-xs text-primary font-bold">Pick exactly 2 {paneerAvailable && "(Paneer makes Thali ₹99)"}</p>
+                  <p className="text-xs text-primary font-bold">Pick exactly 2 {paneerAvailable && `(${paneerName} makes Thali ₹99)`}</p>
                 </div>
                 <button onClick={() => setShowSabji(false)} className="text-muted-foreground hover:text-foreground text-sm font-subheading">✕ Close</button>
               </div>
