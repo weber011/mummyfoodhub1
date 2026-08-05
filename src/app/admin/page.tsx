@@ -559,8 +559,26 @@ export default function AdminPage() {
             {activeTab === "settings" && (
               <div className="bg-white rounded-2xl border border-border p-6 shadow-sm space-y-4">
                 <h2 className="text-xl font-heading font-bold text-foreground mb-2">⚙️ Site Settings</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field label="Phone Number (with country code, no +)" value={data.settings?.phone || ""} onChange={v => setData((d: SiteData) => ({ ...d, settings: { ...d.settings, phone: v } }))} />
+                <div className="space-y-6">
+                  {/* Paneer Availability */}
+                  <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+                    <h2 className="text-xl font-heading font-bold text-foreground mb-6">Special Options</h2>
+                    <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border">
+                      <div>
+                        <h3 className="font-heading font-bold text-foreground">Premium Paneer Option</h3>
+                        <p className="text-sm text-muted-foreground mt-1">If enabled, 'Paneer' appears as a sabji option. Selecting it changes the meal price to ₹99.</p>
+                      </div>
+                      <button
+                        onClick={() => setData((d: SiteData) => ({ ...d, settings: { ...d.settings, paneerAvailable: !d.settings?.paneerAvailable } }))}
+                        className={`w-12 h-6 rounded-full transition-colors relative ${data.settings?.paneerAvailable ? 'bg-primary' : 'bg-gray-300'}`}
+                      >
+                        <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${data.settings?.paneerAvailable ? 'translate-x-6' : ''}`} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Field label="Phone Number (with country code, no +)" value={data.settings?.phone || ""} onChange={v => setData((d: SiteData) => ({ ...d, settings: { ...d.settings, phone: v } }))} />
                   <Field label="WhatsApp Number (with country code, no +)" value={data.settings?.whatsapp || ""} onChange={v => setData((d: SiteData) => ({ ...d, settings: { ...d.settings, whatsapp: v } }))} />
                   <Field label="Location / Address" value={data.settings?.location || ""} onChange={v => setData((d: SiteData) => ({ ...d, settings: { ...d.settings, location: v } }))} />
                   <Field label="Business Hours" value={data.settings?.hours || ""} onChange={v => setData((d: SiteData) => ({ ...d, settings: { ...d.settings, hours: v } }))} />
