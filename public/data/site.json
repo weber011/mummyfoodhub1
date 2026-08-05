@@ -15,8 +15,10 @@
     "deliveryRange": "₹5 – ₹20",
     "deliveryRadius": "5-7 KM",
     "serviceAreas": "Sector 106 & Up to 10km radius",
-    "upiId": "anmol.srivastava01@kotak"
+    "upiId": "anmol.srivastava01@kotak",
+    "menuDate": "2026-08-05"
   },
+  "yesterdayMenu": [],
   "orderForm": {
     "title": "Place Your Order",
     "subtitle": "Fill in your details and we will confirm via WhatsApp",

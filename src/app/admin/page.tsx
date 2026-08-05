@@ -82,10 +82,20 @@ export default function AdminPage() {
     setSaving(true);
     setSaveMsg(null);
     try {
+      // Update menuDate to current date in IST when saving
+      const istDateStr = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+      const currentData = {
+        ...data,
+        settings: {
+          ...data.settings,
+          menuDate: istDateStr
+        }
+      };
+
       const res = await fetch("/api/admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "save", data, username: creds.u, password: creds.p }),
+        body: JSON.stringify({ action: "save", data: currentData, username: creds.u, password: creds.p }),
       });
       const json = await res.json();
       if (json.success) {
@@ -247,11 +257,11 @@ export default function AdminPage() {
             {/* ── MENU TAB ── */}
             {activeTab === "menu" && (
               <div className="space-y-8">
-                {(["todayMenu"] as const).map((dayKey) => (
+                {(["yesterdayMenu", "todayMenu", "tomorrowMenu"] as const).map((dayKey) => (
                   <div key={dayKey} className="bg-white rounded-2xl border border-border p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-6">
                       <h2 className="text-xl font-heading font-bold text-foreground">
-                        {dayKey === "todayMenu" ? "📅 Today's Menu" : ""}
+                        {dayKey === "yesterdayMenu" ? "📅 Yesterday's Menu" : dayKey === "todayMenu" ? "📅 Today's Menu" : "📅 Tomorrow's Menu"}
                       </h2>
                       <button
                         onClick={() => {
