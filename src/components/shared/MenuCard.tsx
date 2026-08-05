@@ -220,11 +220,11 @@ export function MenuCard({
         </div>
 
         {/* Sabji Options Note */}
-        {sabjiOptions && sabjiOptions.length > 0 && (
+        {finalSabjiOptions && finalSabjiOptions.length > 0 && (
           <div className="mb-4 pt-3 border-t border-dashed border-border">
             <p className="text-xs font-bold text-foreground/60 uppercase tracking-wider mb-2 text-primary">Choice of 2 Sabjis Included</p>
             <div className="flex flex-wrap gap-2">
-              {sabjiOptions.map((opt, idx) => (
+              {finalSabjiOptions.map((opt, idx) => (
                 <span key={idx} className="text-[10px] bg-orange-50 text-orange-700 px-2 py-1 rounded-full border border-orange-200">
                   {opt}
                 </span>
@@ -258,7 +258,7 @@ export function MenuCard({
                 <button onClick={() => setShowSabji(false)} className="text-muted-foreground hover:text-foreground text-sm font-subheading">✕ Close</button>
               </div>
               <div className="flex flex-col gap-2 mb-4 overflow-y-auto max-h-48">
-                {sabjiOptions?.map((opt, idx) => {
+                {finalSabjiOptions?.map((opt, idx) => {
                   const isSelected = selectedSabjis.includes(opt);
                   const isDisabled = !isSelected && selectedSabjis.length >= 2;
                   return (
