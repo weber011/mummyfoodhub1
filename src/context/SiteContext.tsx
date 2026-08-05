@@ -38,12 +38,12 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
               
               if (diffDays === 1) {
                 data.yesterdayMenu = data.todayMenu || [];
-                data.todayMenu = data.tomorrowMenu || [];
-                data.tomorrowMenu = [];
+                data.todayMenu = [];
+                delete data.tomorrowMenu; // Clean up old data if exists
               } else if (diffDays >= 2) {
                 data.yesterdayMenu = [];
                 data.todayMenu = [];
-                data.tomorrowMenu = [];
+                delete data.tomorrowMenu; // Clean up old data if exists
               }
             }
           } catch (e) {

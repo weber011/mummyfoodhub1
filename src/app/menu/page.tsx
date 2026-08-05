@@ -5,7 +5,7 @@ import { MenuCard } from "@/components/shared/MenuCard";
 import { motion } from "framer-motion";
 import { useSiteData } from "@/context/SiteContext";
 
-const categories = ["Yesterday's Menu", "Today's Menu", "Tomorrow's Menu", "Breads & Extras"];
+const categories = ["Yesterday's Menu", "Today's Menu", "Breads & Extras"];
 
 export default function FullMenuPage() {
   const { siteData } = useSiteData();
@@ -15,7 +15,6 @@ export default function FullMenuPage() {
   const allItems = [
     ...(siteData.yesterdayMenu || []).map((item: any) => ({ ...item, category: "Yesterday's Menu" })),
     ...(siteData.todayMenu || []).map((item: any) => ({ ...item, category: "Today's Menu" })),
-    ...(siteData.tomorrowMenu || []).map((item: any) => ({ ...item, category: "Tomorrow's Menu" })),
     ...((siteData as any).menuSections?.breadsExtras || []).map((item: any) => ({ ...item, category: "Breads & Extras" }))
   ];
 
