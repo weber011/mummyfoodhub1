@@ -587,6 +587,7 @@ export default function AdminPage() {
                   <Field label="Service Areas (e.g. Sectors 106, 133, 135)" value={data.settings?.serviceAreas || ""} onChange={v => setData((d: SiteData) => ({ ...d, settings: { ...d.settings, serviceAreas: v } }))} />
                   <Field label="UPI ID (for online payments)" value={data.settings?.upiId || ""} onChange={v => setData((d: SiteData) => ({ ...d, settings: { ...d.settings, upiId: v } }))} />
                 </div>
+                </div>
               </div>
             )}
 
