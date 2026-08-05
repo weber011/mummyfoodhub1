@@ -16,7 +16,8 @@
     "deliveryRadius": "5-7 KM",
     "serviceAreas": "Sector 106 & Up to 10km radius",
     "upiId": "anmol.srivastava01@kotak",
-    "menuDate": "2026-08-05"
+    "menuDate": "2026-08-05",
+    "paneerAvailable": false
   },
   "yesterdayMenu": [],
   "orderForm": {

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Check, Leaf, Minus } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useState } from "react";
+import { useSiteData } from "@/context/SiteContext";
 
 type MenuCardProps = {
   title: string;
@@ -25,6 +26,14 @@ export function MenuCard({
   title, originalPrice, price, discount, description, items, sabjiOptions, extras, image, badge, isVeg = true, disabled = false
 }: MenuCardProps) {
   const { addToCart } = useCart();
+  const { siteData } = useSiteData();
+  const paneerAvailable = siteData?.settings?.paneerAvailable || false;
+  const isTodayMenuCategory = true; // For now we assume if sabjiOptions exist it's today's menu. We can also check category if passed.
+
+  const finalSabjiOptions = sabjiOptions && paneerAvailable 
+    ? (sabjiOptions.includes("Paneer") ? sabjiOptions : [...sabjiOptions, "Paneer"])
+    : sabjiOptions;
+
   const [added, setAdded] = useState(false);
   const [showExtras, setShowExtras] = useState(false);
   const [showSabji, setShowSabji] = useState(false);
@@ -32,8 +41,11 @@ export function MenuCard({
   const [selectedSabjis, setSelectedSabjis] = useState<string[]>([]);
   const [upgradedToCombo, setUpgradedToCombo] = useState(false);
 
+  const isPaneerSelected = selectedSabjis.some(s => s.toLowerCase() === "paneer");
+  const effectiveBasePrice = isPaneerSelected ? 99 : price;
+
   const handleInitialAdd = () => {
-    if (sabjiOptions && sabjiOptions.length > 0) {
+    if (finalSabjiOptions && finalSabjiOptions.length > 0) {
       setShowSabji(true);
       return;
     }
@@ -42,7 +54,7 @@ export function MenuCard({
       return;
     }
     
-    addToCart({ title, price, extras: [] });
+    addToCart({ title, price: effectiveBasePrice, extras: [] });
     triggerAdded();
   };
 
@@ -53,20 +65,20 @@ export function MenuCard({
       setShowExtras(true);
     } else {
       const combinedExtras = selectedSabjis.map(s => ({ name: s, price: 0 }));
-      addToCart({ title, price, extras: combinedExtras });
+      addToCart({ title, price: effectiveBasePrice, extras: combinedExtras });
       triggerAdded();
     }
   };
 
   const handleExtrasFinish = () => {
     let finalTitle = title;
-    let finalPrice = price;
+    let finalPrice = effectiveBasePrice;
     let finalExtras = [...selectedExtras];
 
     const hasRaita = selectedExtras.some(e => e.name.toLowerCase().includes("raita") && !e.name.toLowerCase().includes("250ml"));
     const hasSweet = selectedExtras.some(e => e.name.toLowerCase().includes("rasgulla") || e.name.toLowerCase().includes("gulab jamun"));
 
-    if (price === 79 && hasRaita && hasSweet) {
+    if (effectiveBasePrice === 79 && hasRaita && hasSweet) {
       finalTitle = "Special Combo Thali (with FREE Raita & Rasgulla)";
       finalPrice = 99;
       
@@ -99,7 +111,7 @@ export function MenuCard({
 
   const handleSkipExtras = () => {
     const combinedExtras = selectedSabjis.map(s => ({ name: s, price: 0 }));
-    addToCart({ title, price, extras: combinedExtras });
+    addToCart({ title, price: effectiveBasePrice, extras: combinedExtras });
     setShowExtras(false);
     triggerAdded();
   };
@@ -241,7 +253,7 @@ export function MenuCard({
               <div className="flex justify-between items-center mb-3">
                 <div>
                   <p className="font-heading font-bold text-foreground">Select Sabjis</p>
-                  <p className="text-xs text-primary font-bold">Pick exactly 2</p>
+                  <p className="text-xs text-primary font-bold">Pick exactly 2 {paneerAvailable && "(Paneer makes Thali ₹99)"}</p>
                 </div>
                 <button onClick={() => setShowSabji(false)} className="text-muted-foreground hover:text-foreground text-sm font-subheading">✕ Close</button>
               </div>
