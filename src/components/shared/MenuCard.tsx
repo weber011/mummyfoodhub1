@@ -20,10 +20,11 @@ type MenuCardProps = {
   badge?: string;
   isVeg?: boolean;
   disabled?: boolean;
+  disabledText?: string;
 };
 
 export function MenuCard({
-  title, originalPrice, price, discount, description, items, sabjiOptions, extras, image, badge, isVeg = true, disabled = false
+  title, originalPrice, price, discount, description, items, sabjiOptions, extras, image, badge, isVeg = true, disabled = false, disabledText
 }: MenuCardProps) {
   const { addToCart } = useCart();
   const { siteData } = useSiteData();
@@ -400,12 +401,12 @@ export function MenuCard({
                   : "bg-primary text-white hover:bg-primary/90 shadow-md hover:shadow-lg"
           }`}
         >
-          <AnimatePresence mode="wait">
-            {disabled ? (
-              <motion.span key="coming" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="flex items-center gap-2">
-                Coming Soon
-              </motion.span>
-            ) : added ? (
+        <AnimatePresence mode="wait">
+          {disabled ? (
+            <motion.span key="coming" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="flex items-center gap-2">
+              {disabledText || "Sold Out"}
+            </motion.span>
+          ) : added ? (
               <motion.span key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="flex items-center gap-2">
                 <Check className="w-4 h-4" /> {upgradedToCombo ? "Upgraded to Special Combo!" : "Added to Cart!"}
               </motion.span>

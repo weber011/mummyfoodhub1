@@ -13,7 +13,7 @@ export default function FullMenuPage() {
 
   // Combine items from siteData
   const allItems = [
-    ...(siteData.yesterdayMenu || []).map((item: any) => ({ ...item, category: "Yesterday's Menu", disabled: true, disabledText: "Unavailable" })),
+    ...(siteData.yesterdayMenu || []).map((item: any) => ({ ...item, category: "Yesterday's Menu", disabled: true, disabledText: "Sold Out" })),
     ...(siteData.todayMenu || []).map((item: any) => ({ ...item, category: "Today's Menu" })),
     ...((siteData as any).menuSections?.breadsExtras || []).map((item: any) => ({ ...item, category: "Breads & Extras" }))
   ];
