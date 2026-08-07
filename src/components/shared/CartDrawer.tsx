@@ -222,9 +222,14 @@ export function CartDrawer() {
                     )}
                     <button
                       onClick={() => setStep("form")}
-                      className="w-full bg-primary text-white font-bold py-4 rounded-xl text-lg shadow-lg hover:bg-primary/90 transition-all active:scale-95"
+                      disabled={totalPrice < 80}
+                      className={`w-full font-bold py-4 rounded-xl text-lg transition-all ${
+                        totalPrice < 80 
+                          ? "bg-muted text-muted-foreground cursor-not-allowed border border-border" 
+                          : "bg-primary text-white shadow-lg hover:bg-primary/90 active:scale-95"
+                      }`}
                     >
-                      Proceed to Order →
+                      {totalPrice < 80 ? "Minimum Order: ₹80" : "Proceed to Order →"}
                     </button>
                   </div>
                 )}
