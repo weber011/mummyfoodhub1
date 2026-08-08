@@ -36,12 +36,9 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
               const diffTime = todayDate.getTime() - menuDate.getTime();
               const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
               
-              if (diffDays === 1) {
+              if (diffDays >= 1) {
+                // If the menu was last updated any time before today, roll it over to yesterday
                 data.yesterdayMenu = data.todayMenu || [];
-                data.todayMenu = [];
-                delete data.tomorrowMenu; // Clean up old data if exists
-              } else if (diffDays >= 2) {
-                data.yesterdayMenu = [];
                 data.todayMenu = [];
                 delete data.tomorrowMenu; // Clean up old data if exists
               }
