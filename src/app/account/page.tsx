@@ -1,20 +1,34 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { LogOut, ShoppingBag, CreditCard, ChevronRight, User } from "lucide-react";
+import { LogOut, ShoppingBag, CreditCard, ChevronRight, User, Bell } from "lucide-react";
 
 export default function AccountPage() {
   const { user, isLoading, logout } = useAuth();
   const router = useRouter();
+  const [unreadNotifs, setUnreadNotifs] = useState(0);
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.push("/login");
     }
   }, [user, isLoading, router]);
+
+  useEffect(() => {
+    if (user) {
+      fetch("/api/notifications")
+        .then(res => res.json())
+        .then(data => {
+          if (data.notifications) {
+            setUnreadNotifs(data.notifications.filter((n: any) => !n.read).length);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user]);
 
   if (isLoading || !user) return <div className="min-h-screen" />;
 
@@ -24,7 +38,7 @@ export default function AccountPage() {
         
         {/* Header */}
         <div className="bg-white rounded-3xl p-8 border border-border shadow-sm flex items-center gap-6">
-          <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+          <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center shrink-0 relative">
             <span className="text-3xl font-heading font-bold text-primary">
               {user.name.charAt(0).toUpperCase()}
             </span>
@@ -38,6 +52,24 @@ export default function AccountPage() {
 
         {/* Links */}
         <div className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden divide-y divide-border">
+          <Link href="/account/notifications" className="flex items-center justify-between p-6 hover:bg-gray-50 transition-colors group">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform relative">
+                <Bell className="w-5 h-5" />
+                {unreadNotifs > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-bold">
+                    {unreadNotifs}
+                  </span>
+                )}
+              </div>
+              <div>
+                <h2 className="font-heading font-bold text-foreground">Notifications</h2>
+                <p className="text-xs text-muted-foreground font-subheading">View updates and alerts</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </Link>
+
           <Link href="/account/orders" className="flex items-center justify-between p-6 hover:bg-gray-50 transition-colors group">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary group-hover:scale-110 transition-transform">

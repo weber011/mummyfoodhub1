@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { ArrowLeft, Loader2, Package, ChevronRight } from "lucide-react";
 import type { Order } from "@/lib/types";
-import { ORDER_STATUS_LABELS } from "@/lib/types";
+import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/types";
 
 export default function OrdersPage() {
   const { user, isLoading } = useAuth();
@@ -63,16 +63,12 @@ export default function OrdersPage() {
               <Link key={order.id} href={`/account/orders/${order.id}`} className="block bg-white rounded-2xl border border-border p-5 hover:border-primary/30 hover:shadow-md transition-all group">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Order #{order.id.slice(-8).toUpperCase()}</span>
-                    <p className="text-sm font-subheading text-foreground mt-1">
+                    <span className="text-sm font-bold text-foreground font-heading">{order.orderNumber || `Order #${order.id.slice(-8).toUpperCase()}`}</span>
+                    <p className="text-xs font-subheading text-muted-foreground mt-1">
                       {new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} • {new Date(order.createdAt).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}
                     </p>
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-bold ${
-                    order.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                    order.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                    'bg-orange-100 text-orange-700'
-                  }`}>
+                  <div className={`px-3 py-1 rounded-full text-xs font-bold ${ORDER_STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-800'}`}>
                     {ORDER_STATUS_LABELS[order.status] ?? order.status}
                   </div>
                 </div>

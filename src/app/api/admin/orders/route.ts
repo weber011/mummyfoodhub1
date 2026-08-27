@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllOrders, updateOrderStatus } from '@/lib/orders';
+import { getAllOrders, updateOrderStatus, approveOrder } from '@/lib/orders';
+import { sendOrderConfirmedEmail } from '@/lib/email';
+import { createNotification } from '@/lib/notifications';
 
 const ADMIN_USER = 'mummyfoodhubnoida';
 const ADMIN_PASS = 'webbybuilderranchi';
@@ -18,7 +20,24 @@ export async function GET(req: NextRequest) {
   if (!isAdmin(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const orders = await getAllOrders();
+  const { searchParams } = new URL(req.url);
+  const status = searchParams.get('status');
+  const search = searchParams.get('search')?.toLowerCase();
+
+  let orders = await getAllOrders();
+
+  if (status && status !== 'all') {
+    orders = orders.filter(o => o.status === status);
+  }
+
+  if (search) {
+    orders = orders.filter(o => 
+      o.orderNumber?.toLowerCase().includes(search) ||
+      o.customerName?.toLowerCase().includes(search) ||
+      o.customerPhone?.includes(search)
+    );
+  }
+
   return NextResponse.json({ orders });
 }
 
@@ -29,14 +48,34 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { orderId, status } = body;
-    if (!orderId || !status) {
-      return NextResponse.json({ error: 'Missing orderId or status' }, { status: 400 });
+    const { orderId, action, status } = body;
+    
+    if (!orderId) {
+      return NextResponse.json({ error: 'Missing orderId' }, { status: 400 });
     }
 
-    const order = await updateOrderStatus(orderId, status);
-    if (!order) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    let order;
+
+    if (action === 'approve') {
+      order = await approveOrder(orderId);
+      if (!order) {
+         return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+      
+      // Send confirmation email
+      sendOrderConfirmedEmail(order.customerEmail, order).catch(e => console.error(e));
+      createNotification(order.userId, 'order_confirmed', 'Order Confirmed', `Your order ${order.orderNumber} has been confirmed.`, order.id).catch(e => console.error(e));
+
+    } else if (status) {
+      order = await updateOrderStatus(orderId, status);
+      if (!order) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+      
+      createNotification(order.userId, `order_${status}` as any, `Order ${status}`, `Your order ${order.orderNumber} is now ${status}.`, order.id).catch(e => console.error(e));
+
+    } else {
+      return NextResponse.json({ error: 'Missing action or status' }, { status: 400 });
     }
 
     return NextResponse.json({ success: true, order });

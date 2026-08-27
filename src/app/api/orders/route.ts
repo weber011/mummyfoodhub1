@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/session';
-import { createOrder, getOrdersByUser } from '@/lib/orders';
+import { createOrder, getOrdersByUser, getMinOrderValue } from '@/lib/orders';
 import { updateUser, getUserById } from '@/lib/auth';
-import { sendOrderPlacedEmail } from '@/lib/email';
+import { sendOrderPlacedEmail, sendOwnerNewOrderEmail } from '@/lib/email';
+import { getActiveSubscription } from '@/lib/subscriptions';
+import { createNotification } from '@/lib/notifications';
+import { redisGet, redisSet } from '@/lib/redis';
 import type { OrderItem } from '@/lib/types';
 
 export async function GET(req: NextRequest) {
@@ -23,21 +26,39 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { items, subtotal, deliveryCharge, discount, couponCode, totalAmount,
-      customerName, customerPhone, sector, address, deliveryType, deliveryTime,
-      paymentMethod, notes } = body;
+      customerName, customerPhone, sector, address, landmark, deliveryType, deliveryTime,
+      paymentMethod, notes, idempotencyKey } = body;
+
+    // Idempotency check
+    if (idempotencyKey) {
+      const isDuplicate = await redisGet(`idempotency:${idempotencyKey}`);
+      if (isDuplicate) {
+        return NextResponse.json({ error: 'Order already processing' }, { status: 409 });
+      }
+      await redisSet(`idempotency:${idempotencyKey}`, 'processing', 60 * 5); // lock for 5 mins
+    }
 
     // Server-side validation
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'No items in order.' }, { status: 400 });
     }
-    if (typeof subtotal !== 'number' || subtotal < 0) {
-      return NextResponse.json({ error: 'Invalid subtotal.' }, { status: 400 });
-    }
-    if (typeof totalAmount !== 'number' || totalAmount < 0) {
-      return NextResponse.json({ error: 'Invalid total.' }, { status: 400 });
+    if (typeof subtotal !== 'number' || subtotal < getMinOrderValue()) {
+      return NextResponse.json({ error: `Minimum order value is ₹${getMinOrderValue()}.` }, { status: 400 });
     }
 
     const user = await getUserById(session.userId);
+    
+    // Server-side discount recalculation based on active subscription
+    const activeSub = await getActiveSubscription(session.userId);
+    let subscriptionDiscount = 0;
+    if (activeSub) {
+       subscriptionDiscount = Math.floor(subtotal * (activeSub.discountPercentage / 100 || 0.10));
+    }
+
+    // We trust the client's delivery charge for this implementation unless we do a complex distance recalculation
+    // But we recalculate the final total
+    const serverDiscount = (Number(discount) || 0); 
+    const finalTotal = subtotal + Number(deliveryCharge ?? 0) - subscriptionDiscount - serverDiscount;
 
     const order = await createOrder({
       userId: session.userId,
@@ -47,29 +68,38 @@ export async function POST(req: NextRequest) {
       items: items as OrderItem[],
       subtotal: Number(subtotal),
       deliveryCharge: Number(deliveryCharge ?? 0),
-      discount: Number(discount ?? 0),
+      discount: serverDiscount,
+      subscriptionDiscount,
       couponCode: couponCode ?? undefined,
-      totalAmount: Number(totalAmount),
-      status: 'placed',
+      totalAmount: Math.max(0, finalTotal),
+      status: 'pending',
       sector: String(sector || ''),
       address: String(address || ''),
+      landmark: String(landmark || ''),
       deliveryType: String(deliveryType || ''),
       deliveryTime: String(deliveryTime || ''),
       paymentMethod: String(paymentMethod || ''),
       notes: String(notes || ''),
+      idempotencyKey: idempotencyKey || undefined,
     });
 
-    // Mark user as having placed an order (for first-order coupon tracking)
+    // Mark user as having placed an order (for first-order tracking)
     if (!user?.hasPlacedOrder) {
       await updateUser(session.userId, { hasPlacedOrder: true });
     }
 
-    // Send order confirmation email (fire-and-forget — failure must not block the response)
-    sendOrderPlacedEmail(session.email, order).catch((err) =>
-      console.error('[orders POST] email send failed:', err?.message)
-    );
+    if (idempotencyKey) {
+      await redisSet(`idempotency:${idempotencyKey}`, 'completed', 60 * 60 * 24); // 24h
+    }
 
-    return NextResponse.json({ success: true, order });
+    // Fire-and-forget notifications
+    sendOrderPlacedEmail(session.email, order).catch(err => console.error(err));
+    sendOwnerNewOrderEmail(order).catch(err => console.error(err));
+    
+    // Create admin notification
+    createNotification('admin', 'order_placed', 'New Order Received', `Order ${order.orderNumber} placed for ₹${order.totalAmount}`, order.id).catch(err => console.error(err));
+
+    return NextResponse.json({ success: true, orderId: order.id, orderNumber: order.orderNumber });
   } catch (e: any) {
     console.error('[orders POST]', e);
     return NextResponse.json({ error: 'Failed to create order.' }, { status: 500 });

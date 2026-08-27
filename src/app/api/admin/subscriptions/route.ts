@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
       status: 'active',
       totalMeals: totalMeals ? Number(totalMeals) : undefined,
       usedMeals: 0,
+      discountPercentage: 10,
     });
 
     // Notify customer by email (fire-and-forget)

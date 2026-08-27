@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { ArrowLeft, Loader2, MapPin, Clock, CreditCard, CheckCircle } from "lucide-react";
+import { ArrowLeft, Loader2, MapPin, Clock, CreditCard, CheckCircle, Package, Truck, ChefHat, AlertCircle } from "lucide-react";
 import type { Order } from "@/lib/types";
 import { ORDER_STATUS_LABELS } from "@/lib/types";
 
@@ -13,6 +13,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
   const router = useRouter();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!isLoading && !user) router.push("/login");
@@ -21,10 +22,14 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
   useEffect(() => {
     if (user && params.id) {
       fetch(`/api/orders/${params.id}`)
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error("Order not found or unauthorized");
+          return res.json();
+        })
         .then(data => {
           if (data.order) setOrder(data.order);
         })
+        .catch(e => setError(e.message))
         .finally(() => setLoading(false));
     }
   }, [user, params.id]);
@@ -39,14 +44,28 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
     );
   }
 
-  if (!order) {
+  if (error || !order) {
     return (
       <div className="min-h-screen py-32 text-center px-4">
+        <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
         <h2 className="text-xl font-heading font-bold text-foreground">Order not found</h2>
-        <Link href="/account/orders" className="text-primary mt-4 inline-block hover:underline">Return to Orders</Link>
+        <p className="text-muted-foreground mt-2">The order you are looking for does not exist or you don't have access to it.</p>
+        <Link href="/account/orders" className="text-primary mt-4 inline-block hover:underline font-bold">Return to Orders</Link>
       </div>
     );
   }
+
+  const timeline = [
+    { status: 'pending', label: 'Order Placed', icon: Clock },
+    { status: 'confirmed', label: 'Confirmed', icon: CheckCircle },
+    { status: 'preparing', label: 'Preparing', icon: ChefHat },
+    { status: 'out_for_delivery', label: 'Out for Delivery', icon: Truck },
+    { status: 'delivered', label: 'Delivered', icon: Package }
+  ];
+
+  const currentStatusIndex = order.status === 'cancelled' 
+    ? -1 
+    : timeline.findIndex(t => t.status === order.status);
 
   return (
     <div className="min-h-screen bg-background py-16 px-4">
@@ -57,24 +76,59 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </Link>
           <div>
-            <h1 className="text-xl font-heading font-bold text-foreground">Order #{order.id.slice(-8).toUpperCase()}</h1>
+            <h1 className="text-xl font-heading font-bold text-foreground">{order.orderNumber || `Order #${order.id.slice(-8).toUpperCase()}`}</h1>
             <p className="text-xs text-muted-foreground font-subheading mt-1">
               {new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", hour: "numeric", minute: "2-digit" })}
             </p>
           </div>
         </div>
 
-        {/* Status */}
-        <div className="bg-white rounded-2xl border border-border p-6 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Status</p>
-            <h2 className="text-xl font-heading font-bold text-primary">
-              {ORDER_STATUS_LABELS[order.status] ?? order.status}
-            </h2>
-          </div>
-          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary">
-            <CheckCircle className="w-6 h-6" />
-          </div>
+        {/* Timeline Status */}
+        <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+           <h3 className="font-heading font-bold text-foreground mb-6">Order Status</h3>
+           {order.status === 'cancelled' ? (
+             <div className="bg-red-50 text-red-700 p-4 rounded-xl flex items-center gap-3 border border-red-100">
+               <AlertCircle className="w-6 h-6" />
+               <div>
+                 <p className="font-bold">Order Cancelled</p>
+                 <p className="text-sm opacity-80">This order has been cancelled.</p>
+               </div>
+             </div>
+           ) : (
+             <div className="relative">
+                {/* Connecting Line */}
+                <div className="absolute left-6 top-6 bottom-6 w-0.5 bg-gray-100" />
+                
+                <div className="space-y-6 relative">
+                  {timeline.map((step, idx) => {
+                    const isCompleted = currentStatusIndex >= idx;
+                    const isCurrent = currentStatusIndex === idx;
+                    const Icon = step.icon;
+                    return (
+                      <div key={step.status} className="flex gap-4 items-start">
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 z-10 transition-colors ${
+                          isCompleted ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400'
+                        } ${isCurrent ? 'ring-4 ring-primary/20' : ''}`}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div className="pt-3">
+                          <p className={`font-bold ${isCompleted ? 'text-foreground' : 'text-gray-400'}`}>{step.label}</p>
+                          {isCurrent && (
+                            <p className="text-sm text-primary font-medium mt-1">
+                              {step.status === 'pending' && 'Awaiting confirmation from kitchen.'}
+                              {step.status === 'confirmed' && 'Order confirmed! Kitchen will start preparing soon.'}
+                              {step.status === 'preparing' && 'Your food is being prepared.'}
+                              {step.status === 'out_for_delivery' && 'Order is on the way!'}
+                              {step.status === 'delivered' && 'Enjoy your meal!'}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+             </div>
+           )}
         </div>
 
         {/* Items */}
@@ -115,6 +169,12 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
               <span>Delivery Charge</span>
               <span>₹{order.deliveryCharge}</span>
             </div>
+            {order.subscriptionDiscount > 0 && (
+              <div className="flex justify-between text-green-600 font-bold">
+                <span>Subscription Discount (10%)</span>
+                <span>-₹{order.subscriptionDiscount}</span>
+              </div>
+            )}
             {order.discount > 0 && (
               <div className="flex justify-between text-green-600 font-bold">
                 <span>Discount {order.couponCode ? `(${order.couponCode})` : ''}</span>
@@ -137,6 +197,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
             <div>
               <p className="text-sm font-bold text-foreground">Deliver to: {order.deliveryType}</p>
               <p className="text-sm text-muted-foreground mt-1">{order.address}</p>
+              {order.landmark && <p className="text-sm text-muted-foreground mt-1">Landmark: {order.landmark}</p>}
               <p className="text-sm text-muted-foreground">Sector {order.sector}</p>
             </div>
           </div>

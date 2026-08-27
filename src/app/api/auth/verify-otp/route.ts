@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyOtp } from '@/lib/otp';
-import { getUserByEmail, createUser } from '@/lib/auth';
+import { getUserByEmail, createUser, updateUser } from '@/lib/auth';
 import { setSessionCookie } from '@/lib/session';
+import { sendWelcomeEmail } from '@/lib/email';
+import { createNotification } from '@/lib/notifications';
 import type { SessionPayload } from '@/lib/session';
 
 export async function POST(req: NextRequest) {
@@ -39,6 +41,15 @@ export async function POST(req: NextRequest) {
       }
       user = await createUser({ email, name });
       isNewUser = true;
+    }
+
+    // Send Welcome Email if needed
+    if (isNewUser || (!user.welcomeEmailSent)) {
+      sendWelcomeEmail(user.email, user.name).catch(e => console.error(e));
+      await updateUser(user.id, { welcomeEmailSent: true });
+      if (isNewUser) {
+        createNotification('admin', 'new_customer', 'New Customer Registered', `${user.name} (${user.email}) just registered!`).catch(e => console.error(e));
+      }
     }
 
     // Create session

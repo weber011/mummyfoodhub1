@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { redisGet, redisSet, redisLPush, redisLRange, redisSMembers } from './redis';
+import { redisGet, redisSet, redisLPush, redisLRange } from './redis';
 import type { UserSubscription } from './types';
 
 const SUB_PREFIX = 'subscription:';
