@@ -6,6 +6,8 @@ import QRCode from "react-qr-code";
 import { X, Minus, Plus, ShoppingBag, Trash2, MapPin, ChevronDown, CheckCircle } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useSiteData } from "@/context/SiteContext";
+import { useAuth } from "@/context/AuthContext";
+import toast from "react-hot-toast";
 
 // Sector → base delivery charge mapping
 const SECTOR_CHARGES: Record<string, number> = {
@@ -47,9 +49,16 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
 export function CartDrawer() {
   const { siteData } = useSiteData();
   const { cart, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity, clearCart, totalPrice, totalItems } = useCart();
+  const { user } = useAuth();
+  
   const [step, setStep] = useState<"cart" | "form">("cart");
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [form, setForm] = useState({
-    name: "", phone: "", sector: "106", address: "", floor: "", landmark: "",
+    name: user?.name || "", phone: user?.phone || "", sector: "106", address: "", floor: "", landmark: "",
     deliveryType: "Office Gate", time: "Lunch (12:30 - 2 PM)", payment: "Cash on Delivery",
     notes: "", isBulkOrder: false,
     customFields: {} as Record<string, string>
@@ -105,24 +114,88 @@ export function CartDrawer() {
   }
 
   const finalDeliveryCharge = Math.floor(deliveryBase * (1 - discountRatio));
-  const finalTotal = totalPrice + finalDeliveryCharge;
+  const finalTotal = Math.max(0, totalPrice + finalDeliveryCharge - (appliedCoupon?.discount || 0));
 
-  const handleOrder = () => {
-    const itemLines = cart.map((i) => `  • ${i.quantity}x ${i.title}${i.extras && i.extras.length > 0 ? ` (+ ${i.extras.map(e => e.name).join(', ')})` : ''} — ₹${(i.price + (i.extras?.reduce((s, e) => s + e.price, 0) || 0)) * i.quantity}`).join("\n");
-    const sectorLabel = SECTOR_OPTIONS.find(s => s.value === form.sector)?.label ?? `Sector ${form.sector}`;
-    const deliveryTypeLabel = form.deliveryType;
-    const addressDetails = `${form.address}, ${sectorLabel}${form.deliveryType === "Doorstep (+₹10/item)" ? `, Floor/Flat: ${form.floor}` : ''}`;
-    
-    // Add custom fields to message
-    const customFieldsText = Object.entries(form.customFields).filter(([_, v]) => v).map(([k, v]) => `\n🔹 *${k}:* ${v}`).join('');
+  const applyCoupon = async () => {
+    if (!couponCode) return;
+    setValidatingCoupon(true);
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponCode, subtotal: totalPrice }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setAppliedCoupon({ code: couponCode, discount: data.discount });
+        toast.success(data.message || "Coupon applied!");
+      } else {
+        toast.error(data.reason || "Invalid coupon code");
+        setAppliedCoupon(null);
+      }
+    } catch (e) {
+      toast.error("Failed to validate coupon");
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
 
-    const distInfo = distance !== null ? ` (${distance.toFixed(1)} km)` : '';
-    const msg = `🍱 *New Order - Mummy Food Hub*\n${form.isBulkOrder ? '\n📦 *BULK ORDER*' : ''}\n\n👤 *Name:* ${form.name}\n📞 *Phone:* ${form.phone}\n📍 *Deliver To:* ${deliveryTypeLabel}\n🏠 *Address:* ${addressDetails}${distInfo}\n🏢 *Landmark:* ${form.landmark}\n⏰ *Delivery Time:* ${form.time}\n💳 *Payment:* ${form.payment}${customFieldsText}\n\n🛒 *Items:*\n${itemLines}\n\n🚚 *Delivery Charge:* ₹${finalDeliveryCharge}\n💰 *Total to Pay:* ₹${finalTotal}\n\n📝 *Notes:* ${form.notes || "None"}`;
-    const url = `https://wa.me/${siteData.settings?.whatsapp || "917065665988"}?text=${encodeURIComponent(msg)}`;
-    window.open(url, "_blank");
-    clearCart();
-    setIsCartOpen(false);
-    setStep("cart");
+  const handleOrder = async () => {
+    setIsSubmitting(true);
+    try {
+      // 1. Post to API if logged in
+      if (user) {
+        await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: cart,
+            subtotal: totalPrice,
+            deliveryCharge: finalDeliveryCharge,
+            discount: appliedCoupon?.discount || 0,
+            couponCode: appliedCoupon?.code,
+            totalAmount: finalTotal,
+            customerName: form.name,
+            customerPhone: form.phone,
+            sector: form.sector,
+            address: form.address,
+            deliveryType: form.deliveryType,
+            deliveryTime: form.time,
+            paymentMethod: form.payment,
+            notes: form.notes,
+          }),
+        });
+      }
+
+      // 2. Open WhatsApp (Existing Flow)
+      const itemLines = cart.map((i) => `  • ${i.quantity}x ${i.title}${i.extras && i.extras.length > 0 ? ` (+ ${i.extras.map(e => e.name).join(', ')})` : ''} — ₹${(i.price + (i.extras?.reduce((s, e) => s + e.price, 0) || 0)) * i.quantity}`).join("\n");
+      const sectorLabel = SECTOR_OPTIONS.find(s => s.value === form.sector)?.label ?? `Sector ${form.sector}`;
+      const deliveryTypeLabel = form.deliveryType;
+      const addressDetails = `${form.address}, ${sectorLabel}${form.deliveryType === "Doorstep (+₹10/item)" ? `, Floor/Flat: ${form.floor}` : ''}`;
+      
+      const customFieldsText = Object.entries(form.customFields).filter(([_, v]) => v).map(([k, v]) => `\n🔹 *${k}:* ${v}`).join('');
+      const distInfo = distance !== null ? ` (${distance.toFixed(1)} km)` : '';
+      
+      let msg = `🍱 *New Order - Mummy Food Hub*\n${form.isBulkOrder ? '\n📦 *BULK ORDER*' : ''}\n\n👤 *Name:* ${form.name}\n📞 *Phone:* ${form.phone}\n📍 *Deliver To:* ${deliveryTypeLabel}\n🏠 *Address:* ${addressDetails}${distInfo}\n🏢 *Landmark:* ${form.landmark}\n⏰ *Delivery Time:* ${form.time}\n💳 *Payment:* ${form.payment}${customFieldsText}\n\n🛒 *Items:*\n${itemLines}\n\n🚚 *Delivery Charge:* ₹${finalDeliveryCharge}\n`;
+      
+      if (appliedCoupon) {
+        msg += `🏷️ *Discount (${appliedCoupon.code}):* -₹${appliedCoupon.discount}\n`;
+      }
+      
+      msg += `💰 *Total to Pay:* ₹${finalTotal}\n\n📝 *Notes:* ${form.notes || "None"}`;
+      
+      const url = `https://wa.me/${siteData.settings?.whatsapp || "917065665988"}?text=${encodeURIComponent(msg)}`;
+      window.open(url, "_blank");
+      
+      clearCart();
+      setIsCartOpen(false);
+      setStep("cart");
+      toast.success("Order placed successfully!");
+    } catch (e) {
+      toast.error("An error occurred while placing order");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -265,7 +338,6 @@ export function CartDrawer() {
                         );
                       })}
                     </div>
-                    {/* Live Delivery Charge Row */}
                     <div className="mx-4 border-t border-primary/10 py-2 flex justify-between text-sm text-foreground/70">
                       <span>Delivery Charge</span>
                       <motion.span
@@ -280,6 +352,44 @@ export function CartDrawer() {
                         ₹{finalDeliveryCharge}
                       </motion.span>
                     </div>
+
+                    {/* Coupon Input Area */}
+                    <div className="mx-4 border-t border-primary/10 py-3">
+                      {appliedCoupon ? (
+                        <div className="flex justify-between items-center bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                          <span className="text-sm font-bold text-green-700 flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4" /> {appliedCoupon.code} applied!
+                          </span>
+                          <button onClick={() => setAppliedCoupon(null)} className="text-xs text-red-500 font-bold hover:underline">Remove</button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Have a coupon? (e.g. WELCOME100)"
+                            value={couponCode}
+                            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                            className="flex-1 border border-border rounded-lg px-3 py-1.5 text-sm uppercase focus:border-primary focus:outline-none"
+                            disabled={validatingCoupon}
+                          />
+                          <button
+                            onClick={applyCoupon}
+                            disabled={!couponCode || validatingCoupon}
+                            className="bg-primary/10 text-primary font-bold px-4 py-1.5 rounded-lg text-sm disabled:opacity-50 hover:bg-primary hover:text-white transition-colors"
+                          >
+                            Apply
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {appliedCoupon && (
+                      <div className="mx-4 border-t border-primary/10 py-2 flex justify-between text-sm font-bold text-green-600">
+                        <span>Discount ({appliedCoupon.code})</span>
+                        <span>-₹{appliedCoupon.discount}</span>
+                      </div>
+                    )}
+
                     <div className="mx-4 border-t border-primary/20 py-2 flex justify-between text-sm font-bold text-primary">
                       <span>Total to Pay</span>
                       <motion.span

@@ -7,6 +7,7 @@ import { FloatingWhatsApp } from "@/components/shared/FloatingWhatsApp";
 import { CartDrawer } from "@/components/shared/CartDrawer";
 import { CartFAB } from "@/components/shared/CartFAB";
 import { CartProvider } from "@/context/CartContext";
+import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
 
 const inter = Inter({
@@ -47,17 +48,19 @@ export default function RootLayout({
       className={`${inter.variable} ${playfair.variable} ${poppins.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        <SiteProvider>
-          <CartProvider>
-            <Navbar />
-            <main className="flex-grow">{children}</main>
-            <Footer />
-            <FloatingWhatsApp />
-            <CartDrawer />
-            <CartFAB />
-            <Toaster position="bottom-center" />
-          </CartProvider>
-        </SiteProvider>
+        <AuthProvider>
+          <SiteProvider>
+            <CartProvider>
+              <Navbar />
+              <main className="flex-grow">{children}</main>
+              <Footer />
+              <FloatingWhatsApp />
+              <CartDrawer />
+              <CartFAB />
+              <Toaster position="bottom-center" />
+            </CartProvider>
+          </SiteProvider>
+        </AuthProvider>
       </body>
     </html>
   );

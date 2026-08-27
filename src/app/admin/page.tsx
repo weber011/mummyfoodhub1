@@ -8,6 +8,10 @@ import {
 } from "lucide-react";
 
 const TABS = [
+  { id: "orders", label: "Orders", icon: ShoppingBag },
+  { id: "users", label: "Users", icon: Menu },
+  { id: "customersubs", label: "Customer Subs", icon: CreditCard },
+  { id: "coupons", label: "Coupons", icon: Settings },
   { id: "menu", label: "Daily Menu", icon: Menu },
   { id: "catalog", label: "Full Menu Catalog", icon: Menu },
   { id: "categories", label: "Categories", icon: Home },
@@ -26,11 +30,19 @@ export default function AdminPage() {
   const [showPass, setShowPass] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("menu");
+  const [activeTab, setActiveTab] = useState("orders");
   const [data, setData] = useState<SiteData>(null);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [creds, setCreds] = useState({ u: "", p: "" });
+
+  // New states
+  const [orders, setOrders] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [customerSubs, setCustomerSubs] = useState<any[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [loadingSubs, setLoadingSubs] = useState(false);
 
   // Load data on mount
   const loadData = useCallback(async () => {
@@ -43,6 +55,42 @@ export default function AdminPage() {
     }
   }, []);
 
+  const fetchOrders = async (u: string, p: string) => {
+    setLoadingOrders(true);
+    try {
+      const res = await fetch("/api/admin/orders", {
+        headers: { 'Authorization': 'Basic ' + Buffer.from(`${u}:${p}`).toString('base64') }
+      });
+      const json = await res.json();
+      if (json.orders) setOrders(json.orders);
+    } catch {}
+    setLoadingOrders(false);
+  };
+
+  const fetchUsers = async (u: string, p: string) => {
+    setLoadingUsers(true);
+    try {
+      const res = await fetch("/api/admin/users", {
+        headers: { 'Authorization': 'Basic ' + Buffer.from(`${u}:${p}`).toString('base64') }
+      });
+      const json = await res.json();
+      if (json.users) setUsers(json.users);
+    } catch {}
+    setLoadingUsers(false);
+  };
+
+  const fetchCustomerSubs = async (u: string, p: string) => {
+    setLoadingSubs(true);
+    try {
+      const res = await fetch("/api/admin/subscriptions", {
+        headers: { 'Authorization': 'Basic ' + Buffer.from(`${u}:${p}`).toString('base64') }
+      });
+      const json = await res.json();
+      if (json.subscriptions) setCustomerSubs(json.subscriptions);
+    } catch {}
+    setLoadingSubs(false);
+  };
+
   useEffect(() => {
     const saved = sessionStorage.getItem("admin_auth");
     if (saved) {
@@ -50,6 +98,9 @@ export default function AdminPage() {
       setCreds({ u, p });
       setLoggedIn(true);
       loadData();
+      fetchOrders(u, p);
+      fetchUsers(u, p);
+      fetchCustomerSubs(u, p);
     }
   }, [loadData]);
 
@@ -69,6 +120,9 @@ export default function AdminPage() {
         setCreds({ u: username, p: password });
         setLoggedIn(true);
         loadData();
+        fetchOrders(username, password);
+        fetchUsers(username, password);
+        fetchCustomerSubs(username, password);
       } else {
         setLoginError("Invalid username or password.");
       }
@@ -253,6 +307,179 @@ export default function AdminPage() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <AnimatePresence mode="wait">
           <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+
+            {/* ── ORDERS TAB ── */}
+            {activeTab === "orders" && (
+              <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-heading font-bold text-foreground">📦 Order Management</h2>
+                  <button onClick={() => fetchOrders(creds.u, creds.p)} className="text-primary text-sm font-bold hover:underline">Refresh</button>
+                </div>
+                {loadingOrders ? (
+                  <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+                ) : (
+                  <div className="space-y-4">
+                    {orders.length === 0 ? <p className="text-center text-muted-foreground py-10">No orders found.</p> : null}
+                    {orders.map(order => (
+                      <div key={order.id} className="border border-border rounded-xl p-4 bg-gray-50">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="font-bold text-sm">Order #{order.id.slice(-8).toUpperCase()}</p>
+                            <p className="text-xs text-muted-foreground">{order.customerName} • {order.customerPhone}</p>
+                            <p className="text-xs text-muted-foreground">{order.address}, Sector {order.sector}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-primary">₹{order.totalAmount}</p>
+                            <select
+                              className="mt-1 text-xs font-bold border border-border rounded p-1"
+                              value={order.status}
+                              onChange={async (e) => {
+                                const newStatus = e.target.value;
+                                setOrders(orders.map(o => o.id === order.id ? { ...o, status: newStatus } : o));
+                                await fetch("/api/admin/orders", {
+                                  method: "PATCH",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                    'Authorization': 'Basic ' + Buffer.from(`${creds.u}:${creds.p}`).toString('base64')
+                                  },
+                                  body: JSON.stringify({ orderId: order.id, status: newStatus })
+                                });
+                              }}
+                            >
+                              <option value="placed">Placed</option>
+                              <option value="confirmed">Confirmed</option>
+                              <option value="preparing">Preparing</option>
+                              <option value="out_for_delivery">Out for Delivery</option>
+                              <option value="delivered">Delivered</option>
+                              <option value="cancelled">Cancelled</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground border-t border-border pt-2 mt-2">
+                          {order.items.map((i: any) => `${i.quantity}x ${i.title}`).join(", ")}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── USERS TAB ── */}
+            {activeTab === "users" && (
+              <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-heading font-bold text-foreground">👥 Customers</h2>
+                  <button onClick={() => fetchUsers(creds.u, creds.p)} className="text-primary text-sm font-bold hover:underline">Refresh</button>
+                </div>
+                {loadingUsers ? (
+                  <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+                ) : (
+                  <div className="space-y-2">
+                    {users.length === 0 ? <p className="text-center text-muted-foreground py-10">No users found.</p> : null}
+                    {users.map(u => (
+                      <div key={u.id} className="border border-border rounded-lg p-3 flex justify-between items-center bg-gray-50">
+                        <div>
+                          <p className="font-bold text-sm">{u.name}</p>
+                          <p className="text-xs text-muted-foreground">{u.email} {u.phone ? `• ${u.phone}` : ''}</p>
+                        </div>
+                        <div className="text-xs text-muted-foreground text-right">
+                          <p>Joined {new Date(u.createdAt).toLocaleDateString()}</p>
+                          <p>{u.hasPlacedOrder ? "Has Ordered" : "No Orders"}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── CUSTOMER SUBSCRIPTIONS TAB ── */}
+            {activeTab === "customersubs" && (
+              <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-heading font-bold text-foreground">💳 Customer Subscriptions</h2>
+                  <button onClick={() => fetchCustomerSubs(creds.u, creds.p)} className="text-primary text-sm font-bold hover:underline">Refresh</button>
+                </div>
+                {loadingSubs ? (
+                  <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+                ) : (
+                  <div className="space-y-4">
+                    {customerSubs.length === 0 ? <p className="text-center text-muted-foreground py-10">No active subscriptions found.</p> : null}
+                    {customerSubs.map(sub => (
+                      <div key={sub.id} className="border border-border rounded-xl p-4 bg-gray-50">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-bold text-sm">{sub.planName}</p>
+                            <p className="text-xs text-muted-foreground">User ID: {sub.userId}</p>
+                            <p className="text-xs text-muted-foreground">Valid: {new Date(sub.startDate).toLocaleDateString()} - {new Date(sub.endDate).toLocaleDateString()}</p>
+                          </div>
+                          <div className="text-right">
+                            <span className={`px-2 py-1 rounded text-xs font-bold ${sub.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}`}>
+                              {sub.status}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── COUPONS TAB ── */}
+            {activeTab === "coupons" && (
+              <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-heading font-bold text-foreground">🎟️ Coupons</h2>
+                  <button onClick={() => {
+                    const newCoupon = { id: `coupon-${Date.now()}`, code: "NEW10", type: "fixed", discountAmount: 10, minOrderValue: 100, isActive: true, usageCount: 0 };
+                    setData((d: SiteData) => ({ ...d, coupons: [...(d.coupons || []), newCoupon] }));
+                  }} className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-lg text-sm font-subheading font-bold hover:bg-primary/20 transition-colors">
+                    <Plus className="w-4 h-4" /> Add Coupon
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  {(data.coupons || []).map((coupon: any, idx: number) => (
+                    <div key={coupon.id} className="border border-border rounded-xl p-4 bg-gray-50">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-3">
+                        <Field label="Code" value={coupon.code} onChange={v => updateArr("coupons", idx, "code", v, setData)} />
+                        <div>
+                          <label className="block text-xs font-subheading font-medium text-foreground mb-1">Type</label>
+                          <select
+                            className="w-full border border-border rounded-lg px-3 py-2 text-sm font-subheading focus:outline-none"
+                            value={coupon.type}
+                            onChange={e => updateArr("coupons", idx, "type", e.target.value, setData)}
+                          >
+                            <option value="fixed">Fixed Amount (₹)</option>
+                            <option value="percentage">Percentage (%)</option>
+                          </select>
+                        </div>
+                        <Field label="Discount" value={String(coupon.discountAmount)} type="number" onChange={v => updateArr("coupons", idx, "discountAmount", Number(v), setData)} />
+                        <Field label="Min Order Value (₹)" value={String(coupon.minOrderValue)} type="number" onChange={v => updateArr("coupons", idx, "minOrderValue", Number(v), setData)} />
+                      </div>
+                      <div className="flex items-center gap-4 justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-subheading">Active</span>
+                          <button type='button' onClick={() => updateArr("coupons", idx, "isActive", !coupon.isActive, setData)}>
+                            {coupon.isActive ? <ToggleRight className="w-7 h-7 text-primary" /> : <ToggleLeft className="w-7 h-7 text-muted-foreground" />}
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-xs text-muted-foreground font-subheading">Uses: {coupon.usageCount || 0}</span>
+                          <button
+                            onClick={() => setData((d: SiteData) => ({ ...d, coupons: d.coupons.filter((_: any, i: number) => i !== idx) }))}
+                            className="flex items-center gap-1 text-red-500 text-xs font-subheading hover:underline"
+                          >
+                            <Trash2 className="w-3 h-3" /> Remove
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* ── MENU TAB ── */}
             {activeTab === "menu" && (

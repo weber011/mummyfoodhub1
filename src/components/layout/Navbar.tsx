@@ -7,6 +7,8 @@ import { usePathname } from "next/navigation";
 import { Menu, X, Phone, ShoppingBag, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
+import { User } from "lucide-react";
 
 const menuLinks = [
   { name: "Full Menu", href: "/menu" },
@@ -34,6 +36,7 @@ export function Navbar() {
   const [isMenuDropdownOpen, setIsMenuDropdownOpen] = useState(false);
   const pathname = usePathname();
   const { totalItems, setIsCartOpen } = useCart();
+  const { user } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -165,6 +168,16 @@ export function Navbar() {
             >
               Order Now
             </Link>
+
+            {user ? (
+              <Link href="/account" className="flex items-center justify-center w-10 h-10 bg-primary/10 rounded-full text-primary font-bold hover:bg-primary hover:text-white transition-colors">
+                {user.name.charAt(0).toUpperCase()}
+              </Link>
+            ) : (
+              <Link href="/login" className={`p-2 rounded-full transition-colors hover:bg-primary hover:text-white ${!isScrolled && isHomePage ? "bg-white/20 text-white" : "bg-primary/10 text-primary"}`}>
+                <User className="w-5 h-5" />
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -239,6 +252,15 @@ export function Navbar() {
                 >
                   Order Now
                 </Link>
+                {user ? (
+                  <Link href="/account" className="flex items-center justify-center gap-2 w-full border border-border text-foreground px-4 py-3 rounded-md font-subheading font-medium hover:bg-muted">
+                    <User className="w-4 h-4" /> My Account
+                  </Link>
+                ) : (
+                  <Link href="/login" className="flex items-center justify-center gap-2 w-full border border-border text-foreground px-4 py-3 rounded-md font-subheading font-medium hover:bg-muted">
+                    <User className="w-4 h-4" /> Login / Sign Up
+                  </Link>
+                )}
               </div>
             </div>
           </motion.div>
