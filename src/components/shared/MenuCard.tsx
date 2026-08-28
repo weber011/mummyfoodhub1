@@ -256,133 +256,224 @@ export function MenuCard({
           </div>
         )}
 
-        {/* OVERLAYS */}
+        {/* OVERLAYS -> Upgraded to Smooth Fullscreen / Mobile Bottom Sheet */}
         <AnimatePresence>
-          {/* Sabji Selection Overlay */}
-          {showSabji && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              className="absolute inset-x-0 bottom-0 bg-white border-t border-border shadow-[0_-10px_40px_rgba(0,0,0,0.1)] p-4 rounded-t-2xl z-40 flex flex-col"
-            >
-              <div className="flex justify-between items-center mb-3">
-                <div>
-                  <p className="font-heading font-bold text-foreground">Select Sabjis</p>
-                  <p className="text-xs text-primary font-bold">Pick exactly 2 {paneerAvailable && `(${paneerName} makes Thali ₹99)`}</p>
-                </div>
-                <button onClick={() => setShowSabji(false)} className="text-muted-foreground hover:text-foreground text-sm font-subheading">✕ Close</button>
-              </div>
-              <div className="flex flex-col gap-2 mb-4 overflow-y-auto max-h-48">
-                {finalSabjiOptions?.map((opt, idx) => {
-                  const isSelected = selectedSabjis.includes(opt);
-                  const isDisabled = !isSelected && selectedSabjis.length >= 2;
-                  return (
-                    <div 
-                      key={idx} 
-                      onClick={() => !isDisabled && toggleSabji(opt)}
-                      className={`flex items-center justify-between p-3 rounded-lg border transition-colors cursor-pointer ${isSelected ? 'border-primary bg-primary/5' : isDisabled ? 'opacity-50 cursor-not-allowed bg-muted/30' : 'border-border hover:bg-muted/50'}`}
-                    >
-                      <span className="text-sm font-subheading font-medium text-foreground">{opt}</span>
-                      <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${isSelected ? 'bg-primary border-primary' : 'border-gray-300'}`}>
-                        {isSelected && <Check className="w-3 h-3 text-white" />}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <motion.button
-                onClick={handleSabjiContinue}
-                disabled={selectedSabjis.length !== 2}
-                whileTap={{ scale: 0.95 }}
-                className={`w-full font-subheading font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all ${selectedSabjis.length === 2 ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}
-              >
-                Continue
-              </motion.button>
-            </motion.div>
-          )}
+          {(showSabji || showExtras) && (
+            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => {
+                  setShowSabji(false);
+                  setShowExtras(false);
+                }}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-0"
+              />
 
-          {/* Extras Selection Overlay */}
-          {showExtras && !showSabji && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              className="absolute inset-x-0 bottom-0 bg-white border-t border-border shadow-[0_-10px_40px_rgba(0,0,0,0.1)] p-4 rounded-t-2xl z-30 flex flex-col"
-            >
-              <div className="flex justify-between items-center mb-3">
-                <p className="font-heading font-bold text-foreground">Select Add-ons</p>
-                <button onClick={() => setShowExtras(false)} className="text-muted-foreground hover:text-foreground text-sm font-subheading">✕ Close</button>
-              </div>
-              <div className="flex flex-col gap-2 mb-4 overflow-y-auto max-h-48">
-                {extras?.map((extra, idx) => {
-                  const count = selectedExtras.filter(e => e.name === extra.name).length;
-                  return (
-                    <div key={idx} className={`flex items-center justify-between p-2.5 rounded-lg border transition-colors ${count > 0 ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-subheading font-medium text-foreground">{extra.name}</span>
-                        <span className="text-sm font-bold text-primary">+₹{extra.price}</span>
+              {/* Bottom Sheet on Mobile / Centered Modal on Desktop */}
+              <motion.div
+                initial={{ y: "100%", opacity: 0.5 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: "100%", opacity: 0 }}
+                transition={{ type: "spring", damping: 28, stiffness: 320 }}
+                className="relative z-10 w-full sm:max-w-lg bg-white rounded-t-[2rem] sm:rounded-3xl shadow-2xl max-h-[88vh] flex flex-col overflow-hidden border border-border/40"
+              >
+                {/* Mobile Drag Indicator */}
+                <div className="sm:hidden flex justify-center pt-3 pb-1">
+                  <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+                </div>
+
+                {/* Modal Header */}
+                <div className="px-5 pt-3 pb-4 border-b border-border/70 flex items-center justify-between">
+                  <div className="flex items-center gap-3 pr-2">
+                    <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-border/60 shadow-sm">
+                      <Image src={image} alt={title} fill className="object-cover" />
+                    </div>
+                    <div>
+                      <h4 className="font-heading font-bold text-base sm:text-lg text-foreground leading-snug line-clamp-1">{title}</h4>
+                      <p className="text-xs font-semibold text-primary font-subheading">
+                        {showSabji ? "Step 1 of 2: Select 2 Sabjis" : (finalSabjiOptions && finalSabjiOptions.length > 0) ? "Step 2 of 2: Add Extras" : "Customize Your Order"}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowSabji(false);
+                      setShowExtras(false);
+                    }}
+                    className="w-9 h-9 rounded-full bg-muted/80 hover:bg-muted text-foreground flex items-center justify-center transition-colors shrink-0"
+                    aria-label="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Modal Content */}
+                <div className="p-5 overflow-y-auto space-y-4 flex-1">
+                  {showSabji ? (
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="text-sm font-bold text-foreground">Choose Any 2 Sabjis</p>
+                          <p className="text-xs text-muted-foreground font-subheading">
+                            {paneerAvailable ? `Selecting ${paneerName} updates Thali to ₹99` : "Included in your meal"}
+                          </p>
+                        </div>
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${selectedSabjis.length === 2 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-orange-50 text-orange-700 border-orange-200'}`}>
+                          {selectedSabjis.length}/2 Selected
+                        </span>
                       </div>
-                      <div className="flex items-center gap-3 bg-white border border-border rounded-lg p-1 shadow-sm">
-                        <button 
-                          onClick={() => removeExtra(extra.name)} 
-                          disabled={count === 0}
-                          className="w-7 h-7 flex items-center justify-center rounded-md bg-muted text-muted-foreground hover:bg-primary hover:text-white disabled:opacity-50 disabled:hover:bg-muted disabled:hover:text-muted-foreground transition-colors"
-                        >
-                          <Minus className="w-4 h-4" />
-                        </button>
-                        <span className="text-sm font-bold w-4 text-center text-foreground">{count}</span>
-                        <button 
-                          onClick={() => addExtra(extra)} 
-                          className="w-7 h-7 flex items-center justify-center rounded-md bg-muted text-muted-foreground hover:bg-primary hover:text-white transition-colors"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
+
+                      <div className="grid grid-cols-1 gap-2.5">
+                        {finalSabjiOptions?.map((opt, idx) => {
+                          const isSelected = selectedSabjis.includes(opt);
+                          const isMaxSelected = !isSelected && selectedSabjis.length >= 2;
+                          const isPaneer = opt === paneerName;
+                          
+                          return (
+                            <div
+                              key={idx}
+                              onClick={() => !isMaxSelected && toggleSabji(opt)}
+                              className={`flex items-center justify-between p-3.5 rounded-xl border-2 transition-all cursor-pointer select-none ${
+                                isSelected
+                                  ? 'border-primary bg-primary/5 shadow-sm'
+                                  : isMaxSelected
+                                    ? 'opacity-40 cursor-not-allowed border-border/50 bg-muted/20'
+                                    : 'border-border/80 hover:border-primary/50 hover:bg-muted/30 bg-white'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                                  isSelected ? 'bg-primary border-primary' : 'border-gray-300 bg-white'
+                                }`}>
+                                  {isSelected && <Check className="w-3.5 h-3.5 text-white stroke-[3]" />}
+                                </div>
+                                <span className={`text-sm font-subheading font-semibold ${isSelected ? 'text-primary font-bold' : 'text-foreground'}`}>
+                                  {opt}
+                                </span>
+                              </div>
+                              {isPaneer && (
+                                <span className="text-[11px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">
+                                  ₹99 Thali
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-              <div className="flex flex-col gap-2">
-                <motion.button
-                  onClick={handleExtrasFinish}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-full bg-primary text-white font-subheading font-bold py-2.5 rounded-xl flex flex-col items-center justify-center gap-1 shadow-md"
-                >
-                  <div className="flex items-center gap-2">
-                    <Plus className="w-4 h-4" />
-                    Add to Order · ₹{
-                      price === 79 && 
-                      selectedExtras.some(e => e.name.toLowerCase().includes("raita") && !e.name.toLowerCase().includes("250ml")) && 
-                      selectedExtras.some(e => e.name.toLowerCase().includes("rasgulla") || e.name.toLowerCase().includes("gulab jamun"))
-                      ? (() => {
-                          let cost = 99;
-                          let fR = false; let fS = false;
-                          selectedExtras.forEach(e => {
-                            if (!fR && e.name.toLowerCase().includes("raita")) fR = true;
-                            else if (!fS && (e.name.toLowerCase().includes("rasgulla") || e.name.toLowerCase().includes("gulab jamun"))) fS = true;
-                            else cost += e.price;
-                          });
-                          return cost;
-                      })()
-                      : price + selectedExtras.reduce((s, e) => s + e.price, 0)
-                    }
-                  </div>
-                  {price === 79 && 
-                   selectedExtras.some(e => e.name.toLowerCase().includes("raita") && !e.name.toLowerCase().includes("250ml")) && 
-                   selectedExtras.some(e => e.name.toLowerCase().includes("rasgulla") || e.name.toLowerCase().includes("gulab jamun")) && (
-                    <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full">🎉 Upgraded to Special Combo!</span>
+                  ) : (
+                    <div>
+                      <div className="mb-3">
+                        <p className="text-sm font-bold text-foreground">Enhance Your Meal with Add-ons</p>
+                        <p className="text-xs text-muted-foreground font-subheading">
+                          Optional extras freshly prepared for you
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-2.5">
+                        {extras?.map((extra, idx) => {
+                          const count = selectedExtras.filter(e => e.name === extra.name).length;
+                          return (
+                            <div
+                              key={idx}
+                              className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
+                                count > 0 ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/80 bg-white'
+                              }`}
+                            >
+                              <div className="flex flex-col pr-2">
+                                <span className="text-sm font-subheading font-semibold text-foreground">{extra.name}</span>
+                                <span className="text-xs font-bold text-primary">+₹{extra.price}</span>
+                              </div>
+
+                              <div className="flex items-center gap-2.5 bg-muted/60 border border-border/80 rounded-xl p-1 shadow-inner">
+                                <button
+                                  type="button"
+                                  onClick={() => removeExtra(extra.name)}
+                                  disabled={count === 0}
+                                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-white text-foreground shadow-sm hover:bg-primary hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-foreground transition-all"
+                                >
+                                  <Minus className="w-4 h-4" />
+                                </button>
+                                <span className="text-sm font-bold w-5 text-center text-foreground">{count}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => addExtra(extra)}
+                                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-white shadow-sm hover:bg-primary/90 active:scale-95 transition-all"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Combo upgrade notification */}
+                      {price === 79 && 
+                       selectedExtras.some(e => e.name.toLowerCase().includes("raita") && !e.name.toLowerCase().includes("250ml")) && 
+                       selectedExtras.some(e => e.name.toLowerCase().includes("rasgulla") || e.name.toLowerCase().includes("gulab jamun")) && (
+                        <div className="p-3 bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/30 rounded-xl flex items-center gap-2 mt-3">
+                          <span className="text-base">🎉</span>
+                          <p className="text-xs font-bold text-amber-900">Combo unlocked! Raita & Sweet upgraded for just ₹99 total.</p>
+                        </div>
+                      )}
+                    </div>
                   )}
-                </motion.button>
-                <motion.button
-                  onClick={handleSkipExtras}
-                  whileTap={{ scale: 0.97 }}
-                  className="w-full bg-muted border border-border text-foreground/70 font-subheading font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-muted/80 transition-colors"
-                >
-                  Proceed without Add-ons · ₹{price}
-                </motion.button>
-              </div>
-            </motion.div>
+                </div>
+
+                {/* Modal Sticky Footer */}
+                <div className="p-4 bg-muted/30 border-t border-border/70 space-y-2">
+                  {showSabji ? (
+                    <motion.button
+                      onClick={handleSabjiContinue}
+                      disabled={selectedSabjis.length !== 2}
+                      whileTap={{ scale: 0.98 }}
+                      className={`w-full font-subheading font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all ${
+                        selectedSabjis.length === 2 ? 'bg-primary text-white hover:bg-primary/90 cursor-pointer' : 'bg-muted text-muted-foreground cursor-not-allowed'
+                      }`}
+                    >
+                      {extras && extras.length > 0 ? "Next: Choose Add-ons →" : "Add to Cart"}
+                    </motion.button>
+                  ) : (
+                    <>
+                      <motion.button
+                        onClick={handleExtrasFinish}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full bg-primary hover:bg-primary/90 text-white font-subheading font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add to Order · ₹{
+                          effectiveBasePrice === 79 && 
+                          selectedExtras.some(e => e.name.toLowerCase().includes("raita") && !e.name.toLowerCase().includes("250ml")) && 
+                          selectedExtras.some(e => e.name.toLowerCase().includes("rasgulla") || e.name.toLowerCase().includes("gulab jamun"))
+                          ? (() => {
+                              let cost = 99;
+                              let fR = false; let fS = false;
+                              selectedExtras.forEach(e => {
+                                if (!fR && e.name.toLowerCase().includes("raita")) fR = true;
+                                else if (!fS && (e.name.toLowerCase().includes("rasgulla") || e.name.toLowerCase().includes("gulab jamun"))) fS = true;
+                                else cost += e.price;
+                              });
+                              return cost;
+                          })()
+                          : effectiveBasePrice + selectedExtras.reduce((s, e) => s + e.price, 0)
+                        }
+                      </motion.button>
+                      <button
+                        type="button"
+                        onClick={handleSkipExtras}
+                        className="w-full text-center text-xs font-subheading font-medium text-muted-foreground hover:text-foreground py-1.5 transition-colors"
+                      >
+                        Skip add-ons & add basic thali (₹{effectiveBasePrice})
+                      </button>
+                    </>
+                  )}
+                </div>
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
 
@@ -396,17 +487,15 @@ export function MenuCard({
               ? "bg-muted text-muted-foreground cursor-not-allowed"
               : added
                 ? "bg-green-500 text-white"
-                : (showExtras || showSabji)
-                  ? "bg-transparent border-2 border-primary text-primary opacity-0 pointer-events-none"
-                  : "bg-primary text-white hover:bg-primary/90 shadow-md hover:shadow-lg"
+                : "bg-primary text-white hover:bg-primary/90 shadow-md hover:shadow-lg"
           }`}
         >
-        <AnimatePresence mode="wait">
-          {disabled ? (
-            <motion.span key="coming" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="flex items-center gap-2">
-              {disabledText || "Sold Out"}
-            </motion.span>
-          ) : added ? (
+          <AnimatePresence mode="wait">
+            {disabled ? (
+              <motion.span key="coming" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="flex items-center gap-2">
+                {disabledText || "Sold Out"}
+              </motion.span>
+            ) : added ? (
               <motion.span key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="flex items-center gap-2">
                 <Check className="w-4 h-4" /> {upgradedToCombo ? "Upgraded to Special Combo!" : "Added to Cart!"}
               </motion.span>
