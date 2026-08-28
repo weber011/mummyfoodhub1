@@ -22,6 +22,47 @@ export async function generateOrderNumber(): Promise<string> {
 
 export const getMinOrderValue = () => MIN_ORDER_VALUE;
 
+/**
+ * Automatically advances order status if owner hasn't manually updated:
+ * 1. If approved ('confirmed'), automatically shows as 'preparing'.
+ * 2. 1 hour after approval (or order creation if approved), automatically advances to 'out_for_delivery'.
+ */
+export async function resolveOrderStatus(order: Order): Promise<Order> {
+  if (!order) return order;
+
+  // Normalise legacy 'placed' status to 'pending'
+  if ((order.status as string) === 'placed') {
+    order.status = 'pending';
+  }
+
+  // Auto-progression applies once an order is approved / confirmed / preparing
+  if (order.status === 'confirmed' || order.status === 'preparing') {
+    const referenceTimeStr = order.approvedAt || order.updatedAt || order.createdAt;
+    const refTime = new Date(referenceTimeStr).getTime();
+    const now = Date.now();
+    const diffMinutes = (now - refTime) / (1000 * 60);
+
+    let newStatus: OrderStatus = order.status;
+
+    if (diffMinutes >= 60) {
+      // 1 hour after order approval -> automatically out for delivery
+      newStatus = 'out_for_delivery';
+    } else if (order.status === 'confirmed') {
+      // When approved, automatically appear preparing
+      newStatus = 'preparing';
+    }
+
+    if (newStatus !== order.status) {
+      order.status = newStatus;
+      order.updatedAt = new Date().toISOString();
+      // Persist the progressed status
+      await redisSet(`${ORDER_PREFIX}${order.id}`, order).catch(() => {});
+    }
+  }
+
+  return order;
+}
+
 // ── CRUD ─────────────────────────────────────────────────────────
 export async function createOrder(
   order: Omit<Order, 'id' | 'orderNumber' | 'createdAt' | 'updatedAt'>
@@ -41,11 +82,7 @@ export async function createOrder(
 export async function getOrderById(id: string): Promise<Order | null> {
   const order = await redisGet<Order>(`${ORDER_PREFIX}${id}`);
   if (!order) return null;
-  // Normalise legacy 'placed' status to 'pending'
-  if ((order.status as string) === 'placed') {
-    order.status = 'pending';
-  }
-  return order;
+  return resolveOrderStatus(order);
 }
 
 export async function getOrderByNumber(orderNumber: string): Promise<Order | null> {
@@ -74,11 +111,12 @@ export async function getAllOrders(): Promise<Order[]> {
 export async function approveOrder(orderId: string): Promise<Order | null> {
   const order = await getOrderById(orderId);
   if (!order) return null;
+  const now = new Date().toISOString();
   const updated: Order = {
     ...order,
-    status: 'confirmed',
-    approvedAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    status: 'preparing', // When approved by owner, immediately set to preparing
+    approvedAt: now,
+    updatedAt: now,
   };
   await redisSet(`${ORDER_PREFIX}${orderId}`, updated);
   return updated;

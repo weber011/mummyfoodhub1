@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import QRCode from "react-qr-code";
-import { X, Minus, Plus, ShoppingBag, Trash2, MapPin, ChevronDown, CheckCircle } from "lucide-react";
+import { X, Minus, Plus, ShoppingBag, Trash2, MapPin, ChevronDown, CheckCircle, Clock, AlertTriangle } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useSiteData } from "@/context/SiteContext";
 import { useAuth } from "@/context/AuthContext";
+import { getDeliveryTimingState, validateOrderDeliveryTime, type TimingState } from "@/lib/delivery-timing";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
@@ -58,19 +59,43 @@ export function CartDrawer() {
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Real-time IST delivery timing state
+  const [timingState, setTimingState] = useState<TimingState>(() => getDeliveryTimingState());
+
   // Track active subscription for 10% discount
   const [subscriptionDiscount, setSubscriptionDiscount] = useState<number>(0);
   const [hasSubscription, setHasSubscription] = useState(false);
 
   const [form, setForm] = useState({
     name: user?.name || "", phone: user?.phone || "", sector: "106", address: "", floor: "", landmark: "",
-    deliveryType: "Office Gate", time: "Lunch (12:30 - 2 PM)", payment: "Cash on Delivery",
+    deliveryType: "Office Gate", time: "Lunch (12:30 PM – 2:00 PM)", payment: "Cash on Delivery",
     notes: "", customFields: {} as Record<string, string>
   });
 
   const [distance, setDistance] = useState<number | null>(null);
   const [locationError, setLocationError] = useState<string>("");
   const [isLocating, setIsLocating] = useState(false);
+
+  // Live timer to update delivery time dynamically every 30 seconds
+  useEffect(() => {
+    const updateTiming = () => {
+      const newState = getDeliveryTimingState();
+      setTimingState(newState);
+    };
+    updateTiming();
+    const interval = setInterval(updateTiming, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Update default delivery slot selection based on live availability
+  useEffect(() => {
+    if (isCartOpen && timingState.defaultSlot) {
+      const currentValidation = validateOrderDeliveryTime(form.time);
+      if (!currentValidation.valid || !form.time) {
+        setForm(f => ({ ...f, time: timingState.defaultSlot!.orderValue }));
+      }
+    }
+  }, [isCartOpen, timingState]);
 
   // Fetch subscription status to show discount in cart
   useEffect(() => {
@@ -315,6 +340,29 @@ export function CartDrawer() {
                     ) : (
                       <p className="text-xs text-muted-foreground mb-4">+ Delivery charge calculates at checkout</p>
                     )}
+
+                    {/* Delivery Timing Indicator */}
+                    {!timingState.isAnyOrderingOpen ? (
+                      <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-3 mb-4 text-xs flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-bold">Ordering Closed for Today</p>
+                          <p className="text-[11px] text-amber-800 mt-0.5">Lunch orders are accepted until 2:00 PM, Dinner orders until 9:30 PM.</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-primary/5 border border-primary/20 text-foreground rounded-xl p-3 mb-4 text-xs flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-primary" />
+                          <span className="font-bold text-xs">
+                            {timingState.lunch.isAvailable ? "☀️ Lunch Open" : "🌙 Dinner Open"}
+                          </span>
+                        </div>
+                        <span className="text-primary font-bold text-[11px]">
+                          Delivery: {timingState.lunch.isAvailable ? timingState.lunch.expectedDelivery : timingState.dinner.expectedDelivery}
+                        </span>
+                      </div>
+                    )}
                     
                     {!user ? (
                       <div className="space-y-3">
@@ -327,14 +375,18 @@ export function CartDrawer() {
                     ) : (
                       <button
                         onClick={() => setStep("form")}
-                        disabled={totalPrice < 79}
+                        disabled={totalPrice < 79 || !timingState.isAnyOrderingOpen}
                         className={`w-full font-bold py-4 rounded-xl text-lg transition-all ${
-                          totalPrice < 79 
+                          totalPrice < 79 || !timingState.isAnyOrderingOpen
                             ? "bg-muted text-muted-foreground cursor-not-allowed border border-border" 
                             : "bg-primary text-white shadow-lg hover:bg-primary/90 active:scale-95"
                         }`}
                       >
-                        {totalPrice < 79 ? "Minimum Order: ₹79" : "Proceed to Checkout →"}
+                        {!timingState.isAnyOrderingOpen
+                          ? "Ordering Closed for Today"
+                          : totalPrice < 79 
+                            ? "Minimum Order: ₹79" 
+                            : "Proceed to Checkout →"}
                       </button>
                     )}
                   </div>
@@ -555,19 +607,49 @@ export function CartDrawer() {
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-foreground uppercase tracking-wide mb-1 block">Delivery Time</label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-bold text-foreground uppercase tracking-wide flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-primary" /> Delivery Time *
+                      </label>
+                      <span className="text-[10px] text-muted-foreground font-subheading">Current: {timingState.currentIstTime}</span>
+                    </div>
+                    
                     <div className="relative">
                       <select
                         value={form.time}
                         onChange={(e) => setForm({ ...form, time: e.target.value })}
-                        className="w-full border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary font-subheading bg-white appearance-none"
+                        className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary font-subheading bg-white appearance-none"
                       >
-                        <option>Lunch (12:30 - 2 PM)</option>
-                        <option>Dinner (8:00 - 9:30 PM)</option>
-                        <option>Morning (9 - 10 AM)</option>
+                        <option value={timingState.lunch.orderValue} disabled={!timingState.lunch.isAvailable}>
+                          ☀️ Lunch ({timingState.lunch.isAvailable ? timingState.lunch.expectedDelivery : "Closed at 2:00 PM"})
+                        </option>
+                        <option value={timingState.dinner.orderValue} disabled={!timingState.dinner.isAvailable}>
+                          🌙 Dinner ({timingState.dinner.isAvailable ? timingState.dinner.expectedDelivery : "Closed at 9:30 PM"})
+                        </option>
                       </select>
                       <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     </div>
+
+                    {/* Dynamic Availability / Warning Notice */}
+                    {(() => {
+                      const validation = validateOrderDeliveryTime(form.time);
+                      if (!validation.valid) {
+                        return (
+                          <div className="mt-2 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-2.5 text-xs flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                            <span className="font-bold">{validation.reason}</span>
+                          </div>
+                        );
+                      }
+                      const isLunchSelected = form.time.toLowerCase().includes("lunch");
+                      const expectedDel = isLunchSelected ? timingState.lunch.expectedDelivery : timingState.dinner.expectedDelivery;
+                      return (
+                        <div className="mt-2 text-[11px] text-emerald-800 font-bold bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 flex items-center gap-1.5">
+                          <span>⚡ Expected Delivery:</span>
+                          <span className="text-emerald-950 font-black">{expectedDel}</span>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div>
@@ -684,20 +766,32 @@ export function CartDrawer() {
                       Sorry, delivery is not available for locations beyond 10 km.
                     </div>
                   )}
-                  <button
-                    onClick={handleOrder}
-                    disabled={!form.name || !form.phone || !form.address || !isDeliverable || isSubmitting}
-                    className="w-full bg-primary text-white font-bold py-4 rounded-xl text-lg shadow-lg hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? (
-                      <span className="flex items-center gap-2">Processing...</span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <ShoppingBag className="w-5 h-5" />
-                        Place Order (₹{finalTotal})
-                      </span>
-                    )}
-                  </button>
+                  {(() => {
+                    const validation = validateOrderDeliveryTime(form.time);
+                    const isTimeAllowed = validation.valid && timingState.isAnyOrderingOpen;
+
+                    return (
+                      <button
+                        onClick={handleOrder}
+                        disabled={!form.name || !form.phone || !form.address || !isDeliverable || isSubmitting || !isTimeAllowed}
+                        className="w-full bg-primary text-white font-bold py-4 rounded-xl text-lg shadow-lg hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isSubmitting ? (
+                          <span className="flex items-center gap-2">Processing...</span>
+                        ) : !isTimeAllowed ? (
+                          <span className="flex items-center gap-2 text-base">
+                            <AlertTriangle className="w-5 h-5" />
+                            {validation.reason ? "Selected Slot Closed" : "Ordering Closed"}
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-2">
+                            <ShoppingBag className="w-5 h-5" />
+                            Place Order (₹{finalTotal})
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })()}
                   <button onClick={() => setStep("cart")} className="w-full text-sm text-muted-foreground hover:text-primary transition-colors" disabled={isSubmitting}>
                     ← Back to Cart
                   </button>

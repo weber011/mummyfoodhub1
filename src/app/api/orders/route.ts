@@ -6,6 +6,7 @@ import { sendOrderPlacedEmail, sendOwnerNewOrderEmail } from '@/lib/email';
 import { getActiveSubscription } from '@/lib/subscriptions';
 import { createNotification } from '@/lib/notifications';
 import { redisGet, redisSet } from '@/lib/redis';
+import { validateOrderDeliveryTime } from '@/lib/delivery-timing';
 import type { OrderItem } from '@/lib/types';
 
 export async function GET(req: NextRequest) {
@@ -44,6 +45,12 @@ export async function POST(req: NextRequest) {
     }
     if (typeof subtotal !== 'number' || subtotal < getMinOrderValue()) {
       return NextResponse.json({ error: `Minimum order value is ₹${getMinOrderValue()}.` }, { status: 400 });
+    }
+
+    // Delivery timing enforcement in IST
+    const timingValidation = validateOrderDeliveryTime(deliveryTime);
+    if (!timingValidation.valid) {
+      return NextResponse.json({ error: timingValidation.reason || 'Ordering is closed for the selected delivery time.' }, { status: 400 });
     }
 
     const user = await getUserById(session.userId);
