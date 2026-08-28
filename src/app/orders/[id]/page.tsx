@@ -1,33 +1,35 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { Loader2, CheckCircle, ArrowRight, Package } from "lucide-react";
 
-export default function OrderSuccessPage({ params }: { params: { id: string } }) {
+export default function OrderSuccessPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const routeParams = useParams();
+  const id = typeof routeParams?.id === "string" ? routeParams.id : Array.isArray(routeParams?.id) ? routeParams.id[0] : "";
   const [orderNum, setOrderNum] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isLoading && !user) router.push("/");
-  }, [user, isLoading, router]);
-
-  useEffect(() => {
-    if (user && params.id) {
-      fetch(`/api/orders/${params.id}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.order) setOrderNum(data.order.orderNumber);
-        })
-        .finally(() => setLoading(false));
+    if (!id) {
+      setLoading(false);
+      return;
     }
-  }, [user, params.id]);
 
-  if (isLoading || loading) {
+    fetch(`/api/orders/${id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.order) setOrderNum(data.order.orderNumber);
+      })
+      .catch(err => console.error("Error fetching order:", err))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
     return (
       <div className="min-h-screen flex justify-center py-32">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -55,7 +57,7 @@ export default function OrderSuccessPage({ params }: { params: { id: string } })
 
         <div className="space-y-3">
           <Link 
-            href={`/account/orders/${params.id}`}
+            href={`/account/orders/${id}`}
             className="w-full bg-primary text-white font-bold py-4 rounded-xl shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-2 group"
           >
             Track Your Order <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

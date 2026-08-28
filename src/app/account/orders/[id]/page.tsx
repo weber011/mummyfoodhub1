@@ -1,16 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { ArrowLeft, Loader2, MapPin, Clock, CreditCard, CheckCircle, Package, Truck, ChefHat, AlertCircle } from "lucide-react";
 import type { Order } from "@/lib/types";
 import { ORDER_STATUS_LABELS } from "@/lib/types";
 
-export default function OrderDetailsPage({ params }: { params: { id: string } }) {
+export default function OrderDetailsPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const routeParams = useParams();
+  const id = typeof routeParams?.id === "string" ? routeParams.id : Array.isArray(routeParams?.id) ? routeParams.id[0] : "";
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -20,8 +22,8 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
   }, [user, isLoading, router]);
 
   useEffect(() => {
-    if (user && params.id) {
-      fetch(`/api/orders/${params.id}`)
+    if (user && id) {
+      fetch(`/api/orders/${id}`)
         .then(res => {
           if (!res.ok) throw new Error("Order not found or unauthorized");
           return res.json();
@@ -32,7 +34,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
         .catch(e => setError(e.message))
         .finally(() => setLoading(false));
     }
-  }, [user, params.id]);
+  }, [user, id]);
 
   if (isLoading || !user) return <div className="min-h-screen" />;
 
