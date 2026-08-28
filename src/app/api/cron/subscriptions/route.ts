@@ -36,7 +36,7 @@ async function checkAndExpireSubscriptions() {
 export async function GET(req: NextRequest) {
   // Validate Vercel Cron Secret to ensure this is only called by Vercel
   const authHeader = req.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
+  const cronSecret = process.env.CRON_SECRET?.trim();
   
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
