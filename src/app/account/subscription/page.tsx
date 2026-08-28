@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import {
   ArrowLeft, Loader2, CreditCard, Calendar, Clock, CheckCircle,
-  MapPin, AlertCircle, Utensils, RefreshCw, XCircle, PauseCircle
+  MapPin, AlertCircle, Utensils, RefreshCw, XCircle, PauseCircle,
+  Phone, MessageCircle, Headphones
 } from "lucide-react";
 import type { UserSubscription, SubscriptionDelivery } from "@/lib/types";
 import { getRemainingDays, getRemainingMeals } from "@/lib/subscriptions";
@@ -330,6 +331,43 @@ export default function SubscriptionPage() {
                 </div>
               </div>
             )}
+
+            {/* ── SUBSCRIPTION SUPPORT & HELPLINE CARD ── */}
+            <div className="bg-white rounded-3xl border border-border p-6 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider">
+                    <Headphones className="w-3.5 h-3.5" /> Subscriber Helpline
+                  </div>
+                  <h3 className="font-heading font-bold text-lg text-foreground">
+                    Need Help or Have a Question?
+                  </h3>
+                  <p className="text-xs text-muted-foreground font-subheading">
+                    Contact kitchen owner directly for meal pauses, address updates, or special dietary requirements.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
+                  <a
+                    href="tel:+917065665988"
+                    className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-white border border-border hover:bg-gray-50 text-foreground font-bold px-4 py-2.5 rounded-xl text-xs shadow-xs transition-colors"
+                  >
+                    <Phone className="w-3.5 h-3.5 text-primary" />
+                    <span>Call: +91 70656 65988</span>
+                  </a>
+
+                  <a
+                    href="https://wa.me/917065665988?text=Hi%20Mummy%20Food%20Hub!%20I%20am%20an%20active%20subscriber%20and%20have%20a%20query%20about%20my%20meal%20plan."
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#20b858] text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-xs transition-colors"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>WhatsApp</span>
+                  </a>
+                </div>
+              </div>
+            </div>
 
             {/* Previous Plans */}
             {history.length > (active ? 1 : 0) && (

@@ -6,6 +6,7 @@ import QRCode from "react-qr-code";
 import {
   CheckCircle, Info, Loader2, X, Phone, MapPin,
   ChevronDown, ArrowLeft, ArrowRight, Clock, Send,
+  Headphones, MessageCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useSiteData } from "@/context/SiteContext";
@@ -222,6 +223,41 @@ export default function SubscriptionPage() {
           </div>
         </div>
 
+        {/* Need Help / Have Doubts Support Card */}
+        <div className="max-w-4xl mx-auto bg-white rounded-3xl border-2 border-primary/30 p-8 shadow-lg mb-12 relative overflow-hidden">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="space-y-2 text-center md:text-left">
+              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                <Headphones className="w-4 h-4" /> Subscription Support
+              </div>
+              <h3 className="text-2xl font-heading font-black text-foreground">
+                Have Doubts or Questions Before Subscribing?
+              </h3>
+              <p className="text-muted-foreground font-subheading text-sm max-w-xl">
+                Need a trial meal, custom delivery timing, offline cash payment, or have queries about pausing meals? Speak directly with our owner or reach us on WhatsApp.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 w-full md:w-auto">
+              <a
+                href="tel:+917065665988"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white border-2 border-primary text-primary hover:bg-primary/5 font-bold py-3 px-5 rounded-2xl shadow-xs transition-all text-sm"
+              >
+                <Phone className="w-4 h-4" /> Call: +91 70656 65988
+              </a>
+
+              <a
+                href="https://wa.me/917065665988?text=Hello%20Mummy%20Food%20Hub!%20I%20have%20a%20question%20regarding%20the%20monthly%20meal%20subscription."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20b858] text-white font-bold py-3 px-6 rounded-2xl shadow-md transition-all text-sm"
+              >
+                <MessageCircle className="w-4 h-4" /> Chat on WhatsApp
+              </a>
+            </div>
+          </div>
+        </div>
+
         {/* Bulk Orders */}
         <div className="mt-4 bg-primary/10 rounded-2xl border border-primary/20 p-8 text-center max-w-4xl mx-auto">
           <h2 className="text-3xl font-heading font-bold text-foreground mb-4">Planning a Party or Corporate Event?</h2>
@@ -418,6 +454,19 @@ export default function SubscriptionPage() {
                         >
                           Proceed to Payment <ArrowRight className="w-4 h-4" />
                         </button>
+
+                        <div className="pt-2 text-center">
+                          <p className="text-[11px] text-muted-foreground font-subheading flex items-center justify-center gap-2">
+                            <span>Have doubts?</span>
+                            <a href="tel:+917065665988" className="font-bold text-primary hover:underline flex items-center gap-0.5">
+                              <Phone className="w-3 h-3" /> Call Support
+                            </a>
+                            <span>•</span>
+                            <a href="https://wa.me/917065665988" target="_blank" rel="noopener noreferrer" className="font-bold text-[#25D366] hover:underline flex items-center gap-0.5">
+                              <MessageCircle className="w-3 h-3" /> WhatsApp
+                            </a>
+                          </p>
+                        </div>
                       </motion.div>
                     )}
 
@@ -477,6 +526,19 @@ export default function SubscriptionPage() {
                           {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-4 h-4" />}
                           {submitting ? "Submitting..." : "Submit Subscription Request"}
                         </button>
+
+                        <div className="pt-1 text-center">
+                          <p className="text-[11px] text-muted-foreground font-subheading flex items-center justify-center gap-2">
+                            <span>Payment query?</span>
+                            <a href="tel:+917065665988" className="font-bold text-primary hover:underline flex items-center gap-0.5">
+                              <Phone className="w-3 h-3" /> +91 70656 65988
+                            </a>
+                            <span>•</span>
+                            <a href="https://wa.me/917065665988" target="_blank" rel="noopener noreferrer" className="font-bold text-[#25D366] hover:underline flex items-center gap-0.5">
+                              <MessageCircle className="w-3 h-3" /> WhatsApp
+                            </a>
+                          </p>
+                        </div>
                       </motion.div>
                     )}
 
