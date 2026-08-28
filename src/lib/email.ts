@@ -1,21 +1,15 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import type { Order, UserSubscription } from './types';
 
-function getTransporter() {
-  const user = process.env.GMAIL_USER ?? 'mummyfoodhub@gmail.com';
-  const pass = process.env.GMAIL_APP_PASSWORD;
-  if (!pass) {
-    console.warn('[email] GMAIL_APP_PASSWORD not set — emails will not send');
-  }
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user, pass: pass ?? '' },
-  });
+function getResendClient() {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return null;
+  return new Resend(key);
 }
 
-const FROM = '"Mummy Food Hub" <mummyfoodhub@gmail.com>';
+const FROM = 'Mummy Food Hub <onboarding@resend.dev>';
 const OWNER_EMAIL = process.env.OWNER_EMAIL ?? 'mummyfoodhub@gmail.com';
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://mummyfoodhub.vercel.app';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://mummyfoodhub.online';
 
 // ── Base styles ──────────────────────────────────────────────────
 const emailBase = (body: string) => `
@@ -52,269 +46,167 @@ const emailBase = (body: string) => `
     </td></tr>
   </table>
 </body>
-</html>`;
+</html>
+`;
 
-async function send(to: string, subject: string, html: string) {
-  const pass = process.env.GMAIL_APP_PASSWORD;
-  if (!pass) {
-    console.warn(`[email] Skipping email to ${to} — GMAIL_APP_PASSWORD not set`);
+async function sendEmail(to: string, subject: string, html: string) {
+  const client = getResendClient();
+  if (!client) {
+    console.warn('[email] RESEND_API_KEY not set — email skipped');
     return;
   }
-  try {
-    const transporter = getTransporter();
-    await transporter.sendMail({ from: FROM, to, subject, html });
-    console.log(`[email] Sent "${subject}" to ${to}`);
-  } catch (err) {
-    console.error('[email] Failed to send:', (err as Error).message);
-    // Never throw — email failure must not break main flow
-  }
+  const { error } = await client.emails.send({ from: FROM, to, subject, html });
+  if (error) console.error('[email] send failed:', error);
 }
 
-// ── 1. OTP Email ──────────────────────────────────────────────────
-export async function sendOtpEmail(to: string, otp: string, name?: string) {
-  const html = emailBase(`
-    <p style="margin:0 0 8px;color:#3D261D;font-size:18px;font-weight:700;">Your One-Time Password</p>
-    <p style="margin:0 0 24px;color:#7a6e65;font-size:14px;">Hi ${name ?? 'there'}! Use the code below to sign in to Mummy Food Hub.</p>
-    <div style="text-align:center;margin:32px 0;">
-      <div style="display:inline-block;background:#FFF3F3;border:2px dashed #B23A3A;border-radius:12px;padding:20px 40px;">
-        <p style="margin:0;font-size:38px;font-weight:800;color:#B23A3A;letter-spacing:10px;">${otp}</p>
-      </div>
-      <p style="margin:16px 0 0;color:#7a6e65;font-size:12px;">This code expires in 10 minutes. Do not share it with anyone.</p>
-    </div>
-    <p style="margin:24px 0 0;color:#7a6e65;font-size:12px;">If you didn't request this, you can safely ignore this email.</p>
-  `);
-  await send(to, 'Mummy Food Hub — Your Login OTP', html);
-}
-
-// ── 2. Welcome Email (new user only) ─────────────────────────────
+// ── Welcome Email ───────────────────────────────────────────────
 export async function sendWelcomeEmail(to: string, name: string) {
   const html = emailBase(`
-    <p style="margin:0 0 8px;color:#3D261D;font-size:22px;font-weight:700;">Welcome to Mummy Food Hub! ❤️</p>
-    <p style="margin:0 0 24px;color:#7a6e65;font-size:14px;">Hello <strong>${name}</strong>, we're so happy to have you here!</p>
-    <div style="background:#FFF8F0;border-radius:12px;padding:20px;margin-bottom:24px;border-left:4px solid #B23A3A;">
-      <p style="margin:0 0 8px;color:#3D261D;font-size:14px;font-weight:600;">🏡 What is Mummy Food Hub?</p>
-      <p style="margin:0;color:#7a6e65;font-size:13px;line-height:1.6;">
-        We deliver fresh, homemade food with less oil and less masala — just the way your mummy makes it!
-        Based in Sector 110, Noida, we deliver within a 5–7 km radius.
-      </p>
-    </div>
-    <div style="text-align:center;margin:24px 0;">
-      <a href="${APP_URL}/menu" style="display:inline-block;background:#B23A3A;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">Browse Our Menu →</a>
-    </div>
-    <div style="background:#F0FFF4;border-radius:8px;padding:16px;margin-top:16px;">
-      <p style="margin:0;color:#3D261D;font-size:13px;font-weight:600;">💳 Subscription Benefits</p>
-      <p style="margin:6px 0 0;color:#7a6e65;font-size:12px;">Subscribe to any plan and enjoy a flat <strong>10% discount</strong> on every order!</p>
-      <a href="${APP_URL}/subscription" style="color:#B23A3A;font-size:12px;font-weight:600;">View Subscription Plans →</a>
-    </div>
-    <p style="margin:24px 0 0;color:#7a6e65;font-size:12px;">Need help? Email us at <a href="mailto:mummyfoodhub@gmail.com" style="color:#B23A3A;">mummyfoodhub@gmail.com</a></p>
+    <p style="color:#2d2926;font-size:18px;font-weight:700;margin:0 0 8px;">Welcome to Mummy Food Hub, ${name}! 🎉</p>
+    <p style="color:#5a534d;font-size:14px;margin:0 0 20px;">Thank you for creating an account with us. We look forward to serving you fresh, wholesome homemade meals in Noida!</p>
+    <a href="${APP_URL}/menu" style="display:block;background:#B23A3A;color:#fff;font-weight:700;text-align:center;padding:14px;border-radius:10px;text-decoration:none;">Explore Daily Menu</a>
   `);
-  await send(to, 'Welcome to Mummy Food Hub ❤️', html);
+  await sendEmail(to, 'Welcome to Mummy Food Hub! 🍱', html);
 }
 
-// ── 3. Owner New Order Notification ──────────────────────────────
-export async function sendOwnerNewOrderEmail(order: Order) {
-  const itemLines = order.items.map(
-    (i) => `<tr>
-      <td style="padding:5px 0;color:#3D261D;font-size:13px;">${i.quantity}× ${i.title}</td>
-      <td style="padding:5px 0;color:#B23A3A;font-size:13px;text-align:right;font-weight:600;">₹${i.price * i.quantity}</td>
-    </tr>`
-  ).join('');
+// ── OTP Email ──────────────────────────────────────────────────
+export async function sendOtpEmail(to: string, otp: string, name?: string) {
+  const html = emailBase(`
+    <p style="color:#2d2926;font-size:18px;font-weight:700;margin:0 0 8px;">Hello${name ? `, ${name}` : ''}! 👋</p>
+    <p style="color:#5a534d;font-size:14px;margin:0 0 24px;">Your one-time login code for <strong>Mummy Food Hub</strong> is:</p>
+    <div style="background:#FDFBF7;border:2px dashed #B23A3A;border-radius:12px;padding:20px;text-align:center;margin:0 0 24px;">
+      <span style="font-size:42px;font-weight:900;letter-spacing:12px;color:#B23A3A;">${otp}</span>
+    </div>
+    <p style="color:#7a6e65;font-size:13px;margin:0;">This code expires in <strong>10 minutes</strong>. Do not share it with anyone.</p>
+  `);
+  await sendEmail(to, 'Your OTP — Mummy Food Hub', html);
+}
+
+// ── Customer Order Placed ───────────────────────────────────────
+export async function sendOrderPlacedEmail(order: Order) {
+  const html = emailBase(`
+    <p style="color:#2d2926;font-size:20px;font-weight:900;margin:0 0 4px;">Order Placed! 🍱</p>
+    <p style="color:#5a534d;font-size:14px;margin:0 0 20px;">Hi ${order.customerName}, we received your order <strong>${order.orderNumber}</strong>. We're awaiting confirmation from our kitchen!</p>
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;padding:16px;border-radius:10px;margin:0 0 20px;">
+      <p style="margin:0;font-size:14px;font-weight:700;color:#B23A3A;">Total Amount: ₹${order.totalAmount}</p>
+      <p style="margin:4px 0 0;font-size:13px;color:#4b5563;">Delivery to: ${order.address}, Sector ${order.sector}</p>
+    </div>
+    <a href="${APP_URL}/account/orders/${order.id}" style="display:block;background:#B23A3A;color:#fff;font-weight:700;text-align:center;padding:14px;border-radius:10px;text-decoration:none;">View Order Status</a>
+  `);
+  await sendEmail(order.customerEmail, `Order Received — ${order.orderNumber}`, html);
+}
+
+// ── New Order: Owner Notification ──────────────────────────────
+export async function sendNewOrderNotificationEmail(order: Order) {
+  const itemsHtml = order.items
+    .map(i => `<tr><td style="padding:8px 0;border-bottom:1px solid #f0ece5;">${i.quantity}× ${i.title}</td><td style="padding:8px 0;border-bottom:1px solid #f0ece5;text-align:right;font-weight:700;">₹${i.price * i.quantity}</td></tr>`)
+    .join('');
 
   const html = emailBase(`
-    <div style="background:#FFF3F3;border-radius:8px;padding:12px 16px;margin-bottom:20px;border-left:4px solid #B23A3A;">
-      <p style="margin:0;color:#B23A3A;font-size:16px;font-weight:800;">🔔 NEW ORDER RECEIVED</p>
-      <p style="margin:4px 0 0;color:#3D261D;font-size:20px;font-weight:700;">${order.orderNumber}</p>
+    <p style="color:#2d2926;font-size:20px;font-weight:900;margin:0 0 4px;">🔔 New Order Received!</p>
+    <p style="color:#B23A3A;font-size:16px;font-weight:700;margin:0 0 24px;">${order.orderNumber}</p>
+    
+    <div style="background:#fff8f0;border-left:4px solid #B23A3A;padding:16px;border-radius:0 8px 8px 0;margin:0 0 20px;">
+      <p style="margin:0 0 4px;font-size:14px;"><strong>Customer:</strong> ${order.customerName}</p>
+      <p style="margin:0 0 4px;font-size:14px;"><strong>Phone:</strong> ${order.customerPhone}</p>
+      <p style="margin:0 0 4px;font-size:14px;"><strong>Address:</strong> ${order.address}, Sector ${order.sector}</p>
+      ${order.landmark ? `<p style="margin:0 0 4px;font-size:14px;"><strong>Landmark:</strong> ${order.landmark}</p>` : ''}
+      <p style="margin:0 0 4px;font-size:14px;"><strong>Delivery Time:</strong> ${order.deliveryTime}</p>
+      <p style="margin:0;font-size:14px;"><strong>Payment:</strong> ${order.paymentMethod}</p>
     </div>
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
-      <tr><td style="color:#7a6e65;font-size:12px;padding-bottom:4px;">CUSTOMER</td></tr>
-      <tr><td style="color:#3D261D;font-size:14px;font-weight:600;padding-bottom:2px;">${order.customerName}</td></tr>
-      <tr><td style="color:#7a6e65;font-size:13px;padding-bottom:2px;">📞 ${order.customerPhone}</td></tr>
-      <tr><td style="color:#7a6e65;font-size:13px;padding-bottom:2px;">✉️ ${order.customerEmail}</td></tr>
-    </table>
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
-      <tr><td style="color:#7a6e65;font-size:12px;padding-bottom:4px;border-top:1px solid #e6dfd3;padding-top:12px;">DELIVERY ADDRESS</td></tr>
-      <tr><td style="color:#3D261D;font-size:13px;">${order.address}, Sector ${order.sector}</td></tr>
-      ${order.landmark ? `<tr><td style="color:#7a6e65;font-size:12px;">Landmark: ${order.landmark}</td></tr>` : ''}
-      <tr><td style="color:#7a6e65;font-size:12px;">Type: ${order.deliveryType} • Time: ${order.deliveryTime}</td></tr>
-    </table>
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
-      <tr><td colspan="2" style="color:#7a6e65;font-size:12px;padding-bottom:8px;border-top:1px solid #e6dfd3;padding-top:12px;">ORDER ITEMS</td></tr>
-      ${itemLines}
-      <tr><td colspan="2" style="border-top:1px solid #e6dfd3;padding-top:8px;"></td></tr>
-      <tr>
-        <td style="color:#7a6e65;font-size:13px;">Subtotal</td>
-        <td style="color:#3D261D;font-size:13px;text-align:right;">₹${order.subtotal}</td>
-      </tr>
-      ${order.subscriptionDiscount > 0 ? `<tr><td style="color:#647545;font-size:13px;">Subscription Discount (10%)</td><td style="color:#647545;font-size:13px;text-align:right;">-₹${order.subscriptionDiscount}</td></tr>` : ''}
-      ${order.discount > 0 ? `<tr><td style="color:#647545;font-size:13px;">Coupon (${order.couponCode})</td><td style="color:#647545;font-size:13px;text-align:right;">-₹${order.discount}</td></tr>` : ''}
-      <tr>
-        <td style="color:#7a6e65;font-size:13px;">Delivery Charge</td>
-        <td style="color:#3D261D;font-size:13px;text-align:right;">₹${order.deliveryCharge}</td>
-      </tr>
-      <tr>
-        <td style="color:#3D261D;font-size:15px;font-weight:700;padding-top:8px;">TOTAL</td>
-        <td style="color:#B23A3A;font-size:18px;font-weight:800;text-align:right;padding-top:8px;">₹${order.totalAmount}</td>
-      </tr>
-    </table>
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
-      <tr><td colspan="2" style="border-top:1px solid #e6dfd3;padding-top:12px;color:#7a6e65;font-size:12px;padding-bottom:4px;">PAYMENT & NOTES</td></tr>
-      <tr><td style="color:#3D261D;font-size:13px;">💳 ${order.paymentMethod}</td></tr>
-      ${order.notes ? `<tr><td style="color:#7a6e65;font-size:12px;padding-top:4px;">Notes: ${order.notes}</td></tr>` : ''}
-      <tr><td style="color:#7a6e65;font-size:11px;padding-top:4px;">Placed: ${new Date(order.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</td></tr>
-    </table>
-    <div style="text-align:center;margin-top:24px;">
-      <a href="${APP_URL}/admin" style="display:inline-block;background:#B23A3A;color:#fff;padding:14px 36px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">✅ Open Admin Dashboard to Approve</a>
-    </div>
+    
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;">${itemsHtml}</table>
+    <p style="font-size:20px;font-weight:900;color:#B23A3A;text-align:right;margin:0 0 24px;">Total: ₹${order.totalAmount}</p>
+    ${order.notes ? `<p style="background:#fff3cd;padding:12px;border-radius:8px;font-size:13px;margin:0 0 20px;">📝 <strong>Note:</strong> ${order.notes}</p>` : ''}
+    
+    <a href="${APP_URL}/admin" style="display:block;background:#B23A3A;color:#fff;font-weight:700;text-align:center;padding:14px;border-radius:10px;text-decoration:none;font-size:15px;">✅ Approve Order in Dashboard</a>
   `);
-  await send(OWNER_EMAIL, `🔔 New Order — ${order.orderNumber} — ₹${order.totalAmount}`, html);
+  await sendEmail(OWNER_EMAIL, `🆕 New Order ${order.orderNumber} — ₹${order.totalAmount}`, html);
 }
 
-// ── 4. Customer Order Placed (PENDING) ───────────────────────────
-export async function sendOrderPlacedEmail(to: string, order: Order) {
-  const itemLines = order.items.map(
-    (i) => `<tr>
-      <td style="padding:6px 0;color:#3D261D;font-size:13px;">${i.quantity}× ${i.title}</td>
-      <td style="padding:6px 0;color:#B23A3A;font-size:13px;text-align:right;font-weight:600;">₹${i.price * i.quantity}</td>
-    </tr>`
-  ).join('');
-
+// ── Order Confirmed: Customer Notification ─────────────────────
+export async function sendOrderConfirmedEmail(order: Order) {
   const html = emailBase(`
-    <p style="margin:0 0 4px;color:#3D261D;font-size:18px;font-weight:700;">Order Received! 🎉</p>
-    <p style="margin:0 0 24px;color:#7a6e65;font-size:14px;">Hi ${order.customerName}, your order <strong>${order.orderNumber}</strong> has been received.</p>
-    <div style="background:#FFF8F0;border-radius:10px;padding:16px;margin-bottom:20px;border-left:4px solid #e6a830;">
-      <p style="margin:0;color:#7a6e65;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Current Status</p>
-      <p style="margin:6px 0 0;color:#d97706;font-size:18px;font-weight:700;">⏳ Pending Approval</p>
-      <p style="margin:6px 0 0;color:#7a6e65;font-size:12px;">We'll confirm your order shortly and send you an email.</p>
+    <p style="color:#2d2926;font-size:20px;font-weight:900;margin:0 0 4px;">✅ Order Confirmed!</p>
+    <p style="color:#5a534d;font-size:14px;margin:0 0 20px;">Hi ${order.customerName}, your order has been confirmed by the kitchen!</p>
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:16px;border-radius:10px;margin:0 0 20px;">
+      <p style="margin:0;font-size:16px;font-weight:700;color:#15803d;">${order.orderNumber}</p>
+      <p style="margin:4px 0 0;font-size:13px;color:#166534;">Total: ₹${order.totalAmount} • ${order.paymentMethod}</p>
     </div>
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
-      ${itemLines}
-      <tr><td colspan="2" style="border-top:1px solid #e6dfd3;padding-top:10px;"></td></tr>
-      <tr>
-        <td style="color:#3D261D;font-size:14px;font-weight:700;">Total</td>
-        <td style="color:#B23A3A;font-size:16px;font-weight:800;text-align:right;">₹${order.totalAmount}</td>
-      </tr>
-    </table>
-    <div style="background:#f2efe9;border-radius:8px;padding:12px 16px;margin-bottom:16px;">
-      <p style="margin:0;color:#7a6e65;font-size:12px;">📍 ${order.address}, Sector ${order.sector}</p>
-      <p style="margin:4px 0 0;color:#7a6e65;font-size:12px;">💳 ${order.paymentMethod}</p>
-    </div>
-    <div style="text-align:center;margin-top:20px;">
-      <a href="${APP_URL}/account/orders/${order.id}" style="display:inline-block;background:#B23A3A;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;">Track Your Order →</a>
-    </div>
+    <p style="font-size:14px;color:#5a534d;">We'll notify you when your food is out for delivery. Estimated time: <strong>${order.deliveryTime}</strong>.</p>
+    <a href="${APP_URL}/account/orders/${order.id}" style="display:block;background:#B23A3A;color:#fff;font-weight:700;text-align:center;padding:14px;border-radius:10px;text-decoration:none;margin-top:20px;">Track My Order</a>
   `);
-  await send(to, `Order Received — ${order.orderNumber}`, html);
+  await sendEmail(order.customerEmail, `Order Confirmed — ${order.orderNumber}`, html);
 }
 
-// ── 5. Customer Order Confirmed ───────────────────────────────────
-export async function sendOrderConfirmedEmail(to: string, order: Order) {
+// ── Order Status Update ────────────────────────────────────────
+export async function sendOrderStatusUpdateEmail(order: Order, statusLabel: string) {
   const html = emailBase(`
-    <p style="margin:0 0 4px;color:#3D261D;font-size:18px;font-weight:700;">Order Confirmed! ✅ ❤️</p>
-    <p style="margin:0 0 24px;color:#7a6e65;font-size:14px;">Hi ${order.customerName}, great news!</p>
-    <div style="background:#F0FFF4;border-radius:10px;padding:20px;margin-bottom:20px;border-left:4px solid #647545;text-align:center;">
-      <p style="margin:0;color:#647545;font-size:13px;text-transform:uppercase;letter-spacing:1px;">Your Order</p>
-      <p style="margin:8px 0;color:#3D261D;font-size:22px;font-weight:800;">${order.orderNumber}</p>
-      <p style="margin:0;color:#647545;font-size:16px;font-weight:700;">✅ Confirmed</p>
-      <p style="margin:8px 0 0;color:#7a6e65;font-size:13px;">Your homemade food is being prepared with love!</p>
+    <p style="color:#2d2926;font-size:20px;font-weight:900;margin:0 0 4px;">📦 Order Update</p>
+    <p style="color:#5a534d;font-size:14px;margin:0 0 20px;">Hi ${order.customerName}, here's an update on your order:</p>
+    <div style="background:#fff8f0;border:1px solid #fed7aa;padding:16px;border-radius:10px;margin:0 0 20px;">
+      <p style="margin:0;font-size:14px;font-weight:700;color:#B23A3A;">${order.orderNumber}</p>
+      <p style="margin:8px 0 0;font-size:22px;font-weight:900;color:#2d2926;">${statusLabel}</p>
     </div>
-    <div style="background:#f2efe9;border-radius:8px;padding:16px;margin-bottom:16px;">
-      <p style="margin:0 0 6px;color:#3D261D;font-size:13px;font-weight:600;">Order Details</p>
-      <p style="margin:0;color:#7a6e65;font-size:12px;">Total: <strong style="color:#B23A3A;">₹${order.totalAmount}</strong></p>
-      <p style="margin:4px 0;color:#7a6e65;font-size:12px;">📍 ${order.address}, Sector ${order.sector}</p>
-      <p style="margin:4px 0;color:#7a6e65;font-size:12px;">⏰ ${order.deliveryTime}</p>
-      <p style="margin:4px 0;color:#7a6e65;font-size:12px;">Expected delivery: approximately 45 mins – 1 hour</p>
-    </div>
-    <div style="text-align:center;margin-top:20px;">
-      <a href="${APP_URL}/account/orders/${order.id}" style="display:inline-block;background:#647545;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;">Track Your Order →</a>
-    </div>
-    <p style="margin:20px 0 0;color:#7a6e65;font-size:12px;text-align:center;">Thank you for choosing Mummy Food Hub ❤️<br/>Homemade food. Less oil. Less masala.</p>
+    <a href="${APP_URL}/account/orders/${order.id}" style="display:block;background:#B23A3A;color:#fff;font-weight:700;text-align:center;padding:14px;border-radius:10px;text-decoration:none;">View Order Details</a>
   `);
-  await send(to, `Order Confirmed — ${order.orderNumber} ❤️`, html);
+  await sendEmail(order.customerEmail, `Order Update: ${statusLabel} — ${order.orderNumber}`, html);
 }
 
-// ── 6. Order Status Changed ────────────────────────────────────────
-const STATUS_CONFIG: Record<string, { label: string; emoji: string; msg: string; bg: string; border: string }> = {
-  pending:          { label: 'Pending Approval', emoji: '⏳', msg: 'Your order is awaiting confirmation.', bg: '#FFF8F0', border: '#e6a830' },
-  confirmed:        { label: 'Confirmed',         emoji: '✅', msg: 'Your order has been confirmed!', bg: '#F0FFF4', border: '#647545' },
-  preparing:        { label: 'Preparing',         emoji: '👩‍🍳', msg: 'Your homemade food is now being prepared with love!', bg: '#FFF8F0', border: '#e6a830' },
-  out_for_delivery: { label: 'Out for Delivery',  emoji: '🚴', msg: 'Your order is on the way! Please be available at the delivery address.', bg: '#F0F4FF', border: '#3B82F6' },
-  delivered:        { label: 'Delivered',         emoji: '🎉', msg: 'Your order has been delivered. We hope you enjoyed your meal!', bg: '#F0FFF4', border: '#647545' },
-  cancelled:        { label: 'Cancelled',         emoji: '❌', msg: 'Unfortunately, your order has been cancelled. Please contact us if you have questions.', bg: '#FFF3F3', border: '#B23A3A' },
-};
-
-export async function sendOrderStatusEmail(to: string, order: Order, newStatus: string) {
-  const config = STATUS_CONFIG[newStatus] ?? { label: newStatus, emoji: '📋', msg: 'Your order status has been updated.', bg: '#f2efe9', border: '#e6dfd3' };
+// ── Subscription Request: Owner Notification ───────────────────
+export async function sendSubscriptionRequestEmail(request: {
+  userId: string; name: string; email: string; phone: string;
+  planName: string; planId: string; planPrice: number;
+}) {
   const html = emailBase(`
-    <p style="margin:0 0 4px;color:#3D261D;font-size:18px;font-weight:700;">Order Update</p>
-    <p style="margin:0 0 24px;color:#7a6e65;font-size:14px;">Hi ${order.customerName}, your order status has been updated.</p>
-    <div style="background:${config.bg};border-radius:12px;padding:24px;border-left:4px solid ${config.border};text-align:center;margin-bottom:20px;">
-      <p style="margin:0;font-size:32px;">${config.emoji}</p>
-      <p style="margin:8px 0 0;color:#3D261D;font-size:20px;font-weight:800;">${config.label}</p>
-      <p style="margin:8px 0 0;color:#7a6e65;font-size:13px;">${config.msg}</p>
+    <p style="color:#2d2926;font-size:20px;font-weight:900;margin:0 0 4px;">🌟 New Subscription Request!</p>
+    <p style="color:#5a534d;font-size:14px;margin:0 0 20px;">A customer wants to subscribe. Please review and activate from the admin dashboard.</p>
+    <div style="background:#f0fdf4;border-left:4px solid #22c55e;padding:16px;border-radius:0 8px 8px 0;margin:0 0 20px;">
+      <p style="margin:0 0 4px;font-size:14px;"><strong>Name:</strong> ${request.name}</p>
+      <p style="margin:0 0 4px;font-size:14px;"><strong>Email:</strong> ${request.email}</p>
+      <p style="margin:0 0 4px;font-size:14px;"><strong>Phone:</strong> ${request.phone}</p>
+      <p style="margin:0;font-size:14px;"><strong>Plan:</strong> ${request.planName} — ₹${request.planPrice}</p>
     </div>
-    <div style="background:#f2efe9;border-radius:8px;padding:12px 16px;margin-bottom:16px;">
-      <p style="margin:0;color:#7a6e65;font-size:12px;">Order ${order.orderNumber} • ₹${order.totalAmount}</p>
-    </div>
-    ${newStatus !== 'cancelled' ? `
-    <div style="text-align:center;margin-top:16px;">
-      <a href="${APP_URL}/account/orders/${order.id}" style="display:inline-block;background:#B23A3A;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;">Track Order →</a>
-    </div>` : ''}
-    ${newStatus === 'delivered' ? '<p style="margin:20px 0 0;color:#7a6e65;font-size:12px;text-align:center;">Thank you for choosing Mummy Food Hub ❤️ We hope to see you again soon!</p>' : ''}
+    <a href="${APP_URL}/admin" style="display:block;background:#B23A3A;color:#fff;font-weight:700;text-align:center;padding:14px;border-radius:10px;text-decoration:none;">Activate in Admin Dashboard</a>
   `);
-  await send(to, `${config.emoji} ${config.label} — ${order.orderNumber}`, html);
+  await sendEmail(OWNER_EMAIL, `🌟 Subscription Request — ${request.name} (${request.planName})`, html);
 }
 
-// ── 7. Subscription Activated ─────────────────────────────────────
-export async function sendSubscriptionActivatedEmail(to: string, customerName: string, sub: UserSubscription) {
+// ── Subscription Activated: Customer Notification ─────────────
+export async function sendSubscriptionActivatedEmail(to: string, name: string, sub: UserSubscription) {
   const html = emailBase(`
-    <p style="margin:0 0 4px;color:#3D261D;font-size:18px;font-weight:700;">Subscription Activated! 🎉</p>
-    <p style="margin:0 0 24px;color:#7a6e65;font-size:14px;">Hi ${customerName}, your Mummy Food Hub subscription is now active!</p>
-    <div style="background:#F0FFF4;border-radius:10px;border:1px solid #647545;padding:20px;margin-bottom:20px;">
-      <p style="margin:0 0 4px;color:#647545;font-size:16px;font-weight:700;">${sub.planName}</p>
-      <p style="margin:4px 0;color:#7a6e65;font-size:13px;">Start: ${new Date(sub.startDate).toLocaleDateString('en-IN', { day:'numeric',month:'long',year:'numeric' })}</p>
-      <p style="margin:4px 0;color:#7a6e65;font-size:13px;">Expires: ${new Date(sub.endDate).toLocaleDateString('en-IN', { day:'numeric',month:'long',year:'numeric' })}</p>
-      ${sub.totalMeals ? `<p style="margin:4px 0;color:#7a6e65;font-size:13px;">Total Meals: ${sub.totalMeals}</p>` : ''}
-      <div style="margin-top:12px;padding:10px;background:#fff;border-radius:8px;border:1px solid #647545;">
-        <p style="margin:0;color:#647545;font-size:14px;font-weight:700;">🎁 Your Benefit: 10% off every order!</p>
-        <p style="margin:4px 0 0;color:#7a6e65;font-size:12px;">Discount is applied automatically at checkout.</p>
-      </div>
+    <p style="color:#2d2926;font-size:20px;font-weight:900;margin:0 0 4px;">🎉 Subscription Activated!</p>
+    <p style="color:#5a534d;font-size:14px;margin:0 0 20px;">Hi ${name}, your subscription is now active. Enjoy 10% off on all orders!</p>
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:16px;border-radius:10px;margin:0 0 20px;">
+      <p style="margin:0 0 4px;font-size:16px;font-weight:700;color:#15803d;">${sub.planName}</p>
+      <p style="margin:0 0 4px;font-size:13px;color:#166534;">Start: ${new Date(sub.startDate).toLocaleDateString('en-IN')}</p>
+      <p style="margin:0;font-size:13px;color:#166534;">End: ${new Date(sub.endDate).toLocaleDateString('en-IN')}</p>
     </div>
-    <div style="text-align:center;">
-      <a href="${APP_URL}/menu" style="display:inline-block;background:#647545;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;">Order Now →</a>
-    </div>
+    <a href="${APP_URL}/account/subscription" style="display:block;background:#B23A3A;color:#fff;font-weight:700;text-align:center;padding:14px;border-radius:10px;text-decoration:none;">View My Subscription</a>
   `);
-  await send(to, 'Your Mummy Food Hub Subscription is Active! 🎉', html);
+  await sendEmail(to, 'Your Subscription is Active — Mummy Food Hub', html);
 }
 
-// ── 8. Subscription Expiring Soon ─────────────────────────────────
-export async function sendSubscriptionExpiringEmail(to: string, customerName: string, sub: UserSubscription, daysLeft: number) {
+// ── Subscription Expiring Reminder ────────────────────────────
+export async function sendSubscriptionExpiringEmail(to: string, name: string, sub: UserSubscription, daysLeft: number) {
   const html = emailBase(`
-    <p style="margin:0 0 4px;color:#3D261D;font-size:18px;font-weight:700;">Subscription Expiring Soon ⏰</p>
-    <p style="margin:0 0 24px;color:#7a6e65;font-size:14px;">Hi ${customerName}, your subscription expires in <strong style="color:#B23A3A;">${daysLeft} day${daysLeft > 1 ? 's' : ''}</strong>.</p>
-    <div style="background:#FFF8F0;border-radius:10px;border:1px solid #e6a830;padding:20px;margin-bottom:20px;">
-      <p style="margin:0 0 4px;color:#3D261D;font-size:15px;font-weight:700;">${sub.planName}</p>
-      <p style="margin:4px 0;color:#7a6e65;font-size:13px;">Expires: ${new Date(sub.endDate).toLocaleDateString('en-IN', { day:'numeric',month:'long',year:'numeric' })}</p>
-    </div>
-    <p style="color:#7a6e65;font-size:13px;">Renew your subscription to continue enjoying your 10% discount on all orders.</p>
-    <div style="text-align:center;margin-top:20px;">
-      <a href="${APP_URL}/subscription" style="display:inline-block;background:#B23A3A;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;">Renew Subscription →</a>
-    </div>
-    <p style="margin:16px 0 0;color:#7a6e65;font-size:12px;text-align:center;">Or contact us on WhatsApp: <strong>+91 70656 65988</strong></p>
+    <p style="color:#2d2926;font-size:20px;font-weight:900;margin:0 0 4px;">⏰ Subscription Expiring Soon</p>
+    <p style="color:#5a534d;font-size:14px;margin:0 0 20px;">Hi ${name}, your <strong>${sub.planName}</strong> expires in <strong>${daysLeft} day(s)</strong>. Renew to keep enjoying your discount!</p>
+    <a href="${APP_URL}/subscription" style="display:block;background:#B23A3A;color:#fff;font-weight:700;text-align:center;padding:14px;border-radius:10px;text-decoration:none;">Renew My Subscription</a>
   `);
-  await send(to, `Your Mummy Food Hub Subscription Expires in ${daysLeft} Day${daysLeft > 1 ? 's' : ''}`, html);
+  await sendEmail(to, `⏰ Your Subscription Expires in ${daysLeft} Day(s) — Mummy Food Hub`, html);
 }
 
-// ── 9. Subscription Expired ───────────────────────────────────────
-export async function sendSubscriptionExpiredEmail(to: string, customerName: string, sub: UserSubscription) {
+// ── Subscription Expired ───────────────────────────────────────
+export async function sendSubscriptionExpiredEmail(to: string, name: string, sub: UserSubscription) {
   const html = emailBase(`
-    <p style="margin:0 0 4px;color:#3D261D;font-size:18px;font-weight:700;">Subscription Expired</p>
-    <p style="margin:0 0 24px;color:#7a6e65;font-size:14px;">Hi ${customerName}, your <strong>${sub.planName}</strong> subscription has expired.</p>
-    <div style="background:#FFF3F3;border-radius:10px;border:1px solid #B23A3A;padding:20px;margin-bottom:20px;">
-      <p style="margin:0;color:#B23A3A;font-size:13px;">Expired on ${new Date(sub.endDate).toLocaleDateString('en-IN', { day:'numeric',month:'long',year:'numeric' })}</p>
-    </div>
-    <p style="color:#7a6e65;font-size:13px;">To continue enjoying fresh homemade meals with a 10% discount, please renew your subscription.</p>
-    <div style="text-align:center;margin-top:20px;">
-      <a href="${APP_URL}/subscription" style="display:inline-block;background:#B23A3A;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;">Renew Now →</a>
-    </div>
+    <p style="color:#2d2926;font-size:20px;font-weight:900;margin:0 0 4px;">Your Subscription Has Ended</p>
+    <p style="color:#5a534d;font-size:14px;margin:0 0 20px;">Hi ${name}, your <strong>${sub.planName}</strong> has expired. Subscribe again to continue getting 10% off!</p>
+    <a href="${APP_URL}/subscription" style="display:block;background:#B23A3A;color:#fff;font-weight:700;text-align:center;padding:14px;border-radius:10px;text-decoration:none;">Renew Now</a>
   `);
-  await send(to, 'Your Mummy Food Hub Subscription Has Expired', html);
+  await sendEmail(to, 'Subscription Expired — Mummy Food Hub', html);
 }
+
+// ── Aliases ────────────────────────────────────────────────────
+export const sendOwnerNewOrderEmail = sendNewOrderNotificationEmail;
+export const sendOrderStatusEmail = sendOrderStatusUpdateEmail;

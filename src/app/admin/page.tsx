@@ -16,8 +16,8 @@ import {
 const TABS = [
   { id: "dashboard", label: "Dashboard", icon: Home },
   { id: "orders", label: "Orders", icon: ShoppingBag },
-  { id: "users", label: "Users", icon: Menu },
-  { id: "customersubs", label: "Customer Subs", icon: CreditCard },
+  { id: "subrequests", label: "Sub Requests", icon: Bell },
+  { id: "customersubs", label: "Active Subs", icon: CreditCard },
   { id: "coupons", label: "Coupons", icon: Settings },
   { id: "menu", label: "Daily Menu", icon: Menu },
   { id: "catalog", label: "Full Menu Catalog", icon: Menu },
@@ -87,9 +87,11 @@ export default function AdminPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [customerSubs, setCustomerSubs] = useState<any[]>([]);
+  const [subRequests, setSubRequests] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [loadingSubs, setLoadingSubs] = useState(false);
+  const [loadingSubRequests, setLoadingSubRequests] = useState(false);
 
   // Orders Filters
   const [orderStatusFilter, setOrderStatusFilter] = useState("all");
@@ -151,6 +153,18 @@ export default function AdminPage() {
     setLoadingSubs(false);
   }, []);
 
+  const fetchSubRequests = useCallback(async (u: string, p: string) => {
+    setLoadingSubRequests(true);
+    try {
+      const res = await fetch("/api/admin/subscription-requests", {
+        headers: { 'Authorization': 'Basic ' + Buffer.from(`${u}:${p}`).toString('base64') }
+      });
+      const json = await res.json();
+      if (json.requests) setSubRequests(json.requests);
+    } catch {}
+    setLoadingSubRequests(false);
+  }, []);
+
   useEffect(() => {
     const saved = sessionStorage.getItem("admin_auth");
     if (saved) {
@@ -161,8 +175,9 @@ export default function AdminPage() {
       fetchOrders(u, p);
       fetchUsers(u, p);
       fetchCustomerSubs(u, p);
+      fetchSubRequests(u, p);
     }
-  }, [loadData, fetchOrders, fetchUsers, fetchCustomerSubs]);
+  }, [loadData, fetchOrders, fetchUsers, fetchCustomerSubs, fetchSubRequests]);
 
   // Polling for orders
   useEffect(() => {
@@ -252,6 +267,47 @@ export default function AdminPage() {
       }
     } catch (e) {
       alert("Failed to approve order.");
+    }
+  };
+
+  const handleApproveSubRequest = async (requestId: string) => {
+    if (!window.confirm("Approve this subscription request and activate the customer's plan?")) return;
+    try {
+      const res = await fetch("/api/admin/subscription-requests", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': 'Basic ' + Buffer.from(`${creds.u}:${creds.p}`).toString('base64')
+        },
+        body: JSON.stringify({ requestId, action: 'approve' })
+      });
+      if (res.ok) {
+        alert("Subscription activated successfully! Customer notified via email.");
+        fetchSubRequests(creds.u, creds.p);
+        fetchCustomerSubs(creds.u, creds.p);
+      }
+    } catch (e) {
+      alert("Failed to approve subscription request.");
+    }
+  };
+
+  const handleRejectSubRequest = async (requestId: string) => {
+    if (!window.confirm("Reject this subscription request?")) return;
+    try {
+      const res = await fetch("/api/admin/subscription-requests", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': 'Basic ' + Buffer.from(`${creds.u}:${creds.p}`).toString('base64')
+        },
+        body: JSON.stringify({ requestId, action: 'reject' })
+      });
+      if (res.ok) {
+        alert("Subscription request rejected.");
+        fetchSubRequests(creds.u, creds.p);
+      }
+    } catch (e) {
+      alert("Failed to reject subscription request.");
     }
   };
 
@@ -526,8 +582,108 @@ export default function AdminPage() {
               </div>
             )}
 
-            {/* Other tabs omitted for brevity, keeping original logic just simplified for this edit */}
-            {activeTab === "users" && <div className="p-6 bg-white rounded-2xl border border-border"><h2 className="text-xl font-bold">Users (Use original code block here)</h2></div>}
+            {/* SUBSCRIPTION REQUESTS TAB */}
+            {activeTab === "subrequests" && (
+              <div className="bg-white rounded-2xl border border-border shadow-sm">
+                <div className="p-6 border-b border-border flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-heading font-bold text-foreground">🌟 Subscription Requests</h2>
+                    <p className="text-sm text-muted-foreground mt-1">Review and approve customer subscription requests. Customer will be notified via email.</p>
+                  </div>
+                  <button onClick={() => fetchSubRequests(creds.u, creds.p)} className="text-primary text-sm font-bold hover:underline">Refresh</button>
+                </div>
+
+                {loadingSubRequests ? (
+                  <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+                ) : subRequests.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-20">No subscription requests yet.</p>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {subRequests.map(req => (
+                      <div key={req.id} className={`p-6 hover:bg-gray-50 transition-colors ${req.status === 'pending' ? 'bg-orange-50/20' : ''}`}>
+                        <div className="flex flex-col md:flex-row justify-between gap-4">
+                          <div>
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className="font-heading font-bold text-lg text-foreground">{req.name}</span>
+                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
+                                req.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                req.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {req.status}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">{req.email} • {req.phone}</p>
+                            <div className="mt-3 bg-primary/5 border border-primary/20 rounded-xl p-3 inline-block">
+                              <p className="text-sm font-bold text-foreground">{req.planName} — <span className="text-primary">₹{req.planPrice}</span></p>
+                              <p className="text-xs text-muted-foreground mt-0.5">Requested on {new Date(req.createdAt).toLocaleDateString('en-IN')}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            {req.status === 'pending' && (
+                              <>
+                                <button
+                                  onClick={() => handleApproveSubRequest(req.id)}
+                                  className="bg-primary text-white font-bold px-5 py-2.5 rounded-xl hover:bg-primary/90 shadow-md text-sm"
+                                >
+                                  Approve & Activate
+                                </button>
+                                <button
+                                  onClick={() => handleRejectSubRequest(req.id)}
+                                  className="bg-gray-100 text-red-600 font-bold px-4 py-2.5 rounded-xl hover:bg-red-50 text-sm"
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ACTIVE SUBSCRIPTIONS TAB */}
+            {activeTab === "customersubs" && (
+              <div className="bg-white rounded-2xl border border-border shadow-sm">
+                <div className="p-6 border-b border-border flex justify-between items-center">
+                  <h2 className="text-xl font-heading font-bold text-foreground">Active Customer Subscriptions</h2>
+                  <button onClick={() => fetchCustomerSubs(creds.u, creds.p)} className="text-primary text-sm font-bold hover:underline">Refresh</button>
+                </div>
+
+                {loadingSubs ? (
+                  <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+                ) : customerSubs.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-20">No active subscriptions found.</p>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {customerSubs.map(sub => (
+                      <div key={sub.id} className="p-6">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-heading font-bold text-lg">{sub.planName}</h3>
+                            <p className="text-xs text-muted-foreground mt-1">User ID: {sub.userId}</p>
+                            <p className="text-sm font-subheading mt-2">
+                              Valid: {new Date(sub.startDate).toLocaleDateString('en-IN')} → {new Date(sub.endDate).toLocaleDateString('en-IN')}
+                            </p>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            sub.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {sub.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === "users" && <div className="p-6 bg-white rounded-2xl border border-border"><h2 className="text-xl font-bold">Users</h2></div>}
           </motion.div>
         </AnimatePresence>
       </div>

@@ -125,6 +125,7 @@ export type NotificationType =
   | 'subscription_activated'
   | 'subscription_expiring'
   | 'subscription_expired'
+  | 'subscription_rejected'
   | 'new_customer';
 
 export type Notification = {

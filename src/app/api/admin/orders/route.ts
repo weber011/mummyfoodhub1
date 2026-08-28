@@ -63,7 +63,7 @@ export async function PATCH(req: NextRequest) {
       }
       
       // Send confirmation email
-      sendOrderConfirmedEmail(order.customerEmail, order).catch(e => console.error(e));
+      sendOrderConfirmedEmail(order).catch(e => console.error(e));
       createNotification(order.userId, 'order_confirmed', 'Order Confirmed', `Your order ${order.orderNumber} has been confirmed.`, order.id).catch(e => console.error(e));
 
     } else if (status) {

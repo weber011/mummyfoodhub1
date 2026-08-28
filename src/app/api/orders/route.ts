@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Fire-and-forget notifications
-    sendOrderPlacedEmail(session.email, order).catch(err => console.error(err));
+    sendOrderPlacedEmail(order).catch(err => console.error(err));
     sendOwnerNewOrderEmail(order).catch(err => console.error(err));
     
     // Create admin notification

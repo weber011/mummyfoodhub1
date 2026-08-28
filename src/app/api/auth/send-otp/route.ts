@@ -31,14 +31,13 @@ export async function POST(req: NextRequest) {
     }
 
     const isDev = process.env.NODE_ENV !== 'production';
-    const emailConfigured = !!(process.env.GMAIL_APP_PASSWORD);
+    const emailConfigured = !!(process.env.RESEND_API_KEY || process.env.GMAIL_APP_PASSWORD);
     const displayName = existing?.name ?? name ?? undefined;
 
     console.log(`[OTP] ${email} → ${otp}`);
 
-    // Send OTP via email in production when Gmail is configured
+    // Send OTP via email
     if (emailConfigured) {
-      // Fire-and-forget: email failure must never block the API response
       sendOtpEmail(email, otp, displayName).catch((err) =>
         console.error('[send-otp] email send failed:', err?.message)
       );

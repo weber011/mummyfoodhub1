@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { redisGet, redisSet, redisLPush, redisLRange, redisIncr } from './redis';
 import { sendOrderStatusEmail } from './email';
 import type { Order, OrderStatus } from './types';
+import { ORDER_STATUS_LABELS } from './types';
 
 const ORDER_PREFIX = 'order:';
 const MIN_ORDER_VALUE = 79;
@@ -109,7 +110,7 @@ export async function updateOrderStatus(
   if (shouldNotify) {
     await redisSet(lastNotifiedKey, status);
     if (updated.customerEmail) {
-      sendOrderStatusEmail(updated.customerEmail, updated, status).catch((err) =>
+      sendOrderStatusEmail(updated, ORDER_STATUS_LABELS[status] ?? status).catch((err) =>
         console.error('[updateOrderStatus] email send failed:', err?.message)
       );
     }
