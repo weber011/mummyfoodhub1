@@ -7,7 +7,7 @@ function getResendClient() {
   return new Resend(key);
 }
 
-const FROM = 'Mummy Food Hub <onboarding@resend.dev>';
+const FROM = process.env.RESEND_FROM_EMAIL || 'Mummy Food Hub <onboarding@resend.dev>';
 const OWNER_EMAIL = process.env.OWNER_EMAIL ?? 'mummyfoodhub@gmail.com';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://mummyfoodhub.online';
 

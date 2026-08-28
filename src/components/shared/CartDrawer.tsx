@@ -195,6 +195,7 @@ export function CartDrawer() {
           deliveryTime: form.time,
           paymentMethod: form.payment,
           notes: form.notes,
+          customFields: form.customFields,
           idempotencyKey
         }),
       });
@@ -641,6 +642,40 @@ export function CartDrawer() {
                       className="w-full border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary font-subheading resize-none bg-white"
                     />
                   </div>
+
+                  {/* Custom Admin Fields */}
+                  {siteData.orderForm?.fields?.filter((f: any) => !['name', 'phone', 'address', 'instructions', 'mealType'].includes(f.id)).map((field: any) => (
+                    <div key={field.id}>
+                      <label className="text-xs font-bold text-foreground uppercase tracking-wide mb-1 block">{field.label} {field.required && '*'}</label>
+                      {field.type === 'textarea' ? (
+                        <textarea
+                          placeholder={field.placeholder}
+                          value={form.customFields[field.label] || ""}
+                          onChange={(e) => setForm({ ...form, customFields: { ...form.customFields, [field.label]: e.target.value } })}
+                          className="w-full border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary font-subheading resize-none bg-white"
+                        />
+                      ) : field.type === 'select' ? (
+                        <select
+                          value={form.customFields[field.label] || ""}
+                          onChange={(e) => setForm({ ...form, customFields: { ...form.customFields, [field.label]: e.target.value } })}
+                          className="w-full border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary font-subheading bg-white"
+                        >
+                          <option value="">Select option</option>
+                          {field.options?.map((opt: string) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type={field.type}
+                          placeholder={field.placeholder}
+                          value={form.customFields[field.label] || ""}
+                          onChange={(e) => setForm({ ...form, customFields: { ...form.customFields, [field.label]: e.target.value } })}
+                          className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-subheading bg-white"
+                        />
+                      )}
+                    </div>
+                  ))}
                 </div>
 
                 <div className="px-6 py-5 border-t border-border space-y-3 bg-white">
