@@ -188,16 +188,28 @@ export async function sendOrderStatusUpdateEmail(order: Order, statusLabel: stri
 export async function sendSubscriptionRequestEmail(request: {
   userId: string; name: string; email: string; phone: string;
   planName: string; planId: string; planPrice: number;
+  address?: string; sector?: string; landmark?: string;
+  deliveryType?: string; deliveryTime?: string; notes?: string; utr?: string;
 }) {
   const html = emailBase(`
     <p style="color:#2d2926;font-size:20px;font-weight:900;margin:0 0 4px;">🌟 New Subscription Request!</p>
     <p style="color:#5a534d;font-size:14px;margin:0 0 20px;">A customer wants to subscribe. Please review and activate from the admin dashboard.</p>
-    <div style="background:#f0fdf4;border-left:4px solid #22c55e;padding:16px;border-radius:0 8px 8px 0;margin:0 0 20px;">
+    <div style="background:#f0fdf4;border-left:4px solid #22c55e;padding:16px;border-radius:0 8px 8px 0;margin:0 0 16px;">
       <p style="margin:0 0 4px;font-size:14px;"><strong>Name:</strong> ${request.name}</p>
       <p style="margin:0 0 4px;font-size:14px;"><strong>Email:</strong> ${request.email}</p>
       <p style="margin:0 0 4px;font-size:14px;"><strong>Phone:</strong> ${request.phone}</p>
       <p style="margin:0;font-size:14px;"><strong>Plan:</strong> ${request.planName} — ₹${request.planPrice}</p>
     </div>
+    ${request.address ? `
+    <div style="background:#fff8f0;border-left:4px solid #f97316;padding:16px;border-radius:0 8px 8px 0;margin:0 0 16px;">
+      <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:#c2410c;">Delivery Details</p>
+      <p style="margin:0 0 4px;font-size:14px;"><strong>Address:</strong> ${request.address}, Sector ${request.sector}</p>
+      ${request.landmark ? `<p style="margin:0 0 4px;font-size:14px;"><strong>Landmark:</strong> ${request.landmark}</p>` : ''}
+      <p style="margin:0 0 4px;font-size:14px;"><strong>Delivery Type:</strong> ${request.deliveryType}</p>
+      <p style="margin:0;font-size:14px;"><strong>Delivery Time:</strong> ${request.deliveryTime}</p>
+    </div>` : ''}
+    ${request.utr ? `<div style="background:#f5f3ff;border:1px solid #c4b5fd;padding:12px;border-radius:8px;margin:0 0 16px;font-size:14px;"><strong>💳 UTR / Transaction ID:</strong> <span style="font-family:monospace;font-weight:900;color:#7c3aed;">${request.utr}</span></div>` : ''}
+    ${request.notes ? `<p style="background:#fff3cd;padding:12px;border-radius:8px;font-size:13px;margin:0 0 16px;">📝 <strong>Notes:</strong> ${request.notes}</p>` : ''}
     <a href="${APP_URL}/admin" style="display:block;background:#B23A3A;color:#fff;font-weight:700;text-align:center;padding:14px;border-radius:10px;text-decoration:none;">Activate in Admin Dashboard</a>
   `);
   await sendEmail(OWNER_EMAIL, `🌟 Subscription Request — ${request.name} (${request.planName})`, html);
@@ -236,6 +248,43 @@ export async function sendSubscriptionExpiredEmail(to: string, name: string, sub
     <a href="${APP_URL}/subscription" style="display:block;background:#B23A3A;color:#fff;font-weight:700;text-align:center;padding:14px;border-radius:10px;text-decoration:none;">Renew Now</a>
   `);
   await sendEmail(to, 'Subscription Expired — Mummy Food Hub', html);
+}
+
+// ── Daily Delivery Notification: Customer ─────────────────────
+export async function sendDeliveryNotificationEmail(
+  to: string, name: string, planName: string,
+  date: string, status: string, notes: string,
+) {
+  const statusEmoji = status === 'delivered' ? '✅' : status === 'skipped' ? '⏸️' : '❌';
+  const statusText = status === 'delivered' ? 'Delivered' : status === 'skipped' ? 'Skipped for Today' : 'Issue Reported';
+  const html = emailBase(`
+    <p style="color:#2d2926;font-size:20px;font-weight:900;margin:0 0 4px;">${statusEmoji} Delivery Update</p>
+    <p style="color:#5a534d;font-size:14px;margin:0 0 20px;">Hi ${name}, here is today's delivery update for your <strong>${planName}</strong>.</p>
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;padding:16px;border-radius:10px;margin:0 0 20px;text-align:center;">
+      <p style="margin:0 0 4px;font-size:14px;color:#6b7280;">Date: ${new Date(date).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+      <p style="margin:0;font-size:22px;font-weight:900;color:#2d2926;">${statusText}</p>
+      ${notes ? `<p style="margin:8px 0 0;font-size:13px;color:#6b7280;">${notes}</p>` : ''}
+    </div>
+    <a href="${APP_URL}/account/subscription" style="display:block;background:#B23A3A;color:#fff;font-weight:700;text-align:center;padding:14px;border-radius:10px;text-decoration:none;">View My Subscription</a>
+  `);
+  await sendEmail(to, `${statusEmoji} Delivery Update — ${new Date(date).toLocaleDateString('en-IN')}`, html);
+}
+
+// ── Offline Subscriber Welcome ─────────────────────────────────
+export async function sendOfflineSubscriberWelcomeEmail(to: string, name: string, sub: UserSubscription) {
+  const html = emailBase(`
+    <p style="color:#2d2926;font-size:20px;font-weight:900;margin:0 0 4px;">Welcome to Mummy Food Hub! 🍱</p>
+    <p style="color:#5a534d;font-size:14px;margin:0 0 20px;">Hi ${name}, your monthly meal subscription has been activated. Get ready to enjoy fresh homemade food every day!</p>
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:16px;border-radius:10px;margin:0 0 16px;">
+      <p style="margin:0 0 4px;font-size:16px;font-weight:700;color:#15803d;">${sub.planName}</p>
+      <p style="margin:0 0 4px;font-size:13px;color:#166534;">Start: ${new Date(sub.startDate).toLocaleDateString('en-IN')}</p>
+      <p style="margin:0 0 4px;font-size:13px;color:#166534;">End: ${new Date(sub.endDate).toLocaleDateString('en-IN')}</p>
+      ${sub.deliveryTime ? `<p style="margin:4px 0 0;font-size:13px;color:#166534;"><strong>Delivery:</strong> ${sub.deliveryTime} • ${sub.deliveryType}</p>` : ''}
+    </div>
+    <p style="font-size:13px;color:#5a534d;margin:0 0 20px;">For any queries, reach us on WhatsApp: <strong>+91 70656 65988</strong></p>
+    <a href="${APP_URL}/subscription" style="display:block;background:#B23A3A;color:#fff;font-weight:700;text-align:center;padding:14px;border-radius:10px;text-decoration:none;">View Subscription Plans</a>
+  `);
+  await sendEmail(to, 'Welcome! Your Mummy Food Hub Subscription is Active 🎉', html);
 }
 
 // ── Aliases ────────────────────────────────────────────────────

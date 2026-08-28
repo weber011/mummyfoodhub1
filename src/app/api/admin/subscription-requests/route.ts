@@ -41,23 +41,38 @@ export async function PATCH(req: NextRequest) {
     const start = startDate || new Date().toISOString().split('T')[0];
     const end = endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
+    const user = await getUserById(subReq.userId);
+
+    // Create subscription with all delivery details stored
     const sub = await createSubscription({
       userId: subReq.userId,
       planId: subReq.planId,
       planName: subReq.planName,
+      planPrice: subReq.planPrice,
       startDate: start,
       endDate: end,
       status: 'active',
       totalMeals: totalMeals ? Number(totalMeals) : undefined,
       usedMeals: 0,
       discountPercentage: 10,
+      // Store all delivery details on the subscription record
+      customerName: subReq.name,
+      customerEmail: subReq.email,
+      customerPhone: subReq.phone,
+      address: subReq.address,
+      sector: subReq.sector,
+      landmark: subReq.landmark,
+      deliveryType: subReq.deliveryType,
+      deliveryTime: subReq.deliveryTime,
+      notes: subReq.notes,
+      utr: subReq.utr,
+      isOffline: false,
     });
 
     // Mark request as approved
-    await redisSet(`sub_request:${requestId}`, { ...subReq, status: 'approved', approvedAt: new Date().toISOString() });
-    await redisSet(`sub_request:${subReq.userId}`, { ...subReq, status: 'approved' });
+    await redisSet(`sub_request:${requestId}`, { ...subReq, status: 'approved', approvedAt: new Date().toISOString(), subscriptionId: sub.id });
+    await redisSet(`sub_request:${subReq.userId}`, { ...subReq, status: 'approved', subscriptionId: sub.id });
 
-    const user = await getUserById(subReq.userId);
     if (user) {
       sendSubscriptionActivatedEmail(user.email, user.name, sub).catch(e => console.error(e));
       createNotification(subReq.userId, 'subscription_activated', 'Subscription Activated!', `Your ${subReq.planName} subscription is now active.`).catch(e => console.error(e));

@@ -1,11 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle, Info, Loader2, X, Phone } from "lucide-react";
+import QRCode from "react-qr-code";
+import {
+  CheckCircle, Info, Loader2, X, Phone, MapPin,
+  ChevronDown, ArrowLeft, ArrowRight, Clock, Send,
+} from "lucide-react";
 import Link from "next/link";
 import { useSiteData } from "@/context/SiteContext";
 import { useAuth } from "@/context/AuthContext";
+
+const SECTOR_OPTIONS = [
+  { value: "106", label: "Sector 106" },
+  { value: "104", label: "Sector 104" },
+  { value: "107", label: "Sector 107" },
+  { value: "108", label: "Sector 108" },
+  { value: "82",  label: "Sector 82" },
+  { value: "93",  label: "Sector 93" },
+  { value: "133", label: "Sector 133" },
+  { value: "101", label: "Sector 101" },
+  { value: "135", label: "Sector 135" },
+];
 
 export default function SubscriptionPage() {
   const { siteData } = useSiteData();
@@ -13,20 +29,58 @@ export default function SubscriptionPage() {
   const plans = siteData.subscriptionPlans;
 
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
-  const [phone, setPhone] = useState(user?.phone ?? "");
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
-  const handleRequest = async () => {
-    if (!user) {
-      window.location.href = "/login";
-      return;
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    address: "",
+    sector: "106",
+    landmark: "",
+    deliveryType: "Office Gate",
+    deliveryTime: "Lunch (12:30 - 2 PM)",
+    notes: "",
+    utr: "",
+  });
+
+  // Pre-fill from user when modal opens
+  useEffect(() => {
+    if (user) {
+      setForm(f => ({ ...f, name: user.name || f.name, phone: user.phone || f.phone }));
     }
-    if (!phone || phone.replace(/\D/g, "").length < 10) {
-      setError("Please enter a valid 10-digit phone number.");
-      return;
-    }
+  }, [user]);
+
+  const openPlan = (plan: any) => {
+    setSelectedPlan(plan);
+    setStep(1);
+    setError("");
+  };
+
+  const closeModal = () => {
+    setSelectedPlan(null);
+    setStep(1);
+    setError("");
+  };
+
+  const validateStep1 = () => {
+    if (!form.name.trim()) return "Please enter your name.";
+    if (!form.phone.replace(/\D/g, "").length || form.phone.replace(/\D/g, "").length < 10) return "Please enter a valid 10-digit phone number.";
+    if (!form.address.trim()) return "Please enter your building / society name.";
+    return "";
+  };
+
+  const handleNext = () => {
+    const err = validateStep1();
+    if (err) { setError(err); return; }
+    setError("");
+    setStep(2);
+  };
+
+  const handleSubmit = async () => {
+    if (!user) { window.location.href = "/login"; return; }
+    if (!form.utr.trim()) { setError("Please enter your UPI Transaction ID (UTR) to confirm payment."); return; }
     setSubmitting(true);
     setError("");
     try {
@@ -37,19 +91,22 @@ export default function SubscriptionPage() {
           planId: selectedPlan.id,
           planName: selectedPlan.name,
           planPrice: selectedPlan.price,
-          phone,
+          ...form,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to submit request");
-      setSuccess(data.message || "Request submitted!");
-      setSelectedPlan(null);
+      setStep(3);
     } catch (e: any) {
       setError(e.message);
     } finally {
       setSubmitting(false);
     }
   };
+
+  const upiId = siteData.settings?.upiId || "anmol.srivastava01@kotak";
+  const upiAmount = selectedPlan?.price || 0;
+  const upiUrl = `upi://pay?pa=${upiId}&pn=MUMMY%20FOOD%20HUB&am=${upiAmount}&cu=INR`;
 
   return (
     <div className="pt-20 pb-20 bg-background min-h-screen">
@@ -62,18 +119,6 @@ export default function SubscriptionPage() {
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        
-        {/* Success Message */}
-        {success && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl mx-auto mb-10 bg-green-50 border border-green-200 text-green-800 p-5 rounded-2xl flex items-start gap-3 shadow-sm">
-            <CheckCircle className="w-6 h-6 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-bold text-lg">Request Submitted!</p>
-              <p className="text-sm mt-1">{success}</p>
-            </div>
-          </motion.div>
-        )}
-
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto mb-20 items-center">
           {plans.map((plan: any, idx: number) => (
@@ -84,9 +129,9 @@ export default function SubscriptionPage() {
               viewport={{ once: true }}
               transition={{ delay: idx * 0.1 }}
               className={`relative bg-white rounded-2xl p-8 border ${
-                plan.recommended 
-                  ? 'border-primary shadow-2xl scale-100 md:scale-105 z-10' 
-                  : 'border-border shadow-lg'
+                plan.recommended
+                  ? "border-primary shadow-2xl scale-100 md:scale-105 z-10"
+                  : "border-border shadow-lg"
               }`}
             >
               {plan.recommended && (
@@ -99,15 +144,12 @@ export default function SubscriptionPage() {
                   Save {plan.savings}
                 </div>
               )}
-              
               <h3 className="text-xl font-heading font-bold text-foreground mb-2 text-center">{plan.name}</h3>
               <div className="text-center mb-6">
                 <span className="text-4xl font-heading font-black text-primary">₹{plan.price}</span>
                 <span className="text-muted-foreground text-sm">/{plan.duration}</span>
               </div>
-              
               <div className="w-full h-px bg-border mb-6" />
-              
               <ul className="space-y-4 mb-8 flex-grow">
                 {plan.features.map((feature: string, i: number) => (
                   <li key={i} className="flex items-start gap-3 text-sm text-foreground/80 font-subheading">
@@ -116,13 +158,12 @@ export default function SubscriptionPage() {
                   </li>
                 ))}
               </ul>
-              
               <button
-                onClick={() => { setSelectedPlan(plan); setSuccess(""); setError(""); }}
+                onClick={() => openPlan(plan)}
                 className={`w-full block text-center font-bold py-3 rounded-lg transition-colors ${
                   plan.recommended
-                    ? 'bg-primary text-white hover:bg-primary/90'
-                    : 'bg-primary/10 text-primary hover:bg-primary hover:text-white'
+                    ? "bg-primary text-white hover:bg-primary/90"
+                    : "bg-primary/10 text-primary hover:bg-primary hover:text-white"
                 }`}
               >
                 Subscribe Now
@@ -131,7 +172,7 @@ export default function SubscriptionPage() {
           ))}
         </div>
 
-        {/* Benefits Section */}
+        {/* Benefits */}
         <div className="max-w-5xl mx-auto mb-16">
           <div className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl font-heading font-bold text-foreground mb-3">Why Subscribe?</h2>
@@ -164,7 +205,7 @@ export default function SubscriptionPage() {
           </div>
         </div>
 
-        {/* Info Section */}
+        {/* T&C */}
         <div className="max-w-4xl mx-auto bg-muted p-8 rounded-2xl border border-border mb-16">
           <div className="flex items-start gap-4">
             <Info className="w-6 h-6 text-primary shrink-0 mt-1" />
@@ -181,23 +222,22 @@ export default function SubscriptionPage() {
           </div>
         </div>
 
-        {/* Bulk Orders Section */}
+        {/* Bulk Orders */}
         <div className="mt-4 bg-primary/10 rounded-2xl border border-primary/20 p-8 text-center max-w-4xl mx-auto">
           <h2 className="text-3xl font-heading font-bold text-foreground mb-4">Planning a Party or Corporate Event?</h2>
           <p className="text-muted-foreground font-subheading mb-6 max-w-2xl mx-auto">
             We accept bulk orders for parties, office lunches, and special occasions. Contact us to discuss.
           </p>
-          <Link 
+          <Link
             href="/contact"
             className="inline-flex items-center gap-2 bg-primary text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-primary/90 transition-colors"
           >
             Contact Us for Bulk Orders
           </Link>
         </div>
-
       </div>
 
-      {/* Subscription Request Modal */}
+      {/* ── Subscription Modal ── */}
       <AnimatePresence>
         {selectedPlan && (
           <motion.div
@@ -205,64 +245,277 @@ export default function SubscriptionPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
-            onClick={(e) => e.target === e.currentTarget && setSelectedPlan(null)}
+            onClick={(e) => e.target === e.currentTarget && closeModal()}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl"
+              className="bg-white rounded-3xl w-full max-w-lg shadow-2xl max-h-[92vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-heading font-black text-foreground">Subscribe</h2>
-                <button onClick={() => setSelectedPlan(null)} className="p-2 rounded-full hover:bg-gray-100 transition-colors">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border sticky top-0 bg-white z-10 rounded-t-3xl">
+                {step > 1 && step < 3 ? (
+                  <button onClick={() => { setStep(s => (s - 1) as 1 | 2 | 3); setError(""); }} className="p-2 rounded-full hover:bg-gray-100">
+                    <ArrowLeft className="w-5 h-5 text-foreground" />
+                  </button>
+                ) : <div className="w-9" />}
+                <div className="text-center">
+                  <h2 className="text-xl font-heading font-black text-foreground">
+                    {step === 3 ? "Request Sent!" : "Subscribe"}
+                  </h2>
+                  {step < 3 && (
+                    <p className="text-xs text-muted-foreground mt-0.5">Step {step} of 2</p>
+                  )}
+                </div>
+                <button onClick={closeModal} className="p-2 rounded-full hover:bg-gray-100">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-6">
-                <p className="font-bold text-foreground font-heading text-lg">{selectedPlan.name}</p>
-                <p className="text-primary font-black text-2xl mt-1">₹{selectedPlan.price} <span className="text-sm text-muted-foreground font-normal">/{selectedPlan.duration}</span></p>
+              <div className="px-6 pb-6 pt-4">
+                {/* Plan Summary */}
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-5">
+                  <p className="font-bold text-foreground font-heading">{selectedPlan.name}</p>
+                  <p className="text-primary font-black text-2xl mt-1">
+                    ₹{selectedPlan.price}{" "}
+                    <span className="text-sm text-muted-foreground font-normal">/{selectedPlan.duration}</span>
+                  </p>
+                </div>
+
+                {!user ? (
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground mb-4">Please login first to subscribe.</p>
+                    <Link href="/login" className="block w-full bg-primary text-white font-bold py-3 rounded-xl text-center hover:bg-primary/90 transition-colors">
+                      Login to Continue
+                    </Link>
+                  </div>
+                ) : (
+                  <AnimatePresence mode="wait">
+                    {/* ── STEP 1: Delivery Details ── */}
+                    {step === 1 && (
+                      <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                        <p className="text-xs font-bold text-primary uppercase tracking-wider">Delivery Details</p>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-bold text-foreground mb-1">Your Name *</label>
+                            <input
+                              type="text"
+                              value={form.name}
+                              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                              placeholder="e.g. Rahul"
+                              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-subheading"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-foreground mb-1">Phone *</label>
+                            <div className="relative">
+                              <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                              <input
+                                type="tel"
+                                value={form.phone}
+                                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                                placeholder="9876543210"
+                                className="w-full pl-8 pr-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-subheading"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-foreground mb-1">Building / Society Name *</label>
+                          <input
+                            type="text"
+                            value={form.address}
+                            onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+                            placeholder="e.g. ATS Village, Logix City"
+                            className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-subheading"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-bold text-foreground mb-1">Sector *</label>
+                            <div className="relative">
+                              <select
+                                value={form.sector}
+                                onChange={e => setForm(f => ({ ...f, sector: e.target.value }))}
+                                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-subheading appearance-none"
+                              >
+                                {SECTOR_OPTIONS.map(s => (
+                                  <option key={s.value} value={s.value}>{s.label}</option>
+                                ))}
+                              </select>
+                              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-foreground mb-1">Landmark</label>
+                            <div className="relative">
+                              <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                              <input
+                                type="text"
+                                value={form.landmark}
+                                onChange={e => setForm(f => ({ ...f, landmark: e.target.value }))}
+                                placeholder="Near park..."
+                                className="w-full pl-8 pr-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-subheading"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-bold text-foreground mb-1">Deliver To</label>
+                            <div className="relative">
+                              <select
+                                value={form.deliveryType}
+                                onChange={e => setForm(f => ({ ...f, deliveryType: e.target.value }))}
+                                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-subheading appearance-none"
+                              >
+                                <option>Office Gate</option>
+                                <option>Main Gate of House</option>
+                                <option>Doorstep</option>
+                              </select>
+                              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-foreground mb-1">Delivery Time</label>
+                            <div className="relative">
+                              <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                              <select
+                                value={form.deliveryTime}
+                                onChange={e => setForm(f => ({ ...f, deliveryTime: e.target.value }))}
+                                className="w-full pl-8 pr-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-subheading appearance-none"
+                              >
+                                <option>Lunch (12:30 - 2 PM)</option>
+                                <option>Dinner (8:00 - 9:30 PM)</option>
+                                <option>Morning (9 - 10 AM)</option>
+                              </select>
+                              <ChevronDown className="pointer-events-none absolute right-9 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none hidden" />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-foreground mb-1">Special Notes</label>
+                          <textarea
+                            rows={2}
+                            value={form.notes}
+                            onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                            placeholder="Any special instructions for delivery..."
+                            className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-subheading resize-none"
+                          />
+                        </div>
+
+                        {error && <p className="text-red-500 text-sm font-bold bg-red-50 p-3 rounded-lg">{error}</p>}
+
+                        <button
+                          onClick={handleNext}
+                          className="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+                        >
+                          Proceed to Payment <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </motion.div>
+                    )}
+
+                    {/* ── STEP 2: Payment ── */}
+                    {step === 2 && (
+                      <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                        <p className="text-xs font-bold text-primary uppercase tracking-wider">Payment</p>
+                        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-center space-y-3">
+                          <p className="text-sm font-bold text-foreground">
+                            Scan to Pay: <span className="text-primary text-xl">₹{selectedPlan.price}</span>
+                          </p>
+                          <div className="bg-white p-3 inline-block rounded-xl shadow-sm border border-border">
+                            <QRCode value={upiUrl} size={150} />
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground font-subheading mb-2">Or tap to pay via app (Mobile only):</p>
+                            <div className="flex flex-wrap justify-center gap-2">
+                              <a href={`gpay://upi/pay?pa=${upiId}&pn=MUMMY%20FOOD%20HUB&am=${upiAmount}&cu=INR`}
+                                className="px-3 py-1.5 bg-white hover:bg-gray-50 border border-border rounded-lg text-xs font-bold text-gray-700 shadow-sm transition-colors">
+                                GPay
+                              </a>
+                              <a href={`phonepe://pay?pa=${upiId}&pn=MUMMY%20FOOD%20HUB&am=${upiAmount}&cu=INR`}
+                                className="px-3 py-1.5 bg-white hover:bg-gray-50 border border-border rounded-lg text-xs font-bold text-gray-700 shadow-sm transition-colors">
+                                PhonePe
+                              </a>
+                              <a href={`paytmmp://pay?pa=${upiId}&pn=MUMMY%20FOOD%20HUB&am=${upiAmount}&cu=INR`}
+                                className="px-3 py-1.5 bg-white hover:bg-gray-50 border border-border rounded-lg text-xs font-bold text-gray-700 shadow-sm transition-colors">
+                                Paytm
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-foreground mb-1">
+                            Transaction ID / UTR No. (after payment) *
+                          </label>
+                          <input
+                            type="text"
+                            value={form.utr}
+                            onChange={e => setForm(f => ({ ...f, utr: e.target.value }))}
+                            placeholder="Enter 12-digit UTR / Reference No."
+                            className="w-full border border-primary/30 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors font-subheading text-center"
+                          />
+                          <p className="text-[11px] text-muted-foreground mt-1.5 font-subheading">
+                            Found in your UPI app under payment history / transaction details.
+                          </p>
+                        </div>
+
+                        {error && <p className="text-red-500 text-sm font-bold bg-red-50 p-3 rounded-lg">{error}</p>}
+
+                        <button
+                          onClick={handleSubmit}
+                          disabled={submitting}
+                          className="w-full bg-primary text-white font-bold py-4 rounded-xl shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                        >
+                          {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-4 h-4" />}
+                          {submitting ? "Submitting..." : "Submit Subscription Request"}
+                        </button>
+                      </motion.div>
+                    )}
+
+                    {/* ── STEP 3: Success ── */}
+                    {step === 3 && (
+                      <motion.div key="step3" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-4 space-y-5">
+                        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                          <CheckCircle className="w-10 h-10 text-green-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-heading font-black text-foreground mb-2">Request Submitted!</h3>
+                          <p className="text-muted-foreground font-subheading text-sm leading-relaxed">
+                            We have received your subscription request for <strong>{selectedPlan.name}</strong>.
+                            Our team will verify your payment and{" "}
+                            <strong className="text-primary">contact you soon</strong> to activate your plan.
+                          </p>
+                        </div>
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left space-y-1.5 text-sm">
+                          <p className="font-bold text-amber-800">What happens next?</p>
+                          <p className="text-amber-700 font-subheading">1. We verify your UTR payment reference</p>
+                          <p className="text-amber-700 font-subheading">2. Admin activates your plan (usually within 2–4 hrs)</p>
+                          <p className="text-amber-700 font-subheading">3. You receive a confirmation email + your dashboard unlocks</p>
+                        </div>
+                        <a
+                          href={`https://wa.me/917065665988?text=Hi!%20I%20just%20submitted%20a%20subscription%20request%20for%20${encodeURIComponent(selectedPlan.name)}%20(₹${selectedPlan.price}).%20UTR:%20${encodeURIComponent(form.utr)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-2 w-full bg-[#25D366] text-white font-bold py-3 rounded-xl hover:bg-[#20b858] transition-colors"
+                        >
+                          💬 WhatsApp Us for Quick Confirmation
+                        </a>
+                        <button onClick={closeModal} className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                          Close
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                )}
               </div>
-
-              {!user ? (
-                <div className="text-center">
-                  <p className="text-muted-foreground mb-4">Please login first to subscribe.</p>
-                  <Link href="/login" className="block w-full bg-primary text-white font-bold py-3 rounded-xl text-center hover:bg-primary/90 transition-colors">
-                    Login to Continue
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-bold text-foreground mb-2">Your Phone Number</label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="10-digit mobile number"
-                        className="w-full pl-10 pr-4 py-3 border border-border rounded-xl focus:outline-none focus:border-primary font-subheading"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-sm text-yellow-800">
-                    <strong>How it works:</strong> Submit your request, make the payment via UPI/cash to us, and our team will activate your subscription within a few hours.
-                  </div>
-
-                  {error && <p className="text-red-500 text-sm font-bold bg-red-50 p-3 rounded-lg">{error}</p>}
-
-                  <button
-                    onClick={handleRequest}
-                    disabled={submitting}
-                    className="w-full bg-primary text-white font-bold py-4 rounded-xl shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
-                  >
-                    {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Send Subscription Request"}
-                  </button>
-                </div>
-              )}
             </motion.div>
           </motion.div>
         )}

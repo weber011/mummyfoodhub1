@@ -5,7 +5,7 @@ import { redisSet, redisGet, redisLPush } from '@/lib/redis';
 import { sendSubscriptionRequestEmail } from '@/lib/email';
 import { randomUUID } from 'crypto';
 
-// POST: Customer requests a subscription
+// POST: Customer requests a subscription (full details)
 export async function POST(req: NextRequest) {
   try {
     const session = await getSessionFromRequest(req);
@@ -17,9 +17,17 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: 'User not found.' }, { status: 404 });
 
     const body = await req.json();
-    const { planId, planName, planPrice, phone } = body;
+    const {
+      planId, planName, planPrice,
+      phone, address, sector, landmark,
+      deliveryType, deliveryTime, notes, utr,
+    } = body;
+
     if (!planId || !planName || !planPrice) {
       return NextResponse.json({ error: 'Plan details required.' }, { status: 400 });
+    }
+    if (!address || !sector) {
+      return NextResponse.json({ error: 'Address and sector are required.' }, { status: 400 });
     }
 
     // Check if already has pending request
@@ -38,6 +46,13 @@ export async function POST(req: NextRequest) {
       planId,
       planName,
       planPrice,
+      address,
+      sector,
+      landmark: landmark || '',
+      deliveryType: deliveryType || 'Office Gate',
+      deliveryTime: deliveryTime || 'Lunch (12:30 - 2 PM)',
+      notes: notes || '',
+      utr: utr || '',
       status: 'pending',
       createdAt: new Date().toISOString(),
     };
@@ -46,7 +61,7 @@ export async function POST(req: NextRequest) {
     await redisSet(`sub_request:${session.userId}`, subRequest); // user lookup key
     await redisLPush('sub_requests:all', requestId);
 
-    // Notify owner by email
+    // Notify owner by email with full details
     sendSubscriptionRequestEmail({
       userId: session.userId,
       name: user.name,
@@ -55,9 +70,19 @@ export async function POST(req: NextRequest) {
       planName,
       planId,
       planPrice,
+      address,
+      sector,
+      landmark: subRequest.landmark,
+      deliveryType: subRequest.deliveryType,
+      deliveryTime: subRequest.deliveryTime,
+      notes: subRequest.notes,
+      utr: subRequest.utr,
     }).catch(e => console.error('[sub request email]', e));
 
-    return NextResponse.json({ success: true, message: 'Your subscription request has been sent! We will activate it after verifying your payment.' });
+    return NextResponse.json({
+      success: true,
+      message: 'Your subscription request has been sent! We will contact you soon and activate your plan after payment verification.',
+    });
   } catch (e: any) {
     console.error('[subscriptions POST]', e);
     return NextResponse.json({ error: 'Server error.' }, { status: 500 });

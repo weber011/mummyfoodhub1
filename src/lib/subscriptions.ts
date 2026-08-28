@@ -1,8 +1,9 @@
 import { randomUUID } from 'crypto';
 import { redisGet, redisSet, redisLPush, redisLRange } from './redis';
-import type { UserSubscription } from './types';
+import type { UserSubscription, SubscriptionDelivery } from './types';
 
 const SUB_PREFIX = 'subscription:';
+const DELIVERY_PREFIX = 'sub_delivery:';
 
 export async function getUserSubscriptions(userId: string): Promise<UserSubscription[]> {
   const ids = await redisLRange<string>(`subscriptions:user:${userId}`, 0, 49);
@@ -50,4 +51,34 @@ export function getRemainingDays(endDate: string): number {
 export function getRemainingMeals(sub: UserSubscription): number | null {
   if (!sub.totalMeals) return null;
   return Math.max(0, sub.totalMeals - (sub.usedMeals ?? 0));
+}
+
+// ── Delivery Log ──────────────────────────────────────────────────
+
+export async function logDelivery(entry: Omit<SubscriptionDelivery, 'id' | 'loggedAt'>): Promise<SubscriptionDelivery> {
+  const id = randomUUID();
+  const delivery: SubscriptionDelivery = { ...entry, id, loggedAt: new Date().toISOString() };
+  await redisSet(`${DELIVERY_PREFIX}${id}`, delivery);
+  await redisLPush(`sub_deliveries:sub:${entry.subscriptionId}`, id);
+  await redisLPush(`sub_deliveries:user:${entry.userId}`, id);
+  // Increment usedMeals on the subscription when status is 'delivered'
+  if (entry.status === 'delivered') {
+    const sub = await redisGet<UserSubscription>(`${SUB_PREFIX}${entry.subscriptionId}`);
+    if (sub) {
+      await redisSet(`${SUB_PREFIX}${entry.subscriptionId}`, { ...sub, usedMeals: (sub.usedMeals ?? 0) + 1 });
+    }
+  }
+  return delivery;
+}
+
+export async function getDeliveryLog(subscriptionId: string): Promise<SubscriptionDelivery[]> {
+  const ids = await redisLRange<string>(`sub_deliveries:sub:${subscriptionId}`, 0, 999);
+  const entries = await Promise.all(ids.map(id => redisGet<SubscriptionDelivery>(`${DELIVERY_PREFIX}${id}`)));
+  return (entries.filter(Boolean) as SubscriptionDelivery[]).sort((a, b) => b.date.localeCompare(a.date));
+}
+
+export async function getUserDeliveryLog(userId: string): Promise<SubscriptionDelivery[]> {
+  const ids = await redisLRange<string>(`sub_deliveries:user:${userId}`, 0, 999);
+  const entries = await Promise.all(ids.map(id => redisGet<SubscriptionDelivery>(`${DELIVERY_PREFIX}${id}`)));
+  return (entries.filter(Boolean) as SubscriptionDelivery[]).sort((a, b) => b.date.localeCompare(a.date));
 }

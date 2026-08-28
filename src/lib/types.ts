@@ -97,14 +97,63 @@ export type UserSubscription = {
   userId: string;
   planId: string;
   planName: string;
+  planPrice?: number;
   startDate: string;
   endDate: string;
-  status: 'active' | 'expired' | 'cancelled';
+  status: 'pending' | 'active' | 'expired' | 'cancelled';
   discountPercentage: number; // default 10
   totalMeals?: number;
   usedMeals?: number;
   reminderSentAt?: string;   // idempotency: only send 3-day reminder once
   createdAt: string;
+  // Delivery details (stored at subscription time)
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  address?: string;
+  sector?: string;
+  landmark?: string;
+  deliveryType?: string;
+  deliveryTime?: string;
+  notes?: string;
+  utr?: string;
+  isOffline?: boolean; // true if admin manually added (cash customer)
+};
+
+export type SubscriptionRequest = {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  phone: string;
+  planId: string;
+  planName: string;
+  planPrice: number;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  approvedAt?: string;
+  rejectedAt?: string;
+  // Delivery details
+  address: string;
+  sector: string;
+  landmark?: string;
+  deliveryType: string;
+  deliveryTime: string;
+  notes?: string;
+  utr?: string;
+};
+
+export type DeliveryStatus = 'delivered' | 'skipped' | 'issue' | 'pending';
+
+export type SubscriptionDelivery = {
+  id: string;
+  subscriptionId: string;
+  userId: string;
+  date: string;            // YYYY-MM-DD
+  status: DeliveryStatus;
+  notes?: string;
+  notifyCustomer?: boolean;
+  loggedAt: string;        // ISO timestamp when admin logged it
 };
 
 export type Coupon = {

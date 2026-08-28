@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LogOut, Save, Plus, Trash2, Edit2, ChevronDown, ChevronUp,
   Menu, Settings, ShoppingBag, Home, CreditCard, Phone, Eye, EyeOff,
-  CheckCircle, AlertCircle, Loader2, ToggleLeft, ToggleRight, X, Upload, ImageIcon, Bell, Search, Filter
+  CheckCircle, AlertCircle, Loader2, ToggleLeft, ToggleRight, X, Upload, ImageIcon, Bell, Search, Filter,
+  Calendar, MapPin, Clock, Send, Utensils, Check, UserPlus, ListOrdered, History, RefreshCw
 } from "lucide-react";
 
 const TABS = [
@@ -46,6 +47,41 @@ export default function AdminPage() {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [loadingSubs, setLoadingSubs] = useState(false);
   const [loadingSubRequests, setLoadingSubRequests] = useState(false);
+
+  // Delivery & Offline Subs Management States
+  const [showOfflineModal, setShowOfflineModal] = useState(false);
+  const [submittingOffline, setSubmittingOffline] = useState(false);
+  const [offlineForm, setOfflineForm] = useState({
+    customerName: "",
+    customerEmail: "",
+    customerPhone: "",
+    planId: "plan-monthly-standard",
+    planName: "Standard Thali Monthly",
+    planPrice: 2799,
+    startDate: new Date().toISOString().split("T")[0],
+    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+    totalMeals: 26,
+    address: "",
+    sector: "106",
+    landmark: "",
+    deliveryType: "Office Gate",
+    deliveryTime: "Lunch (12:30 - 2 PM)",
+    notes: ""
+  });
+
+  const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+  const [submittingDelivery, setSubmittingDelivery] = useState(false);
+  const [activeSubForDelivery, setActiveSubForDelivery] = useState<any>(null);
+  const [deliveryForm, setDeliveryForm] = useState({
+    date: new Date().toISOString().split("T")[0],
+    status: "delivered",
+    notes: "",
+    notifyCustomer: true
+  });
+
+  const [expandedSubId, setExpandedSubId] = useState<string | null>(null);
+  const [deliveryLogsBySub, setDeliveryLogsBySub] = useState<Record<string, any[]>>({});
+  const [loadingLogsSubId, setLoadingLogsSubId] = useState<string | null>(null);
 
   // Orders Filters
   const [orderStatusFilter, setOrderStatusFilter] = useState("all");
@@ -169,6 +205,96 @@ export default function AdminPage() {
       }
     } catch (e) {
       alert("Failed to reject subscription request.");
+    }
+  };
+
+  const handleAddOfflineSubscriber = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!offlineForm.customerName || !offlineForm.customerPhone || !offlineForm.address) {
+      alert("Please fill all required customer fields.");
+      return;
+    }
+    setSubmittingOffline(true);
+    try {
+      const res = await fetch("/api/admin/subscriptions/offline", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': 'Basic ' + Buffer.from(`${creds.u}:${creds.p}`).toString('base64')
+        },
+        body: JSON.stringify(offlineForm)
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to add offline subscriber");
+      alert("Offline subscriber added successfully!");
+      setShowOfflineModal(false);
+      fetchCustomerSubs(creds.u, creds.p);
+    } catch (err: any) {
+      alert(err.message || "Error adding subscriber.");
+    } finally {
+      setSubmittingOffline(false);
+    }
+  };
+
+  const handleLogDelivery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeSubForDelivery) return;
+    setSubmittingDelivery(true);
+    try {
+      const res = await fetch("/api/admin/subscriptions/delivery", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': 'Basic ' + Buffer.from(`${creds.u}:${creds.p}`).toString('base64')
+        },
+        body: JSON.stringify({
+          subscriptionId: activeSubForDelivery.id,
+          userId: activeSubForDelivery.userId,
+          date: deliveryForm.date,
+          status: deliveryForm.status,
+          notes: deliveryForm.notes,
+          notifyCustomer: deliveryForm.notifyCustomer
+        })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to log delivery");
+      alert("Delivery logged successfully!");
+      setShowDeliveryModal(false);
+      fetchCustomerSubs(creds.u, creds.p);
+      // Refresh logs for this subscription if expanded
+      fetchSubDeliveryLogs(activeSubForDelivery.id);
+    } catch (err: any) {
+      alert(err.message || "Error logging delivery.");
+    } finally {
+      setSubmittingDelivery(false);
+    }
+  };
+
+  const fetchSubDeliveryLogs = async (subId: string) => {
+    setLoadingLogsSubId(subId);
+    try {
+      const res = await fetch(`/api/admin/subscriptions/delivery?subscriptionId=${subId}`, {
+        headers: { 'Authorization': 'Basic ' + Buffer.from(`${creds.u}:${creds.p}`).toString('base64') }
+      });
+      const json = await res.json();
+      if (json.deliveries) {
+        setDeliveryLogsBySub(prev => ({ ...prev, [subId]: json.deliveries }));
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingLogsSubId(null);
+    }
+  };
+
+  const toggleSubDeliveryLogs = (subId: string) => {
+    if (expandedSubId === subId) {
+      setExpandedSubId(null);
+    } else {
+      setExpandedSubId(subId);
+      if (!deliveryLogsBySub[subId]) {
+        fetchSubDeliveryLogs(subId);
+      }
     }
   };
 
@@ -630,8 +756,15 @@ export default function AdminPage() {
               <div className="bg-white rounded-2xl border border-border shadow-sm">
                 <div className="p-6 border-b border-border flex justify-between items-center">
                   <div>
-                    <h2 className="text-xl font-heading font-bold text-foreground">🌟 Subscription Requests</h2>
-                    <p className="text-sm text-muted-foreground mt-1">Review and approve customer subscription requests. Customer will be notified via email.</p>
+                    <h2 className="text-xl font-heading font-bold text-foreground flex items-center gap-2">
+                      🌟 Subscription Requests
+                      {subRequests.filter(r => r.status === 'pending').length > 0 && (
+                        <span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+                          {subRequests.filter(r => r.status === 'pending').length} Pending
+                        </span>
+                      )}
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-1">Review customer subscription requests, verify payment/UTR, and activate their monthly plan.</p>
                   </div>
                   <button onClick={() => fetchSubRequests(creds.u, creds.p)} className="text-primary text-sm font-bold hover:underline">Refresh</button>
                 </div>
@@ -643,42 +776,72 @@ export default function AdminPage() {
                 ) : (
                   <div className="divide-y divide-border">
                     {subRequests.map(req => (
-                      <div key={req.id} className={`p-6 hover:bg-gray-50 transition-colors ${req.status === 'pending' ? 'bg-orange-50/20' : ''}`}>
-                        <div className="flex flex-col md:flex-row justify-between gap-4">
-                          <div>
+                      <div key={req.id} className={`p-6 hover:bg-gray-50 transition-colors ${req.status === 'pending' ? 'bg-amber-50/30' : ''}`}>
+                        <div className="flex flex-col md:flex-row justify-between gap-6">
+                          <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
                               <span className="font-heading font-bold text-lg text-foreground">{req.name}</span>
                               <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
-                                req.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                req.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                'bg-red-100 text-red-800'
+                                req.status === 'pending' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
+                                req.status === 'approved' ? 'bg-green-100 text-green-800 border border-green-300' :
+                                'bg-red-100 text-red-800 border border-red-300'
                               }`}>
                                 {req.status}
                               </span>
                             </div>
+                            
                             <p className="text-sm text-muted-foreground">{req.email} • {req.phone}</p>
-                            <div className="mt-3 bg-primary/5 border border-primary/20 rounded-xl p-3 inline-block">
-                              <p className="text-sm font-bold text-foreground">{req.planName} — <span className="text-primary">₹{req.planPrice}</span></p>
-                              <p className="text-xs text-muted-foreground mt-0.5">Requested on {new Date(req.createdAt).toLocaleDateString('en-IN')}</p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 text-xs">
+                              <div className="bg-white border border-border rounded-xl p-3 space-y-1">
+                                <p className="font-bold text-primary uppercase text-[10px] tracking-wider">Plan Details</p>
+                                <p className="font-bold text-foreground text-sm">{req.planName} — ₹{req.planPrice}</p>
+                                <p className="text-muted-foreground">Requested on {new Date(req.createdAt).toLocaleDateString('en-IN')}</p>
+                              </div>
+
+                              <div className="bg-white border border-border rounded-xl p-3 space-y-1">
+                                <p className="font-bold text-primary uppercase text-[10px] tracking-wider">Delivery Details</p>
+                                <p className="font-medium text-foreground">{req.address || "No address entered"}, Sector {req.sector}</p>
+                                {req.landmark && <p className="text-muted-foreground">Landmark: {req.landmark}</p>}
+                                <p className="text-muted-foreground">{req.deliveryType || "Office Gate"} • {req.deliveryTime || "Lunch"}</p>
+                              </div>
                             </div>
+
+                            {/* UTR / Transaction ID */}
+                            {req.utr && (
+                              <div className="mt-3 text-xs bg-purple-50 text-purple-900 p-2.5 rounded-xl border border-purple-200 inline-flex items-center gap-2">
+                                <span className="font-bold">UPI UTR Ref:</span>
+                                <span className="font-mono font-bold bg-white px-2 py-0.5 rounded border border-purple-300">{req.utr}</span>
+                              </div>
+                            )}
+
+                            {req.notes && (
+                              <div className="mt-2 text-xs bg-amber-50 text-amber-900 p-2 rounded-lg border border-amber-200 block max-w-xl">
+                                <strong>Customer Notes:</strong> {req.notes}
+                              </div>
+                            )}
                           </div>
 
-                          <div className="flex items-center gap-3">
-                            {req.status === 'pending' && (
-                              <>
+                          <div className="flex flex-col justify-center items-end gap-2 shrink-0">
+                            {req.status === 'pending' ? (
+                              <div className="space-y-2 w-full md:w-44">
                                 <button
                                   onClick={() => handleApproveSubRequest(req.id)}
-                                  className="bg-primary text-white font-bold px-5 py-2.5 rounded-xl hover:bg-primary/90 shadow-md text-sm"
+                                  className="w-full bg-primary text-white font-bold py-2.5 px-4 rounded-xl hover:bg-primary/90 shadow-md text-sm flex items-center justify-center gap-1.5"
                                 >
-                                  Approve & Activate
+                                  <CheckCircle className="w-4 h-4" /> Approve & Activate
                                 </button>
                                 <button
                                   onClick={() => handleRejectSubRequest(req.id)}
-                                  className="bg-gray-100 text-red-600 font-bold px-4 py-2.5 rounded-xl hover:bg-red-50 text-sm"
+                                  className="w-full bg-gray-100 text-red-600 font-bold py-2 px-4 rounded-xl hover:bg-red-50 text-sm"
                                 >
-                                  Reject
+                                  Reject Request
                                 </button>
-                              </>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                {req.status === 'approved' ? `Approved on ${new Date(req.approvedAt || req.createdAt).toLocaleDateString()}` : 'Rejected'}
+                              </span>
                             )}
                           </div>
                         </div>
@@ -721,31 +884,158 @@ export default function AdminPage() {
             {/* ── CUSTOMER SUBSCRIPTIONS TAB ── */}
             {activeTab === "customersubs" && (
               <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-heading font-bold text-foreground">💳 Customer Subscriptions</h2>
-                  <button onClick={() => fetchCustomerSubs(creds.u, creds.p)} className="text-primary text-sm font-bold hover:underline">Refresh</button>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                  <div>
+                    <h2 className="text-xl font-heading font-bold text-foreground flex items-center gap-2">
+                      💳 Customer Meal Subscriptions
+                      <span className="text-xs bg-primary/10 text-primary font-bold px-2.5 py-0.5 rounded-full">
+                        {customerSubs.length} Total
+                      </span>
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-0.5 font-subheading">
+                      Manage active plans, log daily deliveries, and add offline/cash subscribers
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setShowOfflineModal(true)}
+                      className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-subheading font-bold hover:bg-primary/90 shadow-sm transition-colors"
+                    >
+                      <UserPlus className="w-4 h-4" /> Add Offline Subscriber
+                    </button>
+                    <button onClick={() => fetchCustomerSubs(creds.u, creds.p)} className="text-primary text-sm font-bold hover:underline">
+                      Refresh
+                    </button>
+                  </div>
                 </div>
+
                 {loadingSubs ? (
                   <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
                 ) : (
                   <div className="space-y-4">
-                    {customerSubs.length === 0 ? <p className="text-center text-muted-foreground py-10">No active subscriptions found.</p> : null}
-                    {customerSubs.map(sub => (
-                      <div key={sub.id} className="border border-border rounded-xl p-4 bg-gray-50">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-bold text-sm">{sub.planName}</p>
-                            <p className="text-xs text-muted-foreground">User ID: {sub.userId}</p>
-                            <p className="text-xs text-muted-foreground">Valid: {new Date(sub.startDate).toLocaleDateString()} - {new Date(sub.endDate).toLocaleDateString()}</p>
+                    {customerSubs.length === 0 ? <p className="text-center text-muted-foreground py-10">No subscriptions found.</p> : null}
+                    {customerSubs.map(sub => {
+                      const isExpanded = expandedSubId === sub.id;
+                      const subLogs = deliveryLogsBySub[sub.id] || [];
+                      const isLoadingLogs = loadingLogsSubId === sub.id;
+
+                      return (
+                        <div key={sub.id} className="border border-border rounded-2xl p-5 bg-gray-50 hover:bg-gray-50/80 transition-all space-y-4">
+                          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2.5 flex-wrap">
+                                <span className="font-heading font-bold text-base text-foreground">
+                                  {sub.customerName || sub.planName}
+                                </span>
+                                <span className="font-bold text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">
+                                  {sub.planName}
+                                </span>
+                                {sub.isOffline ? (
+                                  <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-200 uppercase">
+                                    Offline / Cash
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded border border-blue-200 uppercase">
+                                    Online
+                                  </span>
+                                )}
+                                <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                                  sub.status === 'active' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-gray-200 text-gray-700'
+                                }`}>
+                                  {sub.status}
+                                </span>
+                              </div>
+
+                              <p className="text-xs text-muted-foreground">
+                                {sub.customerPhone ? <strong>{sub.customerPhone}</strong> : `User ID: ${sub.userId}`}
+                                {sub.customerEmail ? ` • ${sub.customerEmail}` : ''}
+                              </p>
+                              
+                              {sub.address && (
+                                <p className="text-xs text-foreground/80 flex items-center gap-1">
+                                  <MapPin className="w-3 h-3 text-primary shrink-0" />
+                                  <span>{sub.address}, Sector {sub.sector} {sub.deliveryTime ? `(${sub.deliveryTime})` : ''}</span>
+                                </p>
+                              )}
+
+                              <p className="text-[11px] text-muted-foreground">
+                                <strong>Validity:</strong> {new Date(sub.startDate).toLocaleDateString("en-IN")} – {new Date(sub.endDate).toLocaleDateString("en-IN")}
+                                {sub.totalMeals ? ` • ${sub.usedMeals || 0}/${sub.totalMeals} Meals Used` : ''}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-2 w-full md:w-auto">
+                              <button
+                                onClick={() => {
+                                  setActiveSubForDelivery(sub);
+                                  setDeliveryForm({
+                                    date: new Date().toISOString().split("T")[0],
+                                    status: "delivered",
+                                    notes: "",
+                                    notifyCustomer: Boolean(sub.customerEmail)
+                                  });
+                                  setShowDeliveryModal(true);
+                                }}
+                                className="flex-1 md:flex-initial bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-colors"
+                              >
+                                <Utensils className="w-3.5 h-3.5" /> Log Daily Delivery
+                              </button>
+
+                              <button
+                                onClick={() => toggleSubDeliveryLogs(sub.id)}
+                                className="flex-1 md:flex-initial bg-white border border-border hover:bg-gray-100 text-foreground text-xs font-bold px-3 py-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors"
+                              >
+                                <History className="w-3.5 h-3.5 text-muted-foreground" />
+                                <span>{isExpanded ? "Hide Logs" : "View Logs"}</span>
+                              </button>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <span className={`px-2 py-1 rounded text-xs font-bold ${sub.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}`}>
-                              {sub.status}
-                            </span>
-                          </div>
+
+                          {/* Expanded Delivery Log History for this Subscriber */}
+                          {isExpanded && (
+                            <div className="mt-4 pt-4 border-t border-border/80 bg-white rounded-xl p-4 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-heading font-bold text-xs uppercase tracking-wider text-foreground">
+                                  Daily Delivery Log ({subLogs.length} entries)
+                                </h4>
+                                <button
+                                  onClick={() => fetchSubDeliveryLogs(sub.id)}
+                                  className="text-[11px] text-primary font-bold hover:underline flex items-center gap-1"
+                                >
+                                  <RefreshCw className={`w-3 h-3 ${isLoadingLogs ? "animate-spin" : ""}`} /> Refresh
+                                </button>
+                              </div>
+
+                              {isLoadingLogs ? (
+                                <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                              ) : subLogs.length === 0 ? (
+                                <p className="text-xs text-muted-foreground italic py-2">No daily delivery entries recorded yet.</p>
+                              ) : (
+                                <div className="divide-y divide-border/60 max-h-56 overflow-y-auto">
+                                  {subLogs.map((log: any) => (
+                                    <div key={log.id} className="py-2 flex items-center justify-between text-xs">
+                                      <div>
+                                        <span className="font-bold text-foreground">
+                                          {new Date(log.date).toLocaleDateString("en-IN", { weekday: 'short', day: 'numeric', month: 'short' })}
+                                        </span>
+                                        {log.notes && <span className="text-muted-foreground ml-2">({log.notes})</span>}
+                                      </div>
+                                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                        log.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                                        log.status === 'skipped' ? 'bg-amber-100 text-amber-800' :
+                                        'bg-red-100 text-red-800'
+                                      }`}>
+                                        {log.status}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1184,6 +1474,325 @@ export default function AdminPage() {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* ── ADD OFFLINE SUBSCRIBER MODAL ── */}
+      <AnimatePresence>
+        {showOfflineModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4"
+            onClick={(e) => e.target === e.currentTarget && setShowOfflineModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-border mb-6">
+                <div>
+                  <h3 className="text-xl font-heading font-bold text-foreground flex items-center gap-2">
+                    <UserPlus className="w-5 h-5 text-primary" /> Add Offline Subscriber
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">Manually register a cash-paying monthly customer</p>
+                </div>
+                <button onClick={() => setShowOfflineModal(false)} className="p-2 rounded-full hover:bg-gray-100">
+                  <X className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddOfflineSubscriber} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">Customer Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Vikram Sharma"
+                      value={offlineForm.customerName}
+                      onChange={e => setOfflineForm({ ...offlineForm, customerName: e.target.value })}
+                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">Customer Phone *</label>
+                    <input
+                      type="tel"
+                      required
+                      placeholder="e.g. 9876543210"
+                      value={offlineForm.customerPhone}
+                      onChange={e => setOfflineForm({ ...offlineForm, customerPhone: e.target.value })}
+                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">Email (Optional, sends welcome email)</label>
+                  <input
+                    type="email"
+                    placeholder="e.g. customer@gmail.com"
+                    value={offlineForm.customerEmail}
+                    onChange={e => setOfflineForm({ ...offlineForm, customerEmail: e.target.value })}
+                    className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-foreground mb-1">Plan</label>
+                    <select
+                      value={offlineForm.planId}
+                      onChange={e => {
+                        const sel = (data?.subscriptionPlans || []).find((p: any) => p.id === e.target.value);
+                        setOfflineForm({
+                          ...offlineForm,
+                          planId: e.target.value,
+                          planName: sel?.name || e.target.value,
+                          planPrice: sel?.price || offlineForm.planPrice
+                        });
+                      }}
+                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white"
+                    >
+                      {(data?.subscriptionPlans || []).map((p: any) => (
+                        <option key={p.id} value={p.id}>{p.name} (₹{p.price})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">Price (₹)</label>
+                    <input
+                      type="number"
+                      value={offlineForm.planPrice}
+                      onChange={e => setOfflineForm({ ...offlineForm, planPrice: Number(e.target.value) })}
+                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">Start Date</label>
+                    <input
+                      type="date"
+                      value={offlineForm.startDate}
+                      onChange={e => setOfflineForm({ ...offlineForm, startDate: e.target.value })}
+                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">End Date</label>
+                    <input
+                      type="date"
+                      value={offlineForm.endDate}
+                      onChange={e => setOfflineForm({ ...offlineForm, endDate: e.target.value })}
+                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">Total Meals</label>
+                    <input
+                      type="number"
+                      value={offlineForm.totalMeals}
+                      onChange={e => setOfflineForm({ ...offlineForm, totalMeals: Number(e.target.value) })}
+                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">Building / Society Address *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Tower 3, Flat 502, ATS Village"
+                    value={offlineForm.address}
+                    onChange={e => setOfflineForm({ ...offlineForm, address: e.target.value })}
+                    className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">Sector *</label>
+                    <select
+                      value={offlineForm.sector}
+                      onChange={e => setOfflineForm({ ...offlineForm, sector: e.target.value })}
+                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white"
+                    >
+                      <option value="106">Sector 106</option>
+                      <option value="104">Sector 104</option>
+                      <option value="107">Sector 107</option>
+                      <option value="108">Sector 108</option>
+                      <option value="82">Sector 82</option>
+                      <option value="93">Sector 93</option>
+                      <option value="133">Sector 133</option>
+                      <option value="101">Sector 101</option>
+                      <option value="135">Sector 135</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">Deliver To</label>
+                    <select
+                      value={offlineForm.deliveryType}
+                      onChange={e => setOfflineForm({ ...offlineForm, deliveryType: e.target.value })}
+                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white"
+                    >
+                      <option>Office Gate</option>
+                      <option>Main Gate of House</option>
+                      <option>Doorstep</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">Preferred Time</label>
+                    <select
+                      value={offlineForm.deliveryTime}
+                      onChange={e => setOfflineForm({ ...offlineForm, deliveryTime: e.target.value })}
+                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white"
+                    >
+                      <option>Lunch (12:30 - 2 PM)</option>
+                      <option>Dinner (8:00 - 9:30 PM)</option>
+                      <option>Morning (9 - 10 AM)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">Special Notes</label>
+                  <textarea
+                    rows={2}
+                    placeholder="e.g. Paid ₹2799 cash in person on 28 Aug"
+                    value={offlineForm.notes}
+                    onChange={e => setOfflineForm({ ...offlineForm, notes: e.target.value })}
+                    className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none"
+                  />
+                </div>
+
+                <div className="pt-3 flex items-center justify-end gap-3 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => setShowOfflineModal(false)}
+                    className="px-4 py-2.5 rounded-xl border border-border text-sm font-bold text-muted-foreground hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingOffline}
+                    className="px-6 py-2.5 rounded-xl bg-primary text-white text-sm font-bold shadow-md hover:bg-primary/90 flex items-center gap-2 disabled:opacity-60"
+                  >
+                    {submittingOffline ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                    <span>Save Subscriber</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── LOG DAILY DELIVERY MODAL ── */}
+      <AnimatePresence>
+        {showDeliveryModal && activeSubForDelivery && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4"
+            onClick={(e) => e.target === e.currentTarget && setShowDeliveryModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl"
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-border mb-5">
+                <div>
+                  <h3 className="text-lg font-heading font-bold text-foreground flex items-center gap-2">
+                    <Utensils className="w-5 h-5 text-primary" /> Record Daily Delivery
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    For {activeSubForDelivery.customerName || activeSubForDelivery.planName}
+                  </p>
+                </div>
+                <button onClick={() => setShowDeliveryModal(false)} className="p-2 rounded-full hover:bg-gray-100">
+                  <X className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </div>
+
+              <form onSubmit={handleLogDelivery} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">Delivery Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={deliveryForm.date}
+                    onChange={e => setDeliveryForm({ ...deliveryForm, date: e.target.value })}
+                    className="w-full border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">Delivery Status</label>
+                  <select
+                    value={deliveryForm.status}
+                    onChange={e => setDeliveryForm({ ...deliveryForm, status: e.target.value })}
+                    className="w-full border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary bg-white font-bold"
+                  >
+                    <option value="delivered">✅ Delivered (Deducts 1 meal)</option>
+                    <option value="skipped">⏸️ Skipped / Customer on leave</option>
+                    <option value="issue">❌ Delivery Issue / Not delivered</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">Kitchen / Driver Notes</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Delivered at 1:15 PM to guard / Customer requested skip"
+                    value={deliveryForm.notes}
+                    onChange={e => setDeliveryForm({ ...deliveryForm, notes: e.target.value })}
+                    className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
+
+                {activeSubForDelivery.customerEmail && (
+                  <label className="flex items-center gap-2 pt-1 text-xs font-medium text-foreground cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={deliveryForm.notifyCustomer}
+                      onChange={e => setDeliveryForm({ ...deliveryForm, notifyCustomer: e.target.checked })}
+                      className="w-4 h-4 rounded text-primary focus:ring-primary"
+                    />
+                    <span>Email delivery update to {activeSubForDelivery.customerEmail}</span>
+                  </label>
+                )}
+
+                <div className="pt-3 flex items-center justify-end gap-3 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeliveryModal(false)}
+                    className="px-4 py-2.5 rounded-xl border border-border text-sm font-bold text-muted-foreground hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingDelivery}
+                    className="px-6 py-2.5 rounded-xl bg-primary text-white text-sm font-bold shadow-md hover:bg-primary/90 flex items-center gap-2 disabled:opacity-60"
+                  >
+                    {submittingDelivery ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    <span>Save Delivery Log</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
