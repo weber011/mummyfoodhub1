@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { getDeliveryTimingState } from "@/lib/delivery-timing";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -132,15 +133,24 @@ Notes: ${values.notes || "None"}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Delivery Time</label>
-              <select 
-                {...register("deliveryTime")}
-                className="w-full p-2 border border-border rounded-md focus:outline-none focus:border-primary bg-background text-foreground"
-              >
-                <option value="">Select Time</option>
-                <option value="Lunch (12:30 PM - 2:00 PM)">Lunch (12:30 PM - 2:00 PM)</option>
-                <option value="Dinner (8:00 PM - 9:30 PM)">Dinner (8:00 PM - 9:30 PM)</option>
-                <option value="Custom Time">Custom Time (Mention in Notes)</option>
-              </select>
+              {(() => {
+                const timing = getDeliveryTimingState();
+                return (
+                  <select 
+                    {...register("deliveryTime")}
+                    className="w-full p-2 border border-border rounded-md focus:outline-none focus:border-primary bg-background text-foreground text-xs"
+                    defaultValue={timing.defaultSlot?.orderValue || ""}
+                  >
+                    <option value="">Select Time</option>
+                    <option value={timing.lunch.orderValue} disabled={!timing.lunch.isAvailable}>
+                      ☀️ Lunch ({timing.lunch.isAvailable ? timing.lunch.expectedDelivery : "Closed at 2:00 PM"})
+                    </option>
+                    <option value={timing.dinner.orderValue} disabled={!timing.dinner.isAvailable}>
+                      🌙 Dinner ({timing.dinner.isAvailable ? timing.dinner.expectedDelivery : "Closed at 9:30 PM"})
+                    </option>
+                  </select>
+                );
+              })()}
               {errors.deliveryTime && <p className="text-xs text-red-500">{errors.deliveryTime.message}</p>}
             </div>
             <div className="space-y-2">
