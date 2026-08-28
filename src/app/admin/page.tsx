@@ -504,19 +504,81 @@ export default function AdminPage() {
                             </div>
 
                             <div className="mt-4">
-                              <p className="text-muted-foreground text-xs font-bold uppercase mb-1">Items</p>
-                              <div className="bg-white border border-border rounded-lg p-3 inline-block min-w-[300px]">
-                                {order.items.map((i: any, idx: number) => (
-                                  <div key={idx} className="flex justify-between text-sm py-1 border-b border-border/50 last:border-0">
-                                    <span>{i.quantity}× {i.title}</span>
-                                    <span className="font-bold">₹{i.price * i.quantity}</span>
-                                  </div>
-                                ))}
+                              <p className="text-muted-foreground text-xs font-bold uppercase mb-1.5">Ordered Items & Selections</p>
+                              <div className="bg-white border border-border rounded-xl p-3.5 w-full max-w-xl shadow-xs divide-y divide-border/60">
+                                {(() => {
+                                  const itemsList = Array.isArray(order.items)
+                                    ? order.items
+                                    : typeof order.items === 'string'
+                                      ? (() => { try { return JSON.parse(order.items); } catch { return []; } })()
+                                      : [];
+
+                                  if (itemsList.length === 0) {
+                                    return <p className="text-xs text-muted-foreground italic py-1">No items details found</p>;
+                                  }
+
+                                  return itemsList.map((i: any, idx: number) => {
+                                    const extrasList = Array.isArray(i.extras) ? i.extras : [];
+                                    const sabjis = extrasList.filter((e: any) => e.price === 0);
+                                    const addons = extrasList.filter((e: any) => e.price > 0);
+
+                                    return (
+                                      <div key={idx} className="py-2 first:pt-0 last:pb-0">
+                                        <div className="flex justify-between items-start text-sm">
+                                          <span className="font-bold text-foreground">
+                                            <span className="text-primary font-black mr-1">{i.quantity}×</span> {i.title}
+                                          </span>
+                                          <span className="font-bold text-foreground shrink-0 ml-3">₹{(i.price || 0) * (i.quantity || 1)}</span>
+                                        </div>
+
+                                        {/* Sabji choices */}
+                                        {sabjis.length > 0 && (
+                                          <div className="mt-1 flex flex-wrap gap-1">
+                                            <span className="text-[11px] font-bold text-orange-800 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-md">
+                                              🍛 Sabjis: {sabjis.map((s: any) => s.name).join(", ")}
+                                            </span>
+                                          </div>
+                                        )}
+
+                                        {/* Add-ons */}
+                                        {addons.length > 0 && (
+                                          <div className="mt-1 flex flex-wrap gap-1">
+                                            {addons.map((a: any, aIdx: number) => (
+                                              <span key={aIdx} className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                                                + {a.name} (+₹{a.price})
+                                              </span>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  });
+                                })()}
                               </div>
                             </div>
+
+                            {/* Custom Form Fields */}
+                            {order.customFields && Object.keys(order.customFields).length > 0 && (
+                              <div className="mt-3 p-3 bg-blue-50/70 border border-blue-200/80 rounded-xl text-xs space-y-1 w-full max-w-xl">
+                                <p className="font-bold text-blue-900 uppercase tracking-wider">Custom Order Details</p>
+                                {Object.entries(order.customFields).map(([key, val]) => (
+                                  <p key={key} className="text-blue-950">
+                                    <span className="font-semibold text-blue-800">{key}:</span> {String(val)}
+                                  </p>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* UTR / Transaction ID */}
+                            {order.utr && (
+                              <div className="mt-2 text-xs bg-purple-50 text-purple-900 p-2 rounded-lg border border-purple-200 inline-block font-mono">
+                                <strong>UPI UTR / Ref:</strong> {order.utr}
+                              </div>
+                            )}
+
                             {order.notes && (
-                              <div className="mt-3 text-sm bg-orange-50 text-orange-800 p-2 rounded border border-orange-100 inline-block">
-                                <strong>Notes:</strong> {order.notes}
+                              <div className="mt-3 text-sm bg-orange-50 text-orange-800 p-2.5 rounded-xl border border-orange-200 inline-block">
+                                <strong>Notes / Instructions:</strong> {order.notes}
                               </div>
                             )}
                           </div>

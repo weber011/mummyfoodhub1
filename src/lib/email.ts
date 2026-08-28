@@ -98,9 +98,38 @@ export async function sendOrderPlacedEmail(order: Order) {
 
 // ── New Order: Owner Notification ──────────────────────────────
 export async function sendNewOrderNotificationEmail(order: Order) {
-  const itemsHtml = order.items
-    .map(i => `<tr><td style="padding:8px 0;border-bottom:1px solid #f0ece5;">${i.quantity}× ${i.title}</td><td style="padding:8px 0;border-bottom:1px solid #f0ece5;text-align:right;font-weight:700;">₹${i.price * i.quantity}</td></tr>`)
+  const itemsList = Array.isArray(order.items)
+    ? order.items
+    : typeof order.items === 'string'
+      ? (() => { try { return JSON.parse(order.items); } catch { return []; } })()
+      : [];
+
+  const itemsHtml = itemsList
+    .map((i: any) => {
+      const extras = Array.isArray(i.extras) ? i.extras : [];
+      const sabjis = extras.filter((e: any) => e.price === 0).map((e: any) => e.name).join(', ');
+      const addons = extras.filter((e: any) => e.price > 0).map((e: any) => `+ ${e.name} (₹${e.price})`).join(', ');
+      const subDetails = [
+        sabjis ? `<div style="font-size:12px;color:#c2410c;margin-top:2px;">🍛 Sabjis: ${sabjis}</div>` : '',
+        addons ? `<div style="font-size:12px;color:#15803d;margin-top:2px;">🥗 Add-ons: ${addons}</div>` : ''
+      ].filter(Boolean).join('');
+
+      return `<tr>
+        <td style="padding:10px 0;border-bottom:1px solid #f0ece5;">
+          <strong>${i.quantity}× ${i.title}</strong>
+          ${subDetails}
+        </td>
+        <td style="padding:10px 0;border-bottom:1px solid #f0ece5;text-align:right;font-weight:700;vertical-align:top;">₹${(i.price || 0) * (i.quantity || 1)}</td>
+      </tr>`;
+    })
     .join('');
+
+  const customFieldsHtml = order.customFields && Object.keys(order.customFields).length > 0
+    ? `<div style="background:#eff6ff;border:1px solid #bfdbfe;padding:12px;border-radius:8px;font-size:13px;margin:0 0 20px;">
+        <strong style="color:#1e40af;">Custom Order Details:</strong><br/>
+        ${Object.entries(order.customFields).map(([k, v]) => `<span>• <strong>${k}:</strong> ${String(v)}</span><br/>`).join('')}
+       </div>`
+    : '';
 
   const html = emailBase(`
     <p style="color:#2d2926;font-size:20px;font-weight:900;margin:0 0 4px;">🔔 New Order Received!</p>
@@ -112,8 +141,10 @@ export async function sendNewOrderNotificationEmail(order: Order) {
       <p style="margin:0 0 4px;font-size:14px;"><strong>Address:</strong> ${order.address}, Sector ${order.sector}</p>
       ${order.landmark ? `<p style="margin:0 0 4px;font-size:14px;"><strong>Landmark:</strong> ${order.landmark}</p>` : ''}
       <p style="margin:0 0 4px;font-size:14px;"><strong>Delivery Time:</strong> ${order.deliveryTime}</p>
-      <p style="margin:0;font-size:14px;"><strong>Payment:</strong> ${order.paymentMethod}</p>
+      <p style="margin:0;font-size:14px;"><strong>Payment:</strong> ${order.paymentMethod}${order.utr ? ` (UTR: ${order.utr})` : ''}</p>
     </div>
+
+    ${customFieldsHtml}
     
     <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;">${itemsHtml}</table>
     <p style="font-size:20px;font-weight:900;color:#B23A3A;text-align:right;margin:0 0 24px;">Total: ₹${order.totalAmount}</p>

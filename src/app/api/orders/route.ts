@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { items, subtotal, deliveryCharge, discount, couponCode, totalAmount,
       customerName, customerPhone, sector, address, landmark, deliveryType, deliveryTime,
-      paymentMethod, notes, idempotencyKey } = body;
+      paymentMethod, notes, customFields, utr, idempotencyKey } = body;
 
     // Idempotency check
     if (idempotencyKey) {
@@ -80,6 +80,8 @@ export async function POST(req: NextRequest) {
       deliveryTime: String(deliveryTime || ''),
       paymentMethod: String(paymentMethod || ''),
       notes: String(notes || ''),
+      customFields: customFields || undefined,
+      utr: utr ? String(utr) : undefined,
       idempotencyKey: idempotencyKey || undefined,
     });
 

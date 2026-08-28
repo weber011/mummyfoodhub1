@@ -69,6 +69,8 @@ export type Order = {
   deliveryTime: string;
   paymentMethod: string;
   notes?: string;
+  customFields?: Record<string, any>;
+  utr?: string;
   idempotencyKey?: string;
   // Timestamps
   createdAt: string;

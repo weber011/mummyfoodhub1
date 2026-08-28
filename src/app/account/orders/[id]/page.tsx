@@ -137,28 +137,51 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
             <h3 className="font-heading font-bold text-foreground">Items Ordered</h3>
           </div>
           <div className="p-4 divide-y divide-border">
-            {order.items.map((item, idx) => {
-              const extrasTotal = item.extras?.reduce((s, e) => s + e.price, 0) || 0;
-              const itemTotal = (item.price + extrasTotal) * item.quantity;
-              return (
-                <div key={idx} className="py-3 first:pt-0 last:pb-0">
-                  <div className="flex justify-between font-subheading text-sm">
-                    <span className="text-foreground"><span className="font-bold">{item.quantity}x</span> {item.title}</span>
-                    <span className="font-bold text-foreground">₹{itemTotal}</span>
-                  </div>
-                  {item.extras && item.extras.length > 0 && (
-                    <div className="pl-6 mt-1 text-xs text-muted-foreground space-y-0.5">
-                      {item.extras.map((ex, eIdx) => (
-                        <div key={eIdx} className="flex justify-between">
-                          <span>+ {ex.name}</span>
-                          {ex.price > 0 && <span>₹{ex.price * item.quantity}</span>}
-                        </div>
-                      ))}
+            {(() => {
+              const itemsList = Array.isArray(order.items)
+                ? order.items
+                : typeof order.items === 'string'
+                  ? (() => { try { return JSON.parse(order.items); } catch { return []; } })()
+                  : [];
+
+              return itemsList.map((item: any, idx: number) => {
+                const extras = Array.isArray(item.extras) ? item.extras : [];
+                const sabjis = extras.filter((e: any) => e.price === 0);
+                const addons = extras.filter((e: any) => e.price > 0);
+                const extrasTotal = addons.reduce((s: number, e: any) => s + (e.price || 0), 0);
+                const itemTotal = ((item.price || 0) + extrasTotal) * (item.quantity || 1);
+
+                return (
+                  <div key={idx} className="py-3 first:pt-0 last:pb-0">
+                    <div className="flex justify-between font-subheading text-sm">
+                      <span className="text-foreground"><span className="font-bold text-primary">{item.quantity}x</span> {item.title}</span>
+                      <span className="font-bold text-foreground">₹{itemTotal}</span>
                     </div>
-                  )}
-                </div>
-              );
-            })}
+
+                    {/* Sabjis */}
+                    {sabjis.length > 0 && (
+                      <div className="pl-4 mt-1">
+                        <span className="text-xs font-bold text-orange-800 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded">
+                          🍛 Sabjis: {sabjis.map((s: any) => s.name).join(", ")}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Add-ons */}
+                    {addons.length > 0 && (
+                      <div className="pl-4 mt-1 space-y-0.5">
+                        {addons.map((ex: any, eIdx: number) => (
+                          <div key={eIdx} className="flex justify-between text-xs text-muted-foreground">
+                            <span>+ {ex.name}</span>
+                            <span>₹{ex.price * (item.quantity || 1)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              });
+            })()}
           </div>
           <div className="p-4 bg-gray-50 border-t border-border space-y-2 text-sm font-subheading">
             <div className="flex justify-between text-muted-foreground">
