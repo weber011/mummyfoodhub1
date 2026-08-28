@@ -1,10 +1,10 @@
 import { createHash, randomInt } from 'crypto';
 import { redisGet, redisSet, redisDel, redisIncr, redisExpire } from './redis';
 
-const OTP_EXPIRY = parseInt(process.env.OTP_EXPIRY_SECONDS ?? '300', 10);
-const RATE_LIMIT_WINDOW = 600; // 10 minutes
-const MAX_ATTEMPTS = 3;
-const RESEND_COOLDOWN = 60; // seconds between resends
+const OTP_EXPIRY = parseInt(process.env.OTP_EXPIRY_SECONDS ?? '900', 10); // 15 minutes
+const RATE_LIMIT_WINDOW = 900; // 15 minutes
+const MAX_ATTEMPTS = 5;
+const RESEND_COOLDOWN = 30; // 30 seconds between resends
 
 function hashOtp(otp: string, email: string): string {
   return createHash('sha256').update(`${email}:${otp}`).digest('hex');

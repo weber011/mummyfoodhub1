@@ -36,11 +36,13 @@ export async function POST(req: NextRequest) {
 
     console.log(`[OTP] ${email} → ${otp}`);
 
-    // Send OTP via email
+    // Send OTP via email immediately
     if (emailConfigured) {
-      sendOtpEmail(email, otp, displayName).catch((err) =>
-        console.error('[send-otp] email send failed:', err?.message)
-      );
+      try {
+        await sendOtpEmail(email, otp, displayName);
+      } catch (err: any) {
+        console.error('[send-otp] email send failed:', err?.message);
+      }
     }
 
     return NextResponse.json({

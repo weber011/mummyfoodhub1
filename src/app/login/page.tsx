@@ -199,13 +199,23 @@ export default function LoginPage() {
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verify & Sign In"}
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => { setStep("email"); setOtp(""); setDevOtp(""); }}
-                    className="w-full text-center text-sm font-subheading text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    ← Use a different email
-                  </button>
+                  <div className="flex items-center justify-between pt-2">
+                    <button
+                      type="button"
+                      onClick={() => { setStep("email"); setOtp(""); setDevOtp(""); }}
+                      className="text-xs font-subheading text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      ← Change email
+                    </button>
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={handleSendOtp}
+                      className="text-xs font-bold text-primary hover:underline transition-colors disabled:opacity-50"
+                    >
+                      Resend Code
+                    </button>
+                  </div>
                 </form>
               </motion.div>
             )}
