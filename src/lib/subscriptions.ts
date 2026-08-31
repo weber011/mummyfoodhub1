@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { redisGet, redisSet, redisLPush, redisLRange } from './redis';
-import type { UserSubscription, SubscriptionDelivery } from './types';
+import type { UserSubscription, SubscriptionDelivery, SubscriptionBalance } from './types';
 
 const SUB_PREFIX = 'subscription:';
 const DELIVERY_PREFIX = 'sub_delivery:';
@@ -50,7 +50,65 @@ export function getRemainingDays(endDate: string): number {
 
 export function getRemainingMeals(sub: UserSubscription): number | null {
   if (!sub.totalMeals) return null;
+  // Key rule: remainingMeals = totalMeals - usedMeals (skips do NOT count as used)
   return Math.max(0, sub.totalMeals - (sub.usedMeals ?? 0));
+}
+
+/**
+ * Full subscription balance for dashboard display.
+ * remainingMeals = totalMeals - usedMeals (skipped meals are NOT deducted)
+ */
+export function getSubscriptionBalance(sub: UserSubscription): SubscriptionBalance {
+  const totalMeals = sub.totalMeals ?? 0;
+  const usedMeals = sub.usedMeals ?? 0;
+  const skippedMeals = sub.skippedMeals ?? 0;
+  const expiredMeals = sub.expiredMeals ?? 0;
+  const remainingMeals = Math.max(0, totalMeals - usedMeals);
+
+  const now = new Date();
+  const istString = now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+  const ist = new Date(istString);
+  const endDate = new Date(sub.endDate);
+  const diffMs = endDate.getTime() - ist.getTime();
+  const daysRemaining = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+  const istDateStr = ist.toLocaleDateString('en-CA');
+  const isValid = sub.status === 'active' && istDateStr <= sub.endDate;
+
+  return {
+    totalMeals, usedMeals, skippedMeals, remainingMeals, expiredMeals,
+    daysRemaining, isValid,
+    validityStartDate: sub.startDate,
+    validityEndDate: sub.endDate,
+  };
+}
+
+// ── Admin Subscription Management ─────────────────────────────────
+
+export async function pauseSubscription(id: string): Promise<UserSubscription | null> {
+  return updateSubscription(id, { status: 'paused' });
+}
+
+export async function cancelSubscription(id: string): Promise<UserSubscription | null> {
+  return updateSubscription(id, { status: 'cancelled' });
+}
+
+export async function extendSubscription(id: string, days: number): Promise<UserSubscription | null> {
+  const sub = await redisGet<UserSubscription>(`subscription:${id}`);
+  if (!sub) return null;
+  const currentEnd = new Date(sub.endDate);
+  currentEnd.setDate(currentEnd.getDate() + days);
+  const newEndDate = currentEnd.toISOString().split('T')[0];
+  return updateSubscription(id, { endDate: newEndDate, status: 'active' });
+}
+
+export async function reactivateSubscription(id: string): Promise<UserSubscription | null> {
+  return updateSubscription(id, { status: 'active' });
+}
+
+export async function addMealsToSubscription(id: string, meals: number): Promise<UserSubscription | null> {
+  const sub = await redisGet<UserSubscription>(`subscription:${id}`);
+  if (!sub) return null;
+  return updateSubscription(id, { totalMeals: (sub.totalMeals ?? 0) + meals });
 }
 
 // ── Delivery Log ──────────────────────────────────────────────────

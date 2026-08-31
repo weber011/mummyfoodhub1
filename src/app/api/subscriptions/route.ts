@@ -3,6 +3,7 @@ import { getSessionFromRequest } from '@/lib/session';
 import { getUserById } from '@/lib/auth';
 import { redisSet, redisGet, redisLPush } from '@/lib/redis';
 import { sendSubscriptionRequestEmail } from '@/lib/email';
+import { getActiveSubscription, getUserSubscriptions, getSubscriptionBalance } from '@/lib/subscriptions';
 import { randomUUID } from 'crypto';
 
 // POST: Customer requests a subscription (full details)
@@ -21,6 +22,8 @@ export async function POST(req: NextRequest) {
       planId, planName, planPrice,
       phone, address, sector, landmark,
       deliveryType, deliveryTime, notes, utr,
+      mealType, deliveryPreference, deliveryInstructions,
+      houseNumber, building, totalMeals, validityDays,
     } = body;
 
     if (!planId || !planName || !planPrice) {
@@ -36,6 +39,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'You already have a pending subscription request. Please wait for admin approval.' }, { status: 409 });
     }
 
+    const mType = mealType || (planName.toLowerCase().includes('dinner') ? 'dinner' : 'lunch');
+    const pref = deliveryPreference || (deliveryType && deliveryType.toLowerCase().includes('door') ? 'doorstep' : 'gate');
+
     const requestId = randomUUID();
     const subRequest = {
       id: requestId,
@@ -49,8 +55,15 @@ export async function POST(req: NextRequest) {
       address,
       sector,
       landmark: landmark || '',
-      deliveryType: deliveryType || 'Office Gate',
-      deliveryTime: deliveryTime || 'Lunch (12:30 - 2 PM)',
+      deliveryType: deliveryType || (pref === 'doorstep' ? 'Doorstep Delivery' : 'Gate Delivery'),
+      deliveryTime: deliveryTime || (mType === 'dinner' ? 'Dinner (8:00 PM - 9:30 PM)' : 'Lunch (12:30 PM - 2:00 PM)'),
+      deliveryPreference: pref,
+      deliveryInstructions: deliveryInstructions || '',
+      houseNumber: houseNumber || '',
+      building: building || '',
+      mealType: mType,
+      totalMeals: totalMeals || 26,
+      validityDays: validityDays || 56,
       notes: notes || '',
       utr: utr || '',
       status: 'pending',
@@ -89,15 +102,36 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET: Get user's current subscription or pending request
+// GET: Get user's current active subscription, balance, history or pending request
 export async function GET(req: NextRequest) {
   try {
     const session = await getSessionFromRequest(req);
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const allSubs = await getUserSubscriptions(session.userId);
+    const activeSub = await getActiveSubscription(session.userId);
     const pendingReq = await redisGet<any>(`sub_request:${session.userId}`);
-    return NextResponse.json({ pendingRequest: pendingReq ?? null });
+
+    const activeWithBalance = activeSub
+      ? {
+          ...activeSub,
+          balance: getSubscriptionBalance(activeSub),
+        }
+      : null;
+
+    const historyWithBalance = allSubs.map((s) => ({
+      ...s,
+      balance: getSubscriptionBalance(s),
+    }));
+
+    return NextResponse.json({
+      active: activeWithBalance,
+      history: historyWithBalance,
+      pendingRequest: pendingReq ?? null,
+    });
   } catch (e: any) {
+    console.error('[subscriptions GET]', e);
     return NextResponse.json({ error: 'Server error.' }, { status: 500 });
   }
 }
+

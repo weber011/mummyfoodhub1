@@ -223,6 +223,16 @@ export default function SubscriptionPage() {
                     </span>
                   </div>
                 </div>
+
+                {/* VIP Dashboard Button */}
+                <div className="pt-2">
+                  <Link
+                    href="/dashboard"
+                    className="w-full py-4 px-6 bg-primary hover:bg-primary/90 text-white font-bold font-subheading text-sm rounded-2xl flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-[0.99]"
+                  >
+                    <Utensils className="w-4 h-4" /> Open Full VIP Customer Dashboard (Skip Meals &amp; Reports) →
+                  </Link>
+                </div>
               </div>
             ) : !pendingReq ? (
               <div className="bg-white rounded-3xl p-12 text-center border border-border shadow-sm">

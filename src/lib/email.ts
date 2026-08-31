@@ -290,3 +290,270 @@ export async function sendOfflineSubscriberWelcomeEmail(to: string, name: string
 // ── Aliases ────────────────────────────────────────────────────
 export const sendOwnerNewOrderEmail = sendNewOrderNotificationEmail;
 export const sendOrderStatusEmail = sendOrderStatusUpdateEmail;
+
+// ══════════════════════════════════════════════════════════════
+// NEW SUBSCRIPTION MANAGEMENT EMAILS
+// ══════════════════════════════════════════════════════════════
+
+// ── Full Subscription Activation Email (per spec) ─────────────
+export async function sendSubscriptionActivatedFullEmail(
+  to: string,
+  name: string,
+  sub: {
+    planName: string;
+    planPrice: number;
+    totalMeals: number;
+    mealType: 'lunch' | 'dinner' | 'both';
+    startDate: string;
+    endDate: string;
+    validityDays?: number;
+    lunchSkipCutoff?: string;
+    dinnerSkipCutoff?: string;
+  }
+) {
+  const mealLabel = sub.mealType === 'dinner' ? 'Dinner' : 'Lunch';
+  const mealsLabel = sub.mealType === 'dinner' ? 'Dinners' : 'Lunches';
+  const validityDays = sub.validityDays ?? 56;
+  const cutoffNote = sub.mealType === 'dinner'
+    ? `Dinner time: 8:00 PM | Skip cutoff: ${sub.dinnerSkipCutoff ?? '4:00 PM'}`
+    : `Lunch time: 1:00 PM | Skip cutoff: ${sub.lunchSkipCutoff ?? '9:00 AM'}`;
+
+  const html = emailBase(`
+    <p style="color:#2d2926;font-size:20px;font-weight:900;margin:0 0 4px;">Your ${mealLabel} Subscription is Active ❤️</p>
+    <p style="color:#5a534d;font-size:14px;margin:0 0 24px;">Dear ${name}, thank you for choosing Mummy Food Hub! We're happy to confirm that your ${mealLabel} Subscription has been successfully activated.</p>
+    
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:20px;border-radius:12px;margin:0 0 20px;">
+      <p style="margin:0 0 4px;font-size:13px;color:#166534;font-weight:700;">🍱 SUBSCRIPTION DETAILS</p>
+      <p style="margin:4px 0;font-size:14px;"><strong>Plan:</strong> ${sub.planName}</p>
+      <p style="margin:4px 0;font-size:14px;"><strong>Amount Paid:</strong> ₹${sub.planPrice}</p>
+      <p style="margin:4px 0;font-size:14px;"><strong>Total Meals:</strong> ${sub.totalMeals} ${mealsLabel}</p>
+      <p style="margin:4px 0;font-size:14px;"><strong>Subscription Validity:</strong> ${validityDays} Days from purchase date</p>
+      <p style="margin:4px 0;font-size:14px;"><strong>Valid From:</strong> ${new Date(sub.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+      <p style="margin:4px 0;font-size:14px;"><strong>Valid Until:</strong> ${new Date(sub.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+    </div>
+
+    <div style="background:#fff8f0;border-left:4px solid #f97316;padding:16px;border-radius:0 8px 8px 0;margin:0 0 20px;">
+      <p style="margin:0 0 4px;font-size:13px;color:#c2410c;font-weight:700;">🔄 UNUSED MEALS CARRY FORWARD</p>
+      <p style="margin:0;font-size:13px;color:#5a534d;">If you have unused meals at the end of a month, they carry forward within your ${validityDays}-day validity period. After the validity ends, unused meals expire.</p>
+    </div>
+
+    <div style="background:#f0f9ff;border-left:4px solid #0284c7;padding:16px;border-radius:0 8px 8px 0;margin:0 0 20px;">
+      <p style="margin:0 0 8px;font-size:13px;color:#0369a1;font-weight:700;">✨ PLAN BENEFITS</p>
+      <p style="margin:2px 0;font-size:13px;">• Twice a week, extra rotis or raita once a week</p>
+      <p style="margin:2px 0;font-size:13px;">• Twice a month, choose any sabji of your preference</p>
+      <p style="margin:2px 0;font-size:13px;">• Daily changing menu</p>
+      <p style="margin:2px 0;font-size:13px;">• Reliable service for office &amp; home</p>
+    </div>
+
+    <div style="background:#fefce8;border-left:4px solid #eab308;padding:16px;border-radius:0 8px 8px 0;margin:0 0 24px;">
+      <p style="margin:0 0 4px;font-size:13px;color:#854d0e;font-weight:700;">📌 IMPORTANT — SKIP POLICY</p>
+      <p style="margin:0 0 4px;font-size:13px;color:#5a534d;">${cutoffNote}</p>
+      <p style="margin:4px 0 0;font-size:13px;color:#5a534d;">You must skip from your dashboard <strong>before the cutoff time</strong>. After the cutoff, the meal cannot be skipped for that day. Skipped meals are NOT deducted from your balance.</p>
+    </div>
+
+    <a href="${APP_URL}/dashboard" style="display:block;background:#B23A3A;color:#fff;font-weight:700;text-align:center;padding:14px;border-radius:10px;text-decoration:none;font-size:15px;">View My Dashboard 🍱</a>
+    
+    <p style="margin:20px 0 0;font-size:13px;color:#7a6e65;text-align:center;">Har Bite Mein Maa Ka Pyaar ❤️</p>
+  `);
+  await sendEmail(to, `Your Mummy Food Hub ${mealLabel} Subscription is Active ❤️`, html);
+}
+
+// ── Skip Confirmation Email ─────────────────────────────────────
+export async function sendSkipConfirmationEmail(
+  to: string,
+  name: string,
+  details: {
+    mealType: 'lunch' | 'dinner';
+    date: string;
+    menu?: string;
+    totalMeals: number;
+    usedMeals: number;
+    skippedMeals: number;
+    remainingMeals: number;
+  }
+) {
+  const mealLabel = details.mealType === 'dinner' ? 'Dinner' : 'Lunch';
+  const dateFormatted = new Date(details.date).toLocaleDateString('en-IN', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
+
+  const html = emailBase(`
+    <p style="color:#2d2926;font-size:20px;font-weight:900;margin:0 0 4px;">Your Meal Has Been Skipped ❤️</p>
+    <p style="color:#5a534d;font-size:14px;margin:0 0 20px;">Dear ${name}, your meal for today has been successfully skipped.</p>
+    
+    <div style="background:#fefce8;border:1px solid #fde047;padding:16px;border-radius:10px;margin:0 0 20px;">
+      <p style="margin:0 0 4px;font-size:14px;"><strong>Meal:</strong> ${mealLabel}</p>
+      <p style="margin:4px 0;font-size:14px;"><strong>Date:</strong> ${dateFormatted}</p>
+      ${details.menu ? `<p style="margin:4px 0;font-size:14px;"><strong>Menu:</strong> ${details.menu}</p>` : ''}
+    </div>
+
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:16px;border-radius:10px;margin:0 0 20px;text-align:center;">
+      <p style="margin:0 0 8px;font-size:13px;color:#15803d;font-weight:700;">✅ YOUR MEAL HAS NOT BEEN DEDUCTED</p>
+      <div style="display:flex;justify-content:space-between;gap:8px;margin:0 0 4px;">
+        <div style="flex:1;background:#fff;border-radius:8px;padding:10px;">
+          <p style="margin:0;font-size:11px;color:#6b7280;">Total Meals</p>
+          <p style="margin:4px 0 0;font-size:20px;font-weight:900;color:#2d2926;">${details.totalMeals}</p>
+        </div>
+        <div style="flex:1;background:#fff;border-radius:8px;padding:10px;">
+          <p style="margin:0;font-size:11px;color:#6b7280;">Meals Used</p>
+          <p style="margin:4px 0 0;font-size:20px;font-weight:900;color:#B23A3A;">${details.usedMeals}</p>
+        </div>
+        <div style="flex:1;background:#fff;border-radius:8px;padding:10px;">
+          <p style="margin:0;font-size:11px;color:#6b7280;">Skipped</p>
+          <p style="margin:4px 0 0;font-size:20px;font-weight:900;color:#eab308;">${details.skippedMeals}</p>
+        </div>
+        <div style="flex:1;background:#fff;border-radius:8px;padding:10px;">
+          <p style="margin:0;font-size:11px;color:#6b7280;">Remaining</p>
+          <p style="margin:4px 0 0;font-size:20px;font-weight:900;color:#15803d;">${details.remainingMeals}</p>
+        </div>
+      </div>
+    </div>
+
+    <p style="font-size:13px;color:#5a534d;margin:0 0 20px;">Thank you for informing us in advance and helping us reduce food waste. Your remaining ${details.remainingMeals} meals are available throughout your subscription validity period.</p>
+
+    <a href="${APP_URL}/dashboard" style="display:block;background:#B23A3A;color:#fff;font-weight:700;text-align:center;padding:14px;border-radius:10px;text-decoration:none;">View My Dashboard</a>
+    <p style="margin:16px 0 0;font-size:12px;color:#7a6e65;text-align:center;">Warm Regards, Mummy Food Hub ❤️</p>
+  `);
+  await sendEmail(to, 'Your Meal Has Been Skipped Successfully ❤️', html);
+}
+
+// ── Meal Reminder Email ────────────────────────────────────────
+export async function sendMealReminderEmail(
+  to: string,
+  name: string,
+  details: {
+    mealType: 'lunch' | 'dinner';
+    menu?: string;
+    deliveryPreference?: string;
+    expectedTime: string;
+    cutoffTime: string;
+    cutoffDisplay: string; // e.g. "9:00 AM"
+    dashboardUrl?: string;
+  }
+) {
+  const mealLabel = details.mealType === 'dinner' ? 'Dinner' : 'Lunch';
+  const emoji = details.mealType === 'dinner' ? '🍽️' : '🍱';
+  const deliveryPref = details.deliveryPreference === 'doorstep' ? 'Doorstep Delivery' : 'Gate Delivery';
+
+  const html = emailBase(`
+    <p style="color:#2d2926;font-size:20px;font-weight:900;margin:0 0 4px;">${emoji} Your ${mealLabel} is Coming Today!</p>
+    <p style="color:#5a534d;font-size:14px;margin:0 0 20px;">Dear ${name}, your ${mealLabel} from Mummy Food Hub is scheduled for today.</p>
+    
+    <div style="background:#fff8f0;border:1px solid #fed7aa;padding:16px;border-radius:10px;margin:0 0 20px;">
+      ${details.menu ? `<p style="margin:0 0 4px;font-size:14px;"><strong>${emoji} Today's Menu:</strong> ${details.menu}</p>` : ''}
+      <p style="margin:4px 0;font-size:14px;"><strong>🚚 Delivery:</strong> ${deliveryPref}</p>
+      <p style="margin:4px 0 0;font-size:14px;"><strong>⏰ Expected Time:</strong> ${details.expectedTime}</p>
+    </div>
+
+    <div style="background:#fefce8;border:1px solid #fde047;padding:14px;border-radius:10px;margin:0 0 20px;">
+      <p style="margin:0;font-size:13px;color:#854d0e;">⚠️ If you need to <strong>skip today's ${mealLabel}</strong>, please do so from your dashboard before <strong>${details.cutoffDisplay}</strong>. After this time, the meal cannot be skipped.</p>
+    </div>
+    
+    <a href="${details.dashboardUrl ?? APP_URL + '/dashboard'}" style="display:block;background:#B23A3A;color:#fff;font-weight:700;text-align:center;padding:14px;border-radius:10px;text-decoration:none;font-size:15px;">Skip or View Dashboard</a>
+    <p style="margin:16px 0 0;font-size:12px;color:#7a6e65;text-align:center;">Har Bite Mein Maa Ka Pyaar ❤️ — Mummy Food Hub</p>
+  `);
+  await sendEmail(to, `Your Mummy Food Hub ${mealLabel} is Coming Today ${emoji}`, html);
+}
+
+// ── Skip Deadline Reminder Email ────────────────────────────────
+export async function sendSkipDeadlineEmail(
+  to: string,
+  name: string,
+  details: { mealType: 'lunch' | 'dinner'; cutoffDisplay: string; minutesLeft: number }
+) {
+  const mealLabel = details.mealType === 'dinner' ? 'Dinner' : 'Lunch';
+  const html = emailBase(`
+    <p style="color:#2d2926;font-size:20px;font-weight:900;margin:0 0 4px;">⏰ Skip Deadline Approaching</p>
+    <p style="color:#5a534d;font-size:14px;margin:0 0 20px;">Dear ${name}, the skip window for today's <strong>${mealLabel}</strong> is closing soon.</p>
+    
+    <div style="background:#fef2f2;border:1px solid #fecaca;padding:16px;border-radius:10px;margin:0 0 20px;text-align:center;">
+      <p style="margin:0;font-size:28px;font-weight:900;color:#B23A3A;">⏰ ${details.cutoffDisplay}</p>
+      <p style="margin:8px 0 0;font-size:13px;color:#7a6e65;">Skip deadline for today's ${mealLabel}</p>
+    </div>
+
+    <p style="font-size:13px;color:#5a534d;margin:0 0 20px;">If you do not want today's ${mealLabel}, please skip it from your dashboard before the deadline. After this time, the meal cannot be skipped.</p>
+    
+    <a href="${APP_URL}/dashboard" style="display:block;background:#B23A3A;color:#fff;font-weight:700;text-align:center;padding:14px;border-radius:10px;text-decoration:none;font-size:15px;">Skip Today's ${mealLabel}</a>
+    <p style="margin:16px 0 0;font-size:12px;color:#7a6e65;text-align:center;">Warm Regards, Mummy Food Hub ❤️</p>
+  `);
+  await sendEmail(to, `⏰ Skip Deadline: ${details.cutoffDisplay} for Today's ${mealLabel}`, html);
+}
+
+// ── 7-Day Expiry Reminder ───────────────────────────────────────
+export async function sendSubscriptionExpiry7dEmail(
+  to: string, name: string,
+  sub: { planName: string; endDate: string; totalMeals?: number; usedMeals?: number; skippedMeals?: number }
+) {
+  const remaining = Math.max(0, (sub.totalMeals ?? 0) - (sub.usedMeals ?? 0));
+  const html = emailBase(`
+    <p style="color:#2d2926;font-size:20px;font-weight:900;margin:0 0 4px;">⏰ Subscription Expiring in 7 Days</p>
+    <p style="color:#5a534d;font-size:14px;margin:0 0 20px;">Dear ${name}, your <strong>${sub.planName}</strong> expires in <strong>7 days</strong>. Please use your remaining meals before they expire.</p>
+    
+    <div style="background:#fff8f0;border:1px solid #fed7aa;padding:16px;border-radius:10px;margin:0 0 20px;">
+      <p style="margin:0 0 4px;font-size:14px;"><strong>Expiry Date:</strong> ${new Date(sub.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+      ${sub.totalMeals ? `<p style="margin:4px 0;font-size:14px;"><strong>Total Meals:</strong> ${sub.totalMeals}</p>` : ''}
+      ${sub.usedMeals !== undefined ? `<p style="margin:4px 0;font-size:14px;"><strong>Meals Used:</strong> ${sub.usedMeals}</p>` : ''}
+      <p style="margin:4px 0 0;font-size:16px;font-weight:900;color:#B23A3A;"><strong>Meals Remaining:</strong> ${remaining}</p>
+    </div>
+    
+    <a href="${APP_URL}/subscription" style="display:block;background:#B23A3A;color:#fff;font-weight:700;text-align:center;padding:14px;border-radius:10px;text-decoration:none;">Renew My Subscription</a>
+  `);
+  await sendEmail(to, '⏰ Your Subscription Expires in 7 Days — Mummy Food Hub', html);
+}
+
+// ── 1-Day Expiry Reminder ────────────────────────────────────────
+export async function sendSubscriptionExpiry1dEmail(
+  to: string, name: string,
+  sub: { planName: string; endDate: string; totalMeals?: number; usedMeals?: number }
+) {
+  const remaining = Math.max(0, (sub.totalMeals ?? 0) - (sub.usedMeals ?? 0));
+  const html = emailBase(`
+    <p style="color:#2d2926;font-size:20px;font-weight:900;margin:0 0 4px;">🚨 Subscription Expires Tomorrow!</p>
+    <p style="color:#5a534d;font-size:14px;margin:0 0 20px;">Dear ${name}, your <strong>${sub.planName}</strong> expires <strong>tomorrow</strong>. You have <strong>${remaining} meal(s)</strong> remaining.</p>
+    
+    <div style="background:#fef2f2;border:1px solid #fecaca;padding:16px;border-radius:10px;margin:0 0 20px;text-align:center;">
+      <p style="margin:0;font-size:28px;font-weight:900;color:#B23A3A;">${remaining} Meals Remaining</p>
+      <p style="margin:8px 0 0;font-size:13px;color:#7a6e65;">Expires on ${new Date(sub.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+    </div>
+    
+    <a href="${APP_URL}/subscription" style="display:block;background:#B23A3A;color:#fff;font-weight:700;text-align:center;padding:14px;border-radius:10px;text-decoration:none;">Renew Now</a>
+    <p style="margin:16px 0 0;font-size:12px;color:#7a6e65;text-align:center;">Warm Regards, Mummy Food Hub ❤️</p>
+  `);
+  await sendEmail(to, '🚨 Your Subscription Expires Tomorrow — Mummy Food Hub', html);
+}
+
+// ── Admin Skip Notification ──────────────────────────────────────
+export async function sendAdminSkipNotificationEmail(details: {
+  customerName: string;
+  customerPhone?: string;
+  mealType: 'lunch' | 'dinner';
+  date: string;
+  subscriptionId: string;
+  planName: string;
+  remainingMeals: number;
+  deliveryPreference?: string;
+}) {
+  const mealLabel = details.mealType === 'dinner' ? 'Dinner' : 'Lunch';
+  const dateFormatted = new Date(details.date).toLocaleDateString('en-IN', {
+    weekday: 'long', day: 'numeric', month: 'long',
+  });
+  const html = emailBase(`
+    <p style="color:#2d2926;font-size:20px;font-weight:900;margin:0 0 4px;">🟡 NEW MEAL SKIP</p>
+    <p style="color:#5a534d;font-size:14px;margin:0 0 20px;">A customer has skipped today's meal. Update the food preparation count accordingly.</p>
+    
+    <div style="background:#fefce8;border-left:4px solid #eab308;padding:16px;border-radius:0 8px 8px 0;margin:0 0 20px;">
+      <p style="margin:0 0 4px;font-size:14px;"><strong>Customer:</strong> ${details.customerName}</p>
+      ${details.customerPhone ? `<p style="margin:0 0 4px;font-size:14px;"><strong>Phone:</strong> ${details.customerPhone}</p>` : ''}
+      <p style="margin:0 0 4px;font-size:14px;"><strong>Meal:</strong> ${mealLabel}</p>
+      <p style="margin:0 0 4px;font-size:14px;"><strong>Date:</strong> ${dateFormatted}</p>
+      <p style="margin:0 0 4px;font-size:14px;"><strong>Plan:</strong> ${details.planName}</p>
+      <p style="margin:0 0 4px;font-size:14px;"><strong>Subscription ID:</strong> <span style="font-family:monospace;">${details.subscriptionId}</span></p>
+      <p style="margin:0 0 4px;font-size:14px;"><strong>Remaining Meals:</strong> ${details.remainingMeals}</p>
+      ${details.deliveryPreference ? `<p style="margin:0;font-size:14px;"><strong>Delivery:</strong> ${details.deliveryPreference}</p>` : ''}
+    </div>
+    
+    <a href="${APP_URL}/admin" style="display:block;background:#B23A3A;color:#fff;font-weight:700;text-align:center;padding:14px;border-radius:10px;text-decoration:none;">View Admin Dashboard</a>
+  `);
+  await sendEmail(OWNER_EMAIL, `🟡 Meal Skip — ${details.customerName} (${mealLabel} on ${details.date})`, html);
+}
+

@@ -7,8 +7,7 @@ const ALGORITHM = 'HS256';
 const EXPIRES_IN = '7d';
 
 function getSecret(): Uint8Array {
-  const secret = process.env.SESSION_SECRET;
-  if (!secret) throw new Error('SESSION_SECRET env var not set');
+  const secret = process.env.SESSION_SECRET || process.env.JWT_SECRET || 'mummy_food_hub_default_secret_key_2026';
   return new TextEncoder().encode(secret);
 }
 

@@ -2,7 +2,12 @@
   "crons": [
     {
       "path": "/api/cron/subscriptions",
-      "schedule": "0 8 * * *"
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/meals",
+      "schedule": "30 2 * * *"
     }
   ]
 }
+

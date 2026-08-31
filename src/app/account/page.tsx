@@ -52,6 +52,22 @@ export default function AccountPage() {
 
         {/* Links */}
         <div className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden divide-y divide-border">
+          <Link href="/dashboard" className="flex items-center justify-between p-6 hover:bg-gray-50 transition-colors group bg-primary/5">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                <CreditCard className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="font-heading font-bold text-foreground">Customer Dashboard</h2>
+                  <span className="px-2 py-0.5 bg-primary text-white text-[10px] font-extrabold rounded-full">VIP</span>
+                </div>
+                <p className="text-xs text-muted-foreground font-subheading">Today&apos;s meal, skip meal, live balance &amp; validity</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-primary" />
+          </Link>
+
           <Link href="/account/notifications" className="flex items-center justify-between p-6 hover:bg-gray-50 transition-colors group">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform relative">

@@ -8,11 +8,20 @@ import {
   Calendar, MapPin, Clock, Send, Utensils, Check, UserPlus, ListOrdered, History, RefreshCw
 } from "lucide-react";
 
+import { TodayMealsTab } from "@/components/admin/TodayMealsTab";
+import { FoodPrepTab } from "@/components/admin/FoodPrepTab";
+import { SkippedMealsTab } from "@/components/admin/SkippedMealsTab";
+import { MealSettingsTab } from "@/components/admin/MealSettingsTab";
+
 const TABS = [
   { id: "orders", label: "Orders", icon: ShoppingBag },
+  { id: "todaymeals", label: "Today's Meals", icon: Utensils },
+  { id: "foodprep", label: "Food Prep Report", icon: ListOrdered },
+  { id: "skippedmeals", label: "Skipped Meals", icon: AlertCircle },
   { id: "subrequests", label: "Sub Requests", icon: Bell },
-  { id: "users", label: "Users", icon: Menu },
   { id: "customersubs", label: "Customer Subs", icon: CreditCard },
+  { id: "mealsettings", label: "Meal Settings", icon: Settings },
+  { id: "users", label: "Users", icon: Menu },
   { id: "coupons", label: "Coupons", icon: Settings },
   { id: "menu", label: "Daily Menu", icon: Menu },
   { id: "catalog", label: "Full Menu Catalog", icon: Menu },
@@ -543,6 +552,18 @@ export default function AdminPage() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <AnimatePresence mode="wait">
           <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+
+            {/* ── TODAY'S MEALS TAB ── */}
+            {activeTab === "todaymeals" && <TodayMealsTab creds={creds} />}
+
+            {/* ── FOOD PREP REPORT TAB ── */}
+            {activeTab === "foodprep" && <FoodPrepTab creds={creds} />}
+
+            {/* ── SKIPPED MEALS TAB ── */}
+            {activeTab === "skippedmeals" && <SkippedMealsTab creds={creds} />}
+
+            {/* ── MEAL SETTINGS TAB ── */}
+            {activeTab === "mealsettings" && <MealSettingsTab creds={creds} />}
 
             {/* ── UPGRADED ORDERS TAB ── */}
             {activeTab === "orders" && (
