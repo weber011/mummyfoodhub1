@@ -18,9 +18,9 @@ type AdminSettingsData = {
 export function MealSettingsTab({ creds }: { creds: { u: string; p: string } }) {
   const [settings, setSettings] = useState<AdminSettingsData>({
     lunchTime: "13:00",
-    lunchSkipCutoff: "09:00",
+    lunchSkipCutoff: "04:00", // 4:00 AM IST
     dinnerTime: "20:00",
-    dinnerSkipCutoff: "16:00",
+    dinnerSkipCutoff: "15:00", // 3:00 PM IST
     skipCutoffHours: 4,
     deliveryRadius: "5-7 km",
     mealReminderMinutesBefore: 120,

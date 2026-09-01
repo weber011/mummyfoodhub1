@@ -59,9 +59,12 @@ export async function validateSkipEligibility(
   // 5. Server-side cutoff check (THE most important validation)
   const { allowed, minutesRemaining, cutoffTime } = await isSkipAllowed(mealType);
   if (!allowed) {
+    const cutoffMsg = mealType === 'lunch'
+      ? "Today's lunch can no longer be skipped because the cutoff time has passed."
+      : "Today's dinner can no longer be skipped because the cutoff time has passed.";
     return {
       eligible: false,
-      reason: 'The skip window has closed for today. Meal skip is not allowed after the cutoff time.',
+      reason: cutoffMsg,
       cutoffTime,
     };
   }

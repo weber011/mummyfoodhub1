@@ -59,9 +59,15 @@ export function getRemainingMeals(sub: UserSubscription): number | null {
  * remainingMeals = totalMeals - usedMeals (skipped meals are NOT deducted)
  */
 export function getSubscriptionBalance(sub: UserSubscription): SubscriptionBalance {
-  const totalMeals = sub.totalMeals ?? 0;
+  const isDinner = sub.mealType === 'dinner' || sub.basePlan === 'dinner';
+  const isLunch = sub.mealType === 'lunch' || sub.basePlan === 'lunch';
+  const isComplete = sub.mealType === 'both' || sub.basePlan === 'complete' || (!isDinner && !isLunch);
+  const hasBreakfast = sub.hasBreakfastAddon || sub.planName?.toLowerCase().includes('breakfast') || false;
+
+  const totalMeals = sub.totalMeals ?? (isDinner ? 30 : isComplete ? 56 : 26) + (hasBreakfast ? 26 : 0);
   const usedMeals = sub.usedMeals ?? 0;
   const skippedMeals = sub.skippedMeals ?? 0;
+  const transferredMeals = sub.transferredMeals ?? 0;
   const expiredMeals = sub.expiredMeals ?? 0;
   const remainingMeals = Math.max(0, totalMeals - usedMeals);
 
@@ -74,12 +80,62 @@ export function getSubscriptionBalance(sub: UserSubscription): SubscriptionBalan
   const istDateStr = ist.toLocaleDateString('en-CA');
   const isValid = sub.status === 'active' && istDateStr <= sub.endDate;
 
-  return {
-    totalMeals, usedMeals, skippedMeals, remainingMeals, expiredMeals,
-    daysRemaining, isValid,
+  const balance: SubscriptionBalance = {
+    totalMeals,
+    usedMeals,
+    skippedMeals,
+    transferredMeals,
+    remainingMeals,
+    expiredMeals,
+    daysRemaining,
+    isValid,
     validityStartDate: sub.startDate,
     validityEndDate: sub.endDate,
   };
+
+  if (hasBreakfast) {
+    const bTotal = sub.breakfastTotalMeals ?? 26;
+    const bUsed = sub.breakfastUsedMeals ?? 0;
+    const bSkipped = sub.breakfastSkippedMeals ?? 0;
+    const bTransferred = sub.breakfastTransferredMeals ?? 0;
+    balance.breakfast = {
+      total: bTotal,
+      consumed: bUsed,
+      skipped: bSkipped,
+      transferred: bTransferred,
+      remaining: Math.max(0, bTotal - bUsed),
+    };
+  }
+
+  if (isLunch || isComplete) {
+    const lTotal = sub.lunchTotalMeals ?? 26;
+    const lUsed = sub.lunchUsedMeals ?? (isLunch && !isComplete ? usedMeals : Math.floor(usedMeals / 2));
+    const lSkipped = sub.lunchSkippedMeals ?? (isLunch && !isComplete ? skippedMeals : Math.floor(skippedMeals / 2));
+    const lTransferred = sub.lunchTransferredMeals ?? (isLunch && !isComplete ? transferredMeals : 0);
+    balance.lunch = {
+      total: lTotal,
+      consumed: lUsed,
+      skipped: lSkipped,
+      transferred: lTransferred,
+      remaining: Math.max(0, lTotal - lUsed),
+    };
+  }
+
+  if (isDinner || isComplete) {
+    const dTotal = sub.dinnerTotalMeals ?? 30;
+    const dUsed = sub.dinnerUsedMeals ?? (isDinner && !isComplete ? usedMeals : Math.ceil(usedMeals / 2));
+    const dSkipped = sub.dinnerSkippedMeals ?? (isDinner && !isComplete ? skippedMeals : Math.ceil(skippedMeals / 2));
+    const dTransferred = sub.dinnerTransferredMeals ?? (isDinner && !isComplete ? transferredMeals : 0);
+    balance.dinner = {
+      total: dTotal,
+      consumed: dUsed,
+      skipped: dSkipped,
+      transferred: dTransferred,
+      remaining: Math.max(0, dTotal - dUsed),
+    };
+  }
+
+  return balance;
 }
 
 // ── Admin Subscription Management ─────────────────────────────────

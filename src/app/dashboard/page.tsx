@@ -8,9 +8,17 @@ import {
   Utensils, Calendar, Clock, CheckCircle2, AlertCircle, XCircle,
   HelpCircle, ChevronRight, ShieldCheck, ArrowRight, Bell, Settings,
   MapPin, Sparkles, AlertTriangle, RefreshCw, Layers, FileText,
-  UserCheck, Check, Info, PhoneCall, ChevronDown
+  UserCheck, Check, Info, PhoneCall, ChevronDown, ArrowRightLeft, Gift
 } from "lucide-react";
 import toast from "react-hot-toast";
+
+type CategorySummary = {
+  total: number;
+  consumed: number;
+  skipped: number;
+  transferred: number;
+  remaining: number;
+};
 
 type DashboardData = {
   user: {
@@ -28,6 +36,8 @@ type DashboardData = {
     planName: string;
     planPrice?: number;
     mealType?: "lunch" | "dinner" | "both";
+    basePlan?: "lunch" | "dinner" | "complete";
+    hasBreakfastAddon?: boolean;
     startDate: string;
     endDate: string;
     status: string;
@@ -36,21 +46,27 @@ type DashboardData = {
       totalMeals: number;
       usedMeals: number;
       skippedMeals: number;
+      transferredMeals: number;
       remainingMeals: number;
       expiredMeals: number;
       daysRemaining: number;
       isValid: boolean;
       validityStartDate: string;
       validityEndDate: string;
+      breakfast?: CategorySummary;
+      lunch?: CategorySummary;
+      dinner?: CategorySummary;
     };
   }>;
   todaysMeals: Array<{
     id: string;
     subscriptionId: string;
-    mealType: "lunch" | "dinner";
+    mealType: "lunch" | "dinner" | "breakfast";
     scheduledDate: string;
     menu?: string;
-    status: "upcoming" | "scheduled" | "delivered" | "consumed" | "skipped" | "missed" | "expired";
+    status: "upcoming" | "scheduled" | "available" | "delivered" | "consumed" | "skipped" | "transferred" | "missed" | "expired";
+    transferredTo?: string;
+    transferredFrom?: string;
     deliveryPreference?: "doorstep" | "gate";
   }>;
   skipEligibility: {
@@ -68,6 +84,13 @@ type DashboardData = {
       cutoffDisplay: string;
       mealTimeDisplay: string;
     };
+  };
+  loyalty?: {
+    qualifyingMealCount: number;
+    rewardAvailable: boolean;
+    rewardRedeemed: boolean;
+    rewardCycle: number;
+    totalRewardsRedeemed: number;
   };
   notifications: Array<{
     id: string;
@@ -89,11 +112,20 @@ export default function CustomerDashboardPage() {
   // Selected subscription for tabs if user has multiple
   const [selectedSubIndex, setSelectedSubIndex] = useState(0);
 
+  // Active meal tab if user has both Lunch & Dinner or Breakfast
+  const [activeMealTab, setActiveMealTab] = useState<"lunch" | "dinner" | "breakfast">("lunch");
+
   // Skip Modal state
   const [skipModalOpen, setSkipModalOpen] = useState(false);
   const [skipTargetMealType, setSkipTargetMealType] = useState<"lunch" | "dinner">("lunch");
   const [skipReason, setSkipReason] = useState("");
   const [skippingLoading, setSkippingLoading] = useState(false);
+
+  // Transfer Modal state
+  const [transferModalOpen, setTransferModalOpen] = useState(false);
+  const [transferSourceMeal, setTransferSourceMeal] = useState<any>(null);
+  const [transferTargetType, setTransferTargetType] = useState<"lunch" | "dinner">("dinner");
+  const [transferringLoading, setTransferringLoading] = useState(false);
 
   // Delivery Preference Modal state
   const [prefModalOpen, setPrefModalOpen] = useState(false);
@@ -141,19 +173,38 @@ export default function CustomerDashboardPage() {
 
   const activeSub = data?.subscriptions?.[selectedSubIndex] || data?.subscriptions?.[0] || null;
 
-  // Determine today's meal for active sub
-  const todaysMeal = useMemo(() => {
-    if (!data?.todaysMeals || !activeSub) return null;
-    return (
-      data.todaysMeals.find(
-        (m) => m.subscriptionId === activeSub.id || (m.mealType === activeSub.mealType && m.subscriptionId === activeSub.id)
-      ) || data.todaysMeals[0] || null
-    );
-  }, [data, activeSub]);
+  // Sync default active meal tab with plan
+  useEffect(() => {
+    if (activeSub) {
+      if (activeSub.mealType === "dinner" || activeSub.basePlan === "dinner") {
+        setActiveMealTab("dinner");
+      } else {
+        setActiveMealTab("lunch");
+      }
+    }
+  }, [activeSub]);
 
-  // Current meal type
-  const currentMealType: "lunch" | "dinner" = activeSub?.mealType === "dinner" ? "dinner" : "lunch";
-  const skipInfo = data?.skipEligibility?.[currentMealType];
+  // Determine available meal types for active sub
+  const availableMealTypes = useMemo(() => {
+    if (!activeSub) return [];
+    const types: Array<"lunch" | "dinner" | "breakfast"> = [];
+    if (activeSub.hasBreakfastAddon || activeSub.balance?.breakfast) types.push("breakfast");
+    if (activeSub.mealType === "lunch" || activeSub.mealType === "both" || activeSub.basePlan === "lunch" || activeSub.basePlan === "complete" || activeSub.balance?.lunch) types.push("lunch");
+    if (activeSub.mealType === "dinner" || activeSub.mealType === "both" || activeSub.basePlan === "dinner" || activeSub.basePlan === "complete" || activeSub.balance?.dinner) types.push("dinner");
+    return types;
+  }, [activeSub]);
+
+  // Determine today's meal for active tab
+  const currentTabMeal = useMemo(() => {
+    if (!data?.todaysMeals || !activeSub) return null;
+    return data.todaysMeals.find(
+      (m) => m.subscriptionId === activeSub.id && m.mealType === activeMealTab
+    ) || data.todaysMeals.find(
+      (m) => m.mealType === activeMealTab
+    ) || null;
+  }, [data, activeSub, activeMealTab]);
+
+  const skipInfo = activeMealTab === "dinner" ? data?.skipEligibility?.dinner : data?.skipEligibility?.lunch;
 
   // Format countdown string
   const formatCountdown = (mins: number) => {
@@ -176,7 +227,7 @@ export default function CustomerDashboardPage() {
           subscriptionId: activeSub.id,
           mealType: skipTargetMealType,
           reason: skipReason,
-          mealId: todaysMeal?.id,
+          mealId: currentTabMeal?.id,
         }),
       });
 
@@ -184,16 +235,46 @@ export default function CustomerDashboardPage() {
       if (!res.ok || json.error) {
         toast.error(json.error || "Could not skip meal.");
       } else {
-        toast.success(json.message || "Meal skipped successfully! It will carry forward.", { duration: 5000 });
+        const mealWord = skipTargetMealType === "dinner" ? "Dinner" : "Lunch";
+        toast.success(`${mealWord} skipped successfully.`, { duration: 5000 });
         setSkipModalOpen(false);
         setSkipReason("");
-        // Reload dashboard data
         loadDashboard(true);
       }
     } catch (e) {
       toast.error("Network error while processing skip.");
     } finally {
       setSkippingLoading(false);
+    }
+  };
+
+  const handleTransferConfirm = async () => {
+    if (!activeSub || !transferSourceMeal) return;
+    setTransferringLoading(true);
+
+    try {
+      const res = await fetch("/api/meals/transfer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subscriptionId: activeSub.id,
+          sourceMealId: transferSourceMeal.id,
+          targetMealType: transferTargetType,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        toast.error(json.error || "Failed to transfer meal.");
+      } else {
+        toast.success("Meal successfully transferred.", { duration: 5000 });
+        setTransferModalOpen(false);
+        loadDashboard(true);
+      }
+    } catch (e) {
+      toast.error("Network error while transferring meal.");
+    } finally {
+      setTransferringLoading(false);
     }
   };
 
@@ -237,27 +318,56 @@ export default function CustomerDashboardPage() {
 
   return (
     <div className="min-h-screen bg-brand-bg pt-24 pb-20 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto space-y-8">
         
-        {/* TOP GREETING & QUICK STATUS */}
+        {/* ── LOYALTY 5TH MEAL REWARD BANNER ── */}
+        {data?.loyalty?.rewardAvailable && (
+          <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-primary text-white rounded-3xl p-6 sm:p-7 shadow-lg flex flex-col md:flex-row items-center justify-between gap-4 border border-white/20 animate-in fade-in">
+            <div className="flex items-center gap-4 text-center md:text-left">
+              <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl shrink-0">
+                🎉
+              </div>
+              <div>
+                <h3 className="text-xl font-heading font-black">5th Meal Reward Unlocked!</h3>
+                <p className="text-sm text-white/90 font-subheading mt-0.5">
+                  Congratulations! You&apos;ve completed 4 qualifying meals. Get <strong>15% OFF + FREE DELIVERY</strong> on your 5th meal.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/menu"
+              className="px-6 py-3.5 bg-white text-primary hover:bg-white/95 rounded-2xl font-bold font-subheading text-sm shadow-md transition-all whitespace-nowrap shrink-0 flex items-center gap-2"
+            >
+              <Gift className="w-4 h-4" /> Use My Reward
+            </Link>
+          </div>
+        )}
+
+        {/* ── TOP HEADER (PER SPEC: Hello, [Customer Name] | Subscription Status: ACTIVE | Plan, Start Date, Expiration Date) ── */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
           <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
           
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold font-subheading rounded-full uppercase tracking-wider">
-                Mummy Food Hub VIP
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-black font-subheading rounded-full uppercase tracking-wider">
+                Subscription Status: ACTIVE
               </span>
               <span className="text-xs text-muted-foreground font-medium">
                 {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short", year: "numeric" })}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-heading font-black text-foreground">
-              {data?.greeting || `Hello, ${user?.name} ❤️`}
+              Hello, {data?.user?.name || user?.name} ❤️
             </h1>
-            <p className="text-sm text-muted-foreground font-subheading">
-              Simplicity is our identity — fresh homemade meals with less oil &amp; less masala.
-            </p>
+            {activeSub && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground font-subheading">
+                <span><strong>Plan:</strong> {activeSub.planName}</span>
+                <span>•</span>
+                <span><strong>Start Date:</strong> {new Date(activeSub.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
+                <span>•</span>
+                <span><strong>Expiration Date:</strong> {new Date(activeSub.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3 self-start md:self-auto">
@@ -285,7 +395,131 @@ export default function CustomerDashboardPage() {
           </div>
         </div>
 
-        {/* SUBSCRIPTION SELECTOR TABS (If user has multiple active subscriptions) */}
+        {/* ── PER-CATEGORY MEAL SUMMARIES (BREAKFAST, LUNCH, DINNER - ONLY SHOW PURCHASED) ── */}
+        {activeSub && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            
+            {/* BREAKFAST SUMMARY (ONLY IF INCLUDED) */}
+            {balance?.breakfast && (
+              <div className="bg-white rounded-3xl p-6 border border-border shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-border">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-sm">
+                      🥐
+                    </span>
+                    <h3 className="font-heading font-black text-foreground text-base">BREAKFAST</h3>
+                  </div>
+                  <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full">
+                    Add-On
+                  </span>
+                </div>
+                <div className="grid grid-cols-5 gap-1 text-center">
+                  <div className="p-2 bg-gray-50 rounded-xl">
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase">Total</p>
+                    <p className="text-base font-black text-foreground mt-0.5">{balance.breakfast.total}</p>
+                  </div>
+                  <div className="p-2 bg-gray-50 rounded-xl">
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase">Consumed</p>
+                    <p className="text-base font-black text-foreground mt-0.5">{balance.breakfast.consumed}</p>
+                  </div>
+                  <div className="p-2 bg-amber-50 rounded-xl">
+                    <p className="text-[10px] text-amber-700 font-bold uppercase">Skipped</p>
+                    <p className="text-base font-black text-amber-700 mt-0.5">{balance.breakfast.skipped}</p>
+                  </div>
+                  <div className="p-2 bg-purple-50 rounded-xl">
+                    <p className="text-[10px] text-purple-700 font-bold uppercase">Transferred</p>
+                    <p className="text-base font-black text-purple-700 mt-0.5">{balance.breakfast.transferred}</p>
+                  </div>
+                  <div className="p-2 bg-green-50 rounded-xl">
+                    <p className="text-[10px] text-green-700 font-bold uppercase">Remaining</p>
+                    <p className="text-base font-black text-green-700 mt-0.5">{balance.breakfast.remaining}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* LUNCH SUMMARY (ONLY IF INCLUDED) */}
+            {balance?.lunch && (
+              <div className="bg-white rounded-3xl p-6 border border-border shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-border">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center font-bold text-sm">
+                      🍱
+                    </span>
+                    <h3 className="font-heading font-black text-foreground text-base">LUNCH</h3>
+                  </div>
+                  <span className="text-xs font-bold text-orange-700 bg-orange-50 px-2.5 py-1 rounded-full">
+                    56 Days Validity
+                  </span>
+                </div>
+                <div className="grid grid-cols-5 gap-1 text-center">
+                  <div className="p-2 bg-gray-50 rounded-xl">
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase">Total</p>
+                    <p className="text-base font-black text-foreground mt-0.5">{balance.lunch.total}</p>
+                  </div>
+                  <div className="p-2 bg-gray-50 rounded-xl">
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase">Consumed</p>
+                    <p className="text-base font-black text-foreground mt-0.5">{balance.lunch.consumed}</p>
+                  </div>
+                  <div className="p-2 bg-amber-50 rounded-xl">
+                    <p className="text-[10px] text-amber-700 font-bold uppercase">Skipped</p>
+                    <p className="text-base font-black text-amber-700 mt-0.5">{balance.lunch.skipped}</p>
+                  </div>
+                  <div className="p-2 bg-purple-50 rounded-xl">
+                    <p className="text-[10px] text-purple-700 font-bold uppercase">Transferred</p>
+                    <p className="text-base font-black text-purple-700 mt-0.5">{balance.lunch.transferred}</p>
+                  </div>
+                  <div className="p-2 bg-green-50 rounded-xl">
+                    <p className="text-[10px] text-green-700 font-bold uppercase">Remaining</p>
+                    <p className="text-base font-black text-green-700 mt-0.5">{balance.lunch.remaining}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* DINNER SUMMARY (ONLY IF INCLUDED) */}
+            {balance?.dinner && (
+              <div className="bg-white rounded-3xl p-6 border border-border shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-border">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">
+                      🍽️
+                    </span>
+                    <h3 className="font-heading font-black text-foreground text-base">DINNER</h3>
+                  </div>
+                  <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full">
+                    60 Days Validity
+                  </span>
+                </div>
+                <div className="grid grid-cols-5 gap-1 text-center">
+                  <div className="p-2 bg-gray-50 rounded-xl">
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase">Total</p>
+                    <p className="text-base font-black text-foreground mt-0.5">{balance.dinner.total}</p>
+                  </div>
+                  <div className="p-2 bg-gray-50 rounded-xl">
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase">Consumed</p>
+                    <p className="text-base font-black text-foreground mt-0.5">{balance.dinner.consumed}</p>
+                  </div>
+                  <div className="p-2 bg-amber-50 rounded-xl">
+                    <p className="text-[10px] text-amber-700 font-bold uppercase">Skipped</p>
+                    <p className="text-base font-black text-amber-700 mt-0.5">{balance.dinner.skipped}</p>
+                  </div>
+                  <div className="p-2 bg-purple-50 rounded-xl">
+                    <p className="text-[10px] text-purple-700 font-bold uppercase">Transferred</p>
+                    <p className="text-base font-black text-purple-700 mt-0.5">{balance.dinner.transferred}</p>
+                  </div>
+                  <div className="p-2 bg-green-50 rounded-xl">
+                    <p className="text-[10px] text-green-700 font-bold uppercase">Remaining</p>
+                    <p className="text-base font-black text-green-700 mt-0.5">{balance.dinner.remaining}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </div>
+        )}
+
+        {/* SUBSCRIPTION SELECTOR TABS (If user has multiple subscriptions) */}
         {data?.subscriptions && data.subscriptions.length > 1 && (
           <div className="flex items-center gap-3 overflow-x-auto pb-2">
             {data.subscriptions.map((sub, idx) => (
@@ -320,12 +554,12 @@ export default function CustomerDashboardPage() {
               href="/subscription"
               className="inline-flex items-center gap-2 px-6 py-3.5 bg-primary hover:bg-primary/90 text-white font-bold font-subheading rounded-2xl transition-all shadow-md text-sm"
             >
-              Explore 26-Meal Plans (₹2,099) <ArrowRight className="w-4 h-4" />
+              Explore Subscription Plans <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         )}
 
-        {/* MAIN DASHBOARD GRID */}
+        {/* ── MAIN DASHBOARD GRID ── */}
         {activeSub && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
@@ -334,6 +568,26 @@ export default function CustomerDashboardPage() {
               
               {/* TODAY'S MEAL CARD */}
               <div className="bg-white rounded-3xl p-6 sm:p-8 border border-border shadow-sm space-y-6 relative overflow-hidden">
+                
+                {/* MULTI-MEAL SELECTOR (If customer has Lunch + Dinner or Breakfast) */}
+                {availableMealTypes.length > 1 && (
+                  <div className="flex items-center gap-2 p-1.5 bg-gray-100 rounded-2xl">
+                    {availableMealTypes.map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setActiveMealTab(t)}
+                        className={`flex-1 py-2.5 rounded-xl font-bold font-subheading text-xs capitalize transition-all flex items-center justify-center gap-1.5 ${
+                          activeMealTab === t
+                            ? "bg-white text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {t === "breakfast" ? "🥐 Breakfast" : t === "lunch" ? "🍱 Lunch" : "🍽️ Dinner"}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
@@ -343,23 +597,31 @@ export default function CustomerDashboardPage() {
                       <span className="text-xs uppercase font-extrabold tracking-wider text-muted-foreground">
                         Today&apos;s Scheduled Meal
                       </span>
-                      <h2 className="text-xl font-heading font-bold text-foreground">
-                        {currentMealType === "dinner" ? "Dinner Service" : "Lunch Service"}
+                      <h2 className="text-xl font-heading font-bold text-foreground capitalize">
+                        {activeMealTab === "breakfast" ? "Breakfast Service" : activeMealTab === "dinner" ? "Dinner Service" : "Lunch Service"}
                       </h2>
                     </div>
                   </div>
 
                   {/* MEAL STATUS BADGE */}
                   <div>
-                    {todaysMeal?.status === "delivered" || todaysMeal?.status === "consumed" ? (
+                    {currentTabMeal?.status === "delivered" || currentTabMeal?.status === "consumed" ? (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-800 text-xs font-bold rounded-full">
                         🟢 Delivered
                       </span>
-                    ) : todaysMeal?.status === "skipped" ? (
+                    ) : currentTabMeal?.status === "skipped" ? (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-800 text-xs font-bold rounded-full">
-                        🟡 Skipped (Carried Forward)
+                        🟡 Skipped
                       </span>
-                    ) : todaysMeal?.status === "missed" ? (
+                    ) : currentTabMeal?.status === "transferred" ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 text-purple-800 text-xs font-bold rounded-full">
+                        🟣 Transferred to {currentTabMeal.transferredTo}
+                      </span>
+                    ) : currentTabMeal?.transferredFrom ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 text-purple-800 text-xs font-bold rounded-full">
+                        🟣 Transferred from {currentTabMeal.transferredFrom}
+                      </span>
+                    ) : currentTabMeal?.status === "missed" ? (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-100 text-red-800 text-xs font-bold rounded-full">
                         🔴 Missed
                       </span>
@@ -377,10 +639,14 @@ export default function CustomerDashboardPage() {
                     <span className="flex items-center gap-1.5 text-primary">
                       <Sparkles className="w-3.5 h-3.5" /> Fresh Homemade Preparation
                     </span>
-                    <span>Expected: {skipInfo?.mealTimeDisplay || (currentMealType === "dinner" ? "8:00 PM" : "1:00 PM")}</span>
+                    <span>Expected: {skipInfo?.mealTimeDisplay || (activeMealTab === "dinner" ? "8:00 PM" : activeMealTab === "breakfast" ? "8:30 AM" : "1:00 PM")}</span>
                   </div>
                   <p className="text-base sm:text-lg font-heading font-bold text-foreground">
-                    {todaysMeal?.menu || "Dal Tadka + Seasonal Sabji + 4 Soft Butter Roti + Jeera Rice + Fresh Salad"}
+                    {currentTabMeal?.menu || (
+                      activeMealTab === "breakfast"
+                        ? "Poha / Stuffed Paratha + Fresh Mint Chutney + Curd"
+                        : "Dal Tadka + Seasonal Sabji + 4 Soft Butter Roti + Steamed Rice + Fresh Salad"
+                    )}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Cooked with minimal oil and homemade masalas for daily healthy digestion.
@@ -411,19 +677,60 @@ export default function CustomerDashboardPage() {
                   </button>
                 </div>
 
-                {/* SKIP BUTTON & CUTOFF COUNTDOWN SECTION */}
+                {/* ── SKIP & SHIFT ACTIONS ── */}
                 <div className="pt-2 border-t border-border space-y-3">
-                  {todaysMeal?.status === "skipped" ? (
-                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-sm space-y-1">
+                  
+                  {/* CASE 1: SKIPPED -> ALLOW TRANSFER */}
+                  {currentTabMeal?.status === "skipped" ? (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-3">
+                      <div className="text-amber-900 text-sm space-y-1">
+                        <p className="font-bold flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-amber-600" />
+                          Today&apos;s {activeMealTab} has been skipped!
+                        </p>
+                        <p className="text-xs text-amber-800">
+                          This meal was NOT deducted from your subscription balance.
+                        </p>
+                      </div>
+
+                      {/* SHIFT / TRANSFER BUTTON */}
+                      {activeMealTab === "lunch" && (
+                        <button
+                          onClick={() => {
+                            setTransferSourceMeal(currentTabMeal);
+                            setTransferTargetType("dinner");
+                            setTransferModalOpen(true);
+                          }}
+                          className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold font-subheading text-xs transition-all shadow-sm flex items-center justify-center gap-2"
+                        >
+                          <ArrowRightLeft className="w-4 h-4" /> Use this meal for Dinner
+                        </button>
+                      )}
+
+                      {activeMealTab === "dinner" && (
+                        <button
+                          onClick={() => {
+                            setTransferSourceMeal(currentTabMeal);
+                            setTransferTargetType("lunch");
+                            setTransferModalOpen(true);
+                          }}
+                          className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold font-subheading text-xs transition-all shadow-sm flex items-center justify-center gap-2"
+                        >
+                          <ArrowRightLeft className="w-4 h-4" /> Use this meal for Lunch
+                        </button>
+                      )}
+                    </div>
+                  ) : currentTabMeal?.status === "transferred" ? (
+                    <div className="p-4 bg-purple-50 border border-purple-200 rounded-2xl text-purple-900 text-sm space-y-1">
                       <p className="font-bold flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-amber-600" />
-                        Today&apos;s meal has been skipped!
+                        <ArrowRightLeft className="w-4 h-4 text-purple-600" />
+                        Transferred to {currentTabMeal.transferredTo === "dinner" ? "Dinner" : "Lunch"}
                       </p>
-                      <p className="text-xs text-amber-800">
-                        This meal was NOT deducted from your subscription. Your remaining balance is still {balance?.remainingMeals} meals.
+                      <p className="text-xs text-purple-800">
+                        This meal entitlement has been shifted. No duplicate transfer is permitted.
                       </p>
                     </div>
-                  ) : todaysMeal?.status === "delivered" || todaysMeal?.status === "consumed" ? (
+                  ) : currentTabMeal?.status === "delivered" || currentTabMeal?.status === "consumed" ? (
                     <div className="p-4 bg-green-50 border border-green-200 rounded-2xl text-green-900 text-sm flex items-center gap-3">
                       <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
                       <div>
@@ -432,13 +739,14 @@ export default function CustomerDashboardPage() {
                       </div>
                     </div>
                   ) : (
+                    /* CASE: UPCOMING / SCHEDULED -> ALLOW SKIP BEFORE CUTOFF */
                     <div className="space-y-3">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-subheading">
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4 text-primary" />
                           <span className="text-muted-foreground">Skip Cutoff Deadline:</span>
                           <span className="font-bold text-foreground">
-                            {skipInfo?.cutoffDisplay || (currentMealType === "dinner" ? "4:00 PM" : "9:00 AM")}
+                            {activeMealTab === "lunch" ? "4:00 AM" : "3:00 PM"}
                           </span>
                         </div>
 
@@ -448,8 +756,8 @@ export default function CustomerDashboardPage() {
                               ⏳ Skip window closes in {formatCountdown(skipInfo.minutesRemaining)}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">
-                              🔒 Meal skip window closed for today
+                            <span className="inline-flex items-center gap-1.5 font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded-lg">
+                              🔒 Cutoff time passed
                             </span>
                           )}
                         </div>
@@ -458,7 +766,7 @@ export default function CustomerDashboardPage() {
                       {/* SKIP BUTTON */}
                       <button
                         onClick={() => {
-                          setSkipTargetMealType(currentMealType);
+                          setSkipTargetMealType(activeMealTab as "lunch" | "dinner");
                           setSkipModalOpen(true);
                         }}
                         disabled={!skipInfo?.allowed}
@@ -469,12 +777,15 @@ export default function CustomerDashboardPage() {
                         }`}
                       >
                         <AlertTriangle className="w-4 h-4 text-amber-600" />
-                        Skip Today&apos;s {currentMealType === "dinner" ? "Dinner" : "Lunch"}
+                        Skip Today&apos;s {activeMealTab === "dinner" ? "Dinner" : "Lunch"}
                       </button>
 
+                      {/* EXACT CUTOFF ERROR TEXT (PER USER SPEC) */}
                       {!skipInfo?.allowed && (
-                        <p className="text-[11px] text-center text-muted-foreground">
-                          Skip requests are accepted up to 4 hours before meal preparation ({skipInfo?.cutoffDisplay || "9:00 AM"}).
+                        <p className="text-xs font-semibold text-center text-red-600 bg-red-50 p-2.5 rounded-xl border border-red-200">
+                          {activeMealTab === "lunch"
+                            ? "Today's lunch can no longer be skipped because the cutoff time has passed."
+                            : "Today's dinner can no longer be skipped because the cutoff time has passed."}
                         </p>
                       )}
                     </div>
@@ -491,7 +802,7 @@ export default function CustomerDashboardPage() {
                   </div>
                   <div>
                     <h4 className="font-bold text-foreground">Unused Meals Carry Forward</h4>
-                    <p className="text-muted-foreground mt-0.5">Use your 26 meals anytime within your 56-day validity.</p>
+                    <p className="text-muted-foreground mt-0.5">Use your meals anytime within your subscription validity.</p>
                   </div>
                 </div>
 
@@ -532,9 +843,9 @@ export default function CustomerDashboardPage() {
                 {/* PROGRESS BAR */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs text-white/80 font-subheading font-medium">
-                    <span>Meals Consumed</span>
+                    <span>Overall Consumption</span>
                     <span className="font-bold text-white">
-                      {balance?.usedMeals || 0} / {balance?.totalMeals || 26} Meals Used
+                      {balance?.usedMeals || 0} / {balance?.totalMeals || 26} Meals
                     </span>
                   </div>
                   <div className="w-full h-3.5 bg-white/10 rounded-full overflow-hidden p-0.5">
@@ -551,15 +862,15 @@ export default function CustomerDashboardPage() {
                 <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/10">
                   
                   <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
-                    <p className="text-[11px] text-white/60 font-subheading">Meals Used</p>
+                    <p className="text-[11px] text-white/60 font-subheading">Total Consumed</p>
                     <p className="text-2xl font-black font-heading text-white mt-1">
                       {balance?.usedMeals || 0}
                     </p>
-                    <p className="text-[10px] text-white/40 mt-0.5">Consumed</p>
+                    <p className="text-[10px] text-white/40 mt-0.5">Delivered</p>
                   </div>
 
                   <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
-                    <p className="text-[11px] text-amber-300 font-subheading">Meals Skipped</p>
+                    <p className="text-[11px] text-amber-300 font-subheading">Total Skipped</p>
                     <p className="text-2xl font-black font-heading text-amber-300 mt-1">
                       {balance?.skippedMeals || 0}
                     </p>
@@ -686,7 +997,7 @@ export default function CustomerDashboardPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-heading font-bold text-foreground">
-                    Skip Today&apos;s {skipTargetMealType === "dinner" ? "Dinner" : "Lunch"}?
+                    Are you sure you want to skip today&apos;s {skipTargetMealType === "dinner" ? "Dinner" : "Lunch"}?
                   </h3>
                   <p className="text-xs text-muted-foreground">
                     {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
@@ -708,7 +1019,7 @@ export default function CustomerDashboardPage() {
                 You will NOT lose this meal!
               </p>
               <p className="text-xs text-green-800 leading-relaxed">
-                It will remain available in your balance and carry forward to use anytime within your 56-day validity period.
+                It will remain available in your balance and carry forward to use anytime within your subscription validity period.
               </p>
             </div>
 
@@ -717,13 +1028,13 @@ export default function CustomerDashboardPage() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Scheduled Menu:</span>
                 <span className="font-bold text-foreground text-right max-w-[200px]">
-                  {todaysMeal?.menu || "Standard Homemade Thali"}
+                  {currentTabMeal?.menu || "Standard Homemade Thali"}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Skip Cutoff Deadline:</span>
                 <span className="font-bold text-foreground">
-                  {skipInfo?.cutoffDisplay || (skipTargetMealType === "dinner" ? "4:00 PM" : "9:00 AM")}
+                  {skipTargetMealType === "lunch" ? "4:00 AM IST" : "3:00 PM IST"}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -769,6 +1080,76 @@ export default function CustomerDashboardPage() {
                   </>
                 ) : (
                   "Confirm Skip"
+                )}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ────────────────────────────────────────────────────────── */}
+      {/* MEAL TRANSFER / SHIFT CONFIRMATION MODAL                  */}
+      {/* ────────────────────────────────────────────────────────── */}
+      {transferModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl border border-border animate-in fade-in zoom-in-95 duration-200">
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center">
+                  <ArrowRightLeft className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-heading font-bold text-foreground">
+                    Transfer this skipped {transferSourceMeal?.mealType === "lunch" ? "Lunch" : "Dinner"} meal to {transferTargetType === "dinner" ? "Dinner" : "Lunch"}?
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Shift meal entitlement for today
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setTransferModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-4 bg-purple-50 border border-purple-200 rounded-2xl space-y-1 text-xs text-purple-950">
+              <p className="font-bold flex items-center gap-1.5 text-purple-900">
+                <Info className="w-4 h-4 text-purple-600" />
+                Entitlement Transfer
+              </p>
+              <p className="leading-relaxed text-purple-800">
+                Your skipped {transferSourceMeal?.mealType} entitlement will be used to serve today&apos;s {transferTargetType}. This is a 1-to-1 transfer of an existing meal and does not cost extra.
+              </p>
+            </div>
+
+            {/* MODAL ACTIONS */}
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setTransferModalOpen(false)}
+                disabled={transferringLoading}
+                className="flex-1 py-3 px-4 rounded-xl border border-border hover:bg-gray-50 text-foreground font-bold font-subheading text-xs"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleTransferConfirm}
+                disabled={transferringLoading}
+                className="flex-1 py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold font-subheading text-xs shadow-md flex items-center justify-center gap-2"
+              >
+                {transferringLoading ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Transferring...
+                  </>
+                ) : (
+                  "Confirm Transfer"
                 )}
               </button>
             </div>
@@ -851,7 +1232,7 @@ export default function CustomerDashboardPage() {
             {/* SPECIAL INSTRUCTIONS */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-foreground font-subheading">
-                Special Delivery Instructions (e.g. Call before reaching gate):
+                Special Delivery Instructions:
               </label>
               <textarea
                 value={newInstructions}

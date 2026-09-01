@@ -6,28 +6,39 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import {
   ArrowLeft, Calendar, Download, RefreshCw,
-  Utensils, CheckCircle2, AlertTriangle, XCircle, Info, ChevronLeft, ChevronRight
+  Utensils, CheckCircle2, AlertTriangle, XCircle, Info, ChevronLeft, ChevronRight, PieChart
 } from "lucide-react";
 import toast from "react-hot-toast";
+
+type CategoryReport = {
+  scheduled: number;
+  total: number;
+  consumed: number;
+  skipped: number;
+  transferred: number;
+  remaining: number;
+};
 
 type MonthlyReport = {
   year: number;
   month: number;
   subscriptionId: string;
   planName: string;
-  mealType: "lunch" | "dinner" | "both";
-  totalScheduled: number;
-  delivered: number;
-  consumed: number;
-  skipped: number;
-  missed: number;
-  upcoming: number;
-  remainingBalance: number;
+  subscriptionPeriod: {
+    startDate: string;
+    endDate: string;
+  };
+  totalEligibleMeals: number;
+  utilizationPercentage: number;
+  breakfast?: CategoryReport;
+  lunch?: CategoryReport;
+  dinner?: CategoryReport;
   days: Array<{
     date: string;
-    mealType: "lunch" | "dinner";
-    status: "upcoming" | "scheduled" | "delivered" | "consumed" | "skipped" | "missed" | "expired";
+    mealType: "lunch" | "dinner" | "breakfast";
+    status: "upcoming" | "scheduled" | "available" | "delivered" | "consumed" | "skipped" | "transferred" | "missed" | "expired";
     menu?: string;
+    note?: string;
   }>;
 };
 
@@ -92,25 +103,26 @@ export default function MonthlyReportPage() {
     const totalDaysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
     const firstDayOfWeek = new Date(selectedYear, selectedMonth - 1, 1).getDay(); // 0 = Sun
 
-    const dayMap = new Map<string, MonthlyReport["days"][0]>();
+    const dayMap = new Map<string, MonthlyReport["days"]>();
     report?.days?.forEach((d) => {
-      dayMap.set(d.date, d);
+      const existing = dayMap.get(d.date) || [];
+      existing.push(d);
+      dayMap.set(d.date, existing);
     });
 
     const daysArray = [];
-    // Padding before 1st of month
     for (let i = 0; i < firstDayOfWeek; i++) {
       daysArray.push({ isPadding: true, dayNumber: 0, dateStr: "" });
     }
 
     for (let d = 1; d <= totalDaysInMonth; d++) {
       const dateStr = `${selectedYear}-${selectedMonth.toString().padStart(2, "0")}-${d.toString().padStart(2, "0")}`;
-      const record = dayMap.get(dateStr);
+      const records = dayMap.get(dateStr) || [];
       daysArray.push({
         isPadding: false,
         dayNumber: d,
         dateStr,
-        record,
+        records,
       });
     }
 
@@ -124,11 +136,12 @@ export default function MonthlyReportPage() {
       return;
     }
 
-    const headers = ["Date", "Meal Type", "Status", "Menu"];
+    const headers = ["Date", "Meal Type", "Status", "Note", "Menu"];
     const rows = report.days.map((d) => [
       d.date,
       d.mealType,
       d.status,
+      `"${(d.note || "").replace(/"/g, '""')}"`,
       `"${(d.menu || "").replace(/"/g, '""')}"`,
     ]);
 
@@ -142,10 +155,6 @@ export default function MonthlyReportPage() {
     document.body.removeChild(link);
     toast.success("CSV Report Downloaded!");
   };
-
-  const consumedPercent = report?.totalScheduled ? Math.round((report.consumed / report.totalScheduled) * 100) : 0;
-  const skippedPercent = report?.totalScheduled ? Math.round((report.skipped / report.totalScheduled) * 100) : 0;
-  const missedPercent = report?.totalScheduled ? Math.round((report.missed / report.totalScheduled) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-brand-bg pt-24 pb-20 px-4 sm:px-6 lg:px-8">
@@ -163,7 +172,7 @@ export default function MonthlyReportPage() {
             <div>
               <h1 className="text-2xl font-heading font-black text-foreground">Monthly Meal Report</h1>
               <p className="text-xs text-muted-foreground font-subheading">
-                Comprehensive calendar &amp; status metrics for your plan.
+                Comprehensive reporting starting from your activation date ({report?.subscriptionPeriod?.startDate || "Active"}).
               </p>
             </div>
           </div>
@@ -199,96 +208,83 @@ export default function MonthlyReportPage() {
           </div>
         </div>
 
-        {/* 5-GRID STATS SUMMARY CARDS */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <div className="bg-white p-4 rounded-2xl border border-border shadow-sm">
-            <p className="text-[11px] text-muted-foreground font-subheading">Scheduled Meals</p>
-            <p className="text-2xl font-heading font-bold text-foreground mt-1">
-              {report?.totalScheduled || 0}
-            </p>
-          </div>
+        {/* OVERALL PLAN UTILIZATION & ELIGIBLE MEALS BANNER */}
+        {report && (
+          <div className="bg-white rounded-3xl p-6 border border-border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-black font-subheading rounded-full uppercase">
+                {report.planName}
+              </span>
+              <h3 className="text-xl font-heading font-black text-foreground mt-2">
+                Plan Period: {new Date(report.subscriptionPeriod.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} → {new Date(report.subscriptionPeriod.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+              </h3>
+              <p className="text-xs text-muted-foreground font-subheading mt-0.5">
+                Monthly reports filter activity without resetting your ongoing subscription balance.
+              </p>
+            </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-border shadow-sm">
-            <p className="text-[11px] text-green-700 font-subheading">Delivered / Consumed</p>
-            <p className="text-2xl font-heading font-bold text-green-700 mt-1">
-              {report?.delivered || 0}
-            </p>
-          </div>
-
-          <div className="bg-white p-4 rounded-2xl border border-border shadow-sm">
-            <p className="text-[11px] text-amber-600 font-subheading">Skipped (Saved)</p>
-            <p className="text-2xl font-heading font-bold text-amber-600 mt-1">
-              {report?.skipped || 0}
-            </p>
-          </div>
-
-          <div className="bg-white p-4 rounded-2xl border border-border shadow-sm">
-            <p className="text-[11px] text-red-600 font-subheading">Missed</p>
-            <p className="text-2xl font-heading font-bold text-red-600 mt-1">
-              {report?.missed || 0}
-            </p>
-          </div>
-
-          <div className="col-span-2 sm:col-span-1 bg-gradient-to-br from-[#3D261D] to-[#251711] text-white p-4 rounded-2xl shadow-sm">
-            <p className="text-[11px] text-white/70 font-subheading">Remaining Balance</p>
-            <p className="text-2xl font-heading font-bold text-green-400 mt-1">
-              {report?.remainingBalance || 0} <span className="text-xs font-normal text-white/80">Meals</span>
-            </p>
-          </div>
-        </div>
-
-        {/* STATUS DISTRIBUTION VISUAL CHART */}
-        <div className="bg-white rounded-3xl p-6 border border-border shadow-sm space-y-4">
-          <h3 className="text-sm font-heading font-bold text-foreground">Monthly Consumption Breakdown</h3>
-
-          {report && report.totalScheduled > 0 ? (
-            <div className="space-y-3">
-              {/* STACKED BAR */}
-              <div className="h-6 w-full bg-gray-100 rounded-full overflow-hidden flex shadow-inner">
-                {consumedPercent > 0 && (
-                  <div
-                    style={{ width: `${consumedPercent}%` }}
-                    className="bg-green-500 h-full transition-all"
-                    title={`Consumed: ${report.delivered} (${consumedPercent}%)`}
-                  />
-                )}
-                {skippedPercent > 0 && (
-                  <div
-                    style={{ width: `${skippedPercent}%` }}
-                    className="bg-amber-400 h-full transition-all"
-                    title={`Skipped: ${report.skipped} (${skippedPercent}%)`}
-                  />
-                )}
-                {missedPercent > 0 && (
-                  <div
-                    style={{ width: `${missedPercent}%` }}
-                    className="bg-red-500 h-full transition-all"
-                    title={`Missed: ${report.missed} (${missedPercent}%)`}
-                  />
-                )}
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground font-subheading">Total Eligible Meals</p>
+                <p className="text-2xl font-heading font-black text-foreground">{report.totalEligibleMeals}</p>
               </div>
-
-              {/* LEGEND */}
-              <div className="flex flex-wrap items-center gap-4 text-xs font-subheading pt-1">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-green-500" />
-                  <span className="text-muted-foreground">Consumed:</span>
-                  <span className="font-bold text-foreground">{report.delivered} ({consumedPercent}%)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-amber-400" />
-                  <span className="text-muted-foreground">Skipped:</span>
-                  <span className="font-bold text-foreground">{report.skipped} ({skippedPercent}%)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-red-500" />
-                  <span className="text-muted-foreground">Missed:</span>
-                  <span className="font-bold text-foreground">{report.missed} ({missedPercent}%)</span>
-                </div>
+              <div className="h-10 w-px bg-border" />
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground font-subheading">Plan Utilization</p>
+                <p className="text-2xl font-heading font-black text-primary">{report.utilizationPercentage}%</p>
               </div>
             </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">No meal schedule recorded for this month yet.</p>
+          </div>
+        )}
+
+        {/* CATEGORY METRICS: BREAKFAST / LUNCH / DINNER BREAKDOWN */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {report?.breakfast && (
+            <div className="bg-white rounded-3xl p-5 border border-border shadow-sm space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-border">
+                <span className="font-heading font-black text-sm text-foreground">🥐 BREAKFAST</span>
+                <span className="text-xs text-muted-foreground">Add-on</span>
+              </div>
+              <div className="grid grid-cols-5 gap-1 text-center text-xs">
+                <div className="p-2 bg-gray-50 rounded-xl"><p className="text-[10px] text-muted-foreground">Sched.</p><p className="font-bold">{report.breakfast.scheduled}</p></div>
+                <div className="p-2 bg-green-50 rounded-xl text-green-800"><p className="text-[10px]">Cons.</p><p className="font-bold">{report.breakfast.consumed}</p></div>
+                <div className="p-2 bg-amber-50 rounded-xl text-amber-800"><p className="text-[10px]">Skip</p><p className="font-bold">{report.breakfast.skipped}</p></div>
+                <div className="p-2 bg-purple-50 rounded-xl text-purple-800"><p className="text-[10px]">Trans.</p><p className="font-bold">{report.breakfast.transferred}</p></div>
+                <div className="p-2 bg-blue-50 rounded-xl text-blue-800"><p className="text-[10px]">Rem.</p><p className="font-bold">{report.breakfast.remaining}</p></div>
+              </div>
+            </div>
+          )}
+
+          {report?.lunch && (
+            <div className="bg-white rounded-3xl p-5 border border-border shadow-sm space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-border">
+                <span className="font-heading font-black text-sm text-foreground">🍱 LUNCH</span>
+                <span className="text-xs text-muted-foreground">56 Days</span>
+              </div>
+              <div className="grid grid-cols-5 gap-1 text-center text-xs">
+                <div className="p-2 bg-gray-50 rounded-xl"><p className="text-[10px] text-muted-foreground">Sched.</p><p className="font-bold">{report.lunch.scheduled}</p></div>
+                <div className="p-2 bg-green-50 rounded-xl text-green-800"><p className="text-[10px]">Cons.</p><p className="font-bold">{report.lunch.consumed}</p></div>
+                <div className="p-2 bg-amber-50 rounded-xl text-amber-800"><p className="text-[10px]">Skip</p><p className="font-bold">{report.lunch.skipped}</p></div>
+                <div className="p-2 bg-purple-50 rounded-xl text-purple-800"><p className="text-[10px]">Trans.</p><p className="font-bold">{report.lunch.transferred}</p></div>
+                <div className="p-2 bg-blue-50 rounded-xl text-blue-800"><p className="text-[10px]">Rem.</p><p className="font-bold">{report.lunch.remaining}</p></div>
+              </div>
+            </div>
+          )}
+
+          {report?.dinner && (
+            <div className="bg-white rounded-3xl p-5 border border-border shadow-sm space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-border">
+                <span className="font-heading font-black text-sm text-foreground">🍽️ DINNER</span>
+                <span className="text-xs text-muted-foreground">60 Days</span>
+              </div>
+              <div className="grid grid-cols-5 gap-1 text-center text-xs">
+                <div className="p-2 bg-gray-50 rounded-xl"><p className="text-[10px] text-muted-foreground">Sched.</p><p className="font-bold">{report.dinner.scheduled}</p></div>
+                <div className="p-2 bg-green-50 rounded-xl text-green-800"><p className="text-[10px]">Cons.</p><p className="font-bold">{report.dinner.consumed}</p></div>
+                <div className="p-2 bg-amber-50 rounded-xl text-amber-800"><p className="text-[10px]">Skip</p><p className="font-bold">{report.dinner.skipped}</p></div>
+                <div className="p-2 bg-purple-50 rounded-xl text-purple-800"><p className="text-[10px]">Trans.</p><p className="font-bold">{report.dinner.transferred}</p></div>
+                <div className="p-2 bg-blue-50 rounded-xl text-blue-800"><p className="text-[10px]">Rem.</p><p className="font-bold">{report.dinner.remaining}</p></div>
+              </div>
+            </div>
           )}
         </div>
 
@@ -299,7 +295,7 @@ export default function MonthlyReportPage() {
               {monthName} {selectedYear} Calendar View
             </h3>
             <span className="text-xs text-muted-foreground">
-              🟢 Delivered • 🟡 Skipped • 🔵 Upcoming • 🔴 Missed
+              🟢 Delivered • 🟡 Skipped • 🟣 Transferred • 🔵 Upcoming • 🔴 Missed
             </span>
           </div>
 
@@ -320,62 +316,54 @@ export default function MonthlyReportPage() {
               {/* DAYS CELLS */}
               {calendarDays.map((c, i) => {
                 if (c.isPadding) {
-                  return <div key={`pad-${i}`} className="min-h-[80px] bg-gray-50/50 rounded-2xl border border-transparent" />;
+                  return <div key={`pad-${i}`} className="min-h-[85px] bg-gray-50/50 rounded-2xl border border-transparent" />;
                 }
 
-                const rec = c.record;
-                let bgClass = "bg-white border-border hover:border-gray-300";
-                let statusBadge = null;
-
-                if (rec) {
-                  if (rec.status === "delivered" || rec.status === "consumed") {
-                    bgClass = "bg-green-50/60 border-green-200";
-                    statusBadge = (
-                      <span className="inline-block px-1.5 py-0.5 bg-green-200 text-green-800 rounded text-[10px] font-bold">
-                        Delivered
-                      </span>
-                    );
-                  } else if (rec.status === "skipped") {
-                    bgClass = "bg-amber-50/70 border-amber-200";
-                    statusBadge = (
-                      <span className="inline-block px-1.5 py-0.5 bg-amber-200 text-amber-900 rounded text-[10px] font-bold">
-                        Skipped
-                      </span>
-                    );
-                  } else if (rec.status === "missed") {
-                    bgClass = "bg-red-50/70 border-red-200";
-                    statusBadge = (
-                      <span className="inline-block px-1.5 py-0.5 bg-red-200 text-red-900 rounded text-[10px] font-bold">
-                        Missed
-                      </span>
-                    );
-                  } else {
-                    bgClass = "bg-blue-50/60 border-blue-200";
-                    statusBadge = (
-                      <span className="inline-block px-1.5 py-0.5 bg-blue-200 text-blue-900 rounded text-[10px] font-bold">
-                        Upcoming
-                      </span>
-                    );
-                  }
-                }
+                const records = c.records || [];
+                const hasRecords = records.length > 0;
 
                 return (
                   <div
                     key={c.dateStr}
-                    className={`min-h-[80px] p-2.5 rounded-2xl border transition-all flex flex-col justify-between ${bgClass}`}
+                    className={`min-h-[85px] p-2 rounded-2xl border transition-all flex flex-col justify-between ${
+                      hasRecords ? "bg-white border-border hover:border-gray-300" : "bg-gray-50/30 border-dashed border-border/60"
+                    }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold font-subheading text-foreground">
                         {c.dayNumber}
                       </span>
-                      {rec && (
-                        <span className="text-[10px] font-extrabold text-muted-foreground uppercase">
-                          {rec.mealType === "dinner" ? "D" : "L"}
-                        </span>
-                      )}
                     </div>
 
-                    <div>{statusBadge}</div>
+                    <div className="space-y-1 mt-1">
+                      {records.map((rec, idx) => {
+                        let badgeClass = "bg-blue-100 text-blue-800";
+                        let label = rec.mealType === "dinner" ? "Dinner" : rec.mealType === "breakfast" ? "B'fast" : "Lunch";
+
+                        if (rec.status === "delivered" || rec.status === "consumed") {
+                          badgeClass = "bg-green-100 text-green-800";
+                        } else if (rec.status === "skipped") {
+                          badgeClass = "bg-amber-100 text-amber-900";
+                          label += " (Skip)";
+                        } else if (rec.status === "transferred") {
+                          badgeClass = "bg-purple-100 text-purple-900";
+                          label += " (Shift)";
+                        } else if (rec.status === "missed") {
+                          badgeClass = "bg-red-100 text-red-900";
+                          label += " (Miss)";
+                        }
+
+                        return (
+                          <div
+                            key={idx}
+                            className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-tight text-center truncate ${badgeClass}`}
+                            title={`${rec.mealType}: ${rec.status} ${rec.note ? `(${rec.note})` : ""}`}
+                          >
+                            {label}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })}

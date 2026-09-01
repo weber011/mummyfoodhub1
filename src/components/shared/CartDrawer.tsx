@@ -66,6 +66,10 @@ export function CartDrawer() {
   const [subscriptionDiscount, setSubscriptionDiscount] = useState<number>(0);
   const [hasSubscription, setHasSubscription] = useState(false);
 
+  // Loyalty 5th meal reward state
+  const [loyaltyAvailable, setLoyaltyAvailable] = useState(false);
+  const [useLoyalty, setUseLoyalty] = useState(false);
+
   const [form, setForm] = useState({
     name: user?.name || "", phone: user?.phone || "", sector: "106", address: "", floor: "", landmark: "",
     deliveryType: "Office Gate", time: "Lunch (12:30 PM – 2:00 PM)", payment: "Cash on Delivery",
@@ -97,7 +101,7 @@ export function CartDrawer() {
     }
   }, [isCartOpen, timingState]);
 
-  // Fetch subscription status to show discount in cart
+  // Fetch subscription status & loyalty reward to show discount in cart
   useEffect(() => {
     if (user && isCartOpen) {
       fetch("/api/account/subscription")
@@ -105,6 +109,19 @@ export function CartDrawer() {
         .then(data => {
           if (data.subscription && data.subscription.status === 'active') {
             setHasSubscription(true);
+          }
+        })
+        .catch(() => {});
+
+      fetch("/api/loyalty")
+        .then(res => res.json())
+        .then(data => {
+          if (data.loyalty && data.loyalty.rewardAvailable && !data.loyalty.rewardRedeemed) {
+            setLoyaltyAvailable(true);
+            setUseLoyalty(true); // default to using reward if available
+          } else {
+            setLoyaltyAvailable(false);
+            setUseLoyalty(false);
           }
         })
         .catch(() => {});
@@ -148,7 +165,10 @@ export function CartDrawer() {
 
   let discountRatio = 0;
   let discountMsg = "";
-  if (totalPrice >= 400) {
+  if (useLoyalty) {
+    discountRatio = 1;
+    discountMsg = "🎉 Loyalty 5th Meal Reward: FREE Delivery + 15% OFF!";
+  } else if (totalPrice >= 400) {
     discountRatio = 1;
     discountMsg = "🚀 You unlocked FREE delivery!";
   } else if (totalPrice >= 200) {
@@ -156,12 +176,15 @@ export function CartDrawer() {
     discountMsg = "🎉 Wow! You get 50% off on delivery!";
   }
 
-  const finalDeliveryCharge = Math.floor(deliveryBase * (1 - discountRatio));
+  const finalDeliveryCharge = useLoyalty ? 0 : Math.floor(deliveryBase * (1 - discountRatio));
   
   // Calculate subscription discount dynamically
   const calcSubDiscount = hasSubscription ? Math.floor(totalPrice * 0.1) : 0;
   
-  const finalTotal = Math.max(0, totalPrice + finalDeliveryCharge - (appliedCoupon?.discount || 0) - calcSubDiscount);
+  // Calculate loyalty 15% discount
+  const calcLoyaltyDiscount = useLoyalty ? Math.round(totalPrice * 0.15) : 0;
+  
+  const finalTotal = Math.max(0, totalPrice + finalDeliveryCharge - (appliedCoupon?.discount || 0) - calcSubDiscount - calcLoyaltyDiscount);
 
   const applyCoupon = async () => {
     if (!couponCode) return;
@@ -220,6 +243,7 @@ export function CartDrawer() {
           deliveryTime: form.time,
           paymentMethod: form.payment,
           notes: form.notes,
+          useLoyaltyReward: useLoyalty,
           customFields: form.customFields,
           idempotencyKey
         }),
@@ -443,6 +467,28 @@ export function CartDrawer() {
                       <div className="mx-4 border-t border-primary/10 py-2 flex justify-between text-sm font-bold text-[#647545]">
                         <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Sub. Discount (10%)</span>
                         <span>-₹{calcSubDiscount}</span>
+                      </div>
+                    )}
+
+                    {/* Loyalty 5th Meal Reward */}
+                    {loyaltyAvailable && (
+                      <div className="mx-4 border-t border-primary/10 py-2.5">
+                        <label className="flex items-center justify-between cursor-pointer p-2 rounded-lg bg-amber-50 border border-amber-200">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={useLoyalty}
+                              onChange={(e) => setUseLoyalty(e.target.checked)}
+                              className="w-4 h-4 rounded text-primary focus:ring-primary"
+                            />
+                            <span className="text-xs font-bold text-amber-900">
+                              🎉 5th Meal Reward (15% OFF + Free Delivery)
+                            </span>
+                          </div>
+                          {useLoyalty && (
+                            <span className="text-xs font-black text-amber-900">-₹{calcLoyaltyDiscount}</span>
+                          )}
+                        </label>
                       </div>
                     )}
 

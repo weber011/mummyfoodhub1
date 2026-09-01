@@ -30,6 +30,7 @@ export default function SubscriptionPage() {
   const plans = siteData.subscriptionPlans;
 
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [addBreakfast, setAddBreakfast] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -55,12 +56,14 @@ export default function SubscriptionPage() {
 
   const openPlan = (plan: any) => {
     setSelectedPlan(plan);
+    setAddBreakfast(false);
     setStep(1);
     setError("");
   };
 
   const closeModal = () => {
     setSelectedPlan(null);
+    setAddBreakfast(false);
     setStep(1);
     setError("");
   };
@@ -79,6 +82,9 @@ export default function SubscriptionPage() {
     setStep(2);
   };
 
+  const currentPrice = (selectedPlan?.price || 0) + (addBreakfast ? 1620 : 0);
+  const currentPlanName = addBreakfast ? `${selectedPlan?.name} + Breakfast` : selectedPlan?.name;
+
   const handleSubmit = async () => {
     if (!user) { window.location.href = "/login"; return; }
     if (!form.utr.trim()) { setError("Please enter your UPI Transaction ID (UTR) to confirm payment."); return; }
@@ -90,8 +96,9 @@ export default function SubscriptionPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           planId: selectedPlan.id,
-          planName: selectedPlan.name,
-          planPrice: selectedPlan.price,
+          planName: currentPlanName,
+          planPrice: currentPrice,
+          hasBreakfastAddon: addBreakfast,
           ...form,
         }),
       });
@@ -106,7 +113,7 @@ export default function SubscriptionPage() {
   };
 
   const upiId = siteData.settings?.upiId || "anmol.srivastava01@kotak";
-  const upiAmount = selectedPlan?.price || 0;
+  const upiAmount = currentPrice;
   const upiUrl = `upi://pay?pa=${upiId}&pn=MUMMY%20FOOD%20HUB&am=${upiAmount}&cu=INR`;
 
   return (
@@ -213,11 +220,12 @@ export default function SubscriptionPage() {
             <div>
               <h4 className="text-xl font-heading font-bold text-foreground mb-2">Delivery Policy & Terms (T&C)</h4>
               <ul className="list-disc pl-5 space-y-2 text-muted-foreground text-sm font-subheading">
-                <li><strong className="text-foreground">Important Note:</strong> If you wish to skip any meal, please inform us at least one day in advance.</li>
-                <li>If usage in a month is less than 26 days, the remaining meals will be carried forward to the next month.</li>
+                <li><strong className="text-foreground">Meal Skip Cutoffs:</strong> Lunch skip requests must be placed before <strong className="text-primary">4:00 AM IST</strong>. Dinner skip requests must be placed before <strong className="text-primary">3:00 PM IST</strong>.</li>
+                <li><strong className="text-foreground">Unused Meals Carry Forward:</strong> Skipped meals are NEVER deducted from your total balance. You can consume your meals anytime within your subscription validity (56–60 days).</li>
+                <li><strong className="text-foreground">Meal Shifting:</strong> You can transfer a skipped Lunch meal to Dinner, or a skipped Dinner meal to Lunch right from your dashboard.</li>
+                <li><strong className="text-foreground">Breakfast:</strong> Available as an exclusive add-on with 26 meals (56 days validity) attached to your Lunch, Dinner, or Complete plan.</li>
                 <li>Delivery is free within 4 KM radius of Sector 110, Noida. Nominal charges apply up to 10 KM.</li>
-                <li>Subscription amount is payable in advance at the start of the subscription.</li>
-                <li>After submitting your request, our team will verify your payment and activate your subscription within a few hours.</li>
+                <li>Subscription amount is payable in advance via UPI / Bank Transfer / Cash.</li>
               </ul>
             </div>
           </div>
@@ -311,12 +319,34 @@ export default function SubscriptionPage() {
 
               <div className="px-6 pb-6 pt-4">
                 {/* Plan Summary */}
-                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-5">
-                  <p className="font-bold text-foreground font-heading">{selectedPlan.name}</p>
-                  <p className="text-primary font-black text-2xl mt-1">
-                    ₹{selectedPlan.price}{" "}
-                    <span className="text-sm text-muted-foreground font-normal">/{selectedPlan.duration}</span>
-                  </p>
+                <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mb-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-foreground font-heading">{currentPlanName}</p>
+                      <p className="text-xs text-muted-foreground">{selectedPlan.duration} Validity</p>
+                    </div>
+                    <p className="text-primary font-black text-2xl">
+                      ₹{currentPrice}
+                    </p>
+                  </div>
+
+                  {/* Breakfast Add-On Option */}
+                  <label className="flex items-start gap-2.5 p-3 rounded-xl bg-white border border-primary/20 cursor-pointer hover:bg-amber-50/50 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={addBreakfast}
+                      onChange={e => setAddBreakfast(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded text-primary focus:ring-primary"
+                    />
+                    <div>
+                      <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                        🥐 Add Breakfast (+26 Meals, 56 Days) <span className="text-primary font-black">+₹1,620</span>
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Fresh morning homemade breakfast delivered to your doorstep.
+                      </p>
+                    </div>
+                  </label>
                 </div>
 
                 {!user ? (

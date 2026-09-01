@@ -62,10 +62,27 @@ export async function POST(req: NextRequest) {
        subscriptionDiscount = Math.floor(subtotal * (activeSub.discountPercentage / 100 || 0.10));
     }
 
-    // We trust the client's delivery charge for this implementation unless we do a complex distance recalculation
-    // But we recalculate the final total
-    const serverDiscount = (Number(discount) || 0); 
-    const finalTotal = subtotal + Number(deliveryCharge ?? 0) - subscriptionDiscount - serverDiscount;
+    // Loyalty Reward Integration
+    const { useLoyaltyReward } = body;
+    let loyaltyDiscount = 0;
+    let finalDeliveryCharge = Number(deliveryCharge ?? 0);
+
+    if (useLoyaltyReward) {
+      const { validateAndApplyLoyaltyReward, redeemLoyaltyReward } = await import('@/lib/loyalty');
+      const loyaltyResult = await validateAndApplyLoyaltyReward({
+        email: session.email,
+        subtotal: Number(subtotal),
+        standardDelivery: finalDeliveryCharge,
+      });
+
+      if (loyaltyResult.applicable) {
+        loyaltyDiscount = loyaltyResult.discount;
+        finalDeliveryCharge = loyaltyResult.deliveryCharge; // ₹0
+      }
+    }
+
+    const serverDiscount = (Number(discount) || 0) + loyaltyDiscount; 
+    const finalTotal = subtotal + finalDeliveryCharge - subscriptionDiscount - serverDiscount;
 
     const order = await createOrder({
       userId: session.userId,
@@ -74,10 +91,10 @@ export async function POST(req: NextRequest) {
       customerPhone: String(customerPhone || user?.phone || '').trim(),
       items: items as OrderItem[],
       subtotal: Number(subtotal),
-      deliveryCharge: Number(deliveryCharge ?? 0),
+      deliveryCharge: finalDeliveryCharge,
       discount: serverDiscount,
       subscriptionDiscount,
-      couponCode: couponCode ?? undefined,
+      couponCode: couponCode ?? (loyaltyDiscount > 0 ? 'LOYALTY5TH' : undefined),
       totalAmount: Math.max(0, finalTotal),
       status: 'pending',
       sector: String(sector || ''),
@@ -91,6 +108,15 @@ export async function POST(req: NextRequest) {
       utr: utr ? String(utr) : undefined,
       idempotencyKey: idempotencyKey || undefined,
     });
+
+    // Handle Loyalty Reward Redemption or Qualifying Order Recording
+    if (useLoyaltyReward && loyaltyDiscount > 0) {
+      const { redeemLoyaltyReward } = await import('@/lib/loyalty');
+      await redeemLoyaltyReward(session.email, order.id);
+    } else {
+      const { recordQualifyingOrder } = await import('@/lib/loyalty');
+      await recordQualifyingOrder(session.email, order.id, session.userId);
+    }
 
     // Mark user as having placed an order (for first-order tracking)
     if (!user?.hasPlacedOrder) {
@@ -106,7 +132,13 @@ export async function POST(req: NextRequest) {
     sendOwnerNewOrderEmail(order).catch(err => console.error(err));
     
     // Create admin notification
-    createNotification('admin', 'order_placed', 'New Order Received', `Order ${order.orderNumber} placed for ₹${order.totalAmount}`, order.id).catch(err => console.error(err));
+    createNotification(
+      'admin',
+      'order_placed',
+      'New Order Received',
+      `Order ${order.orderNumber} placed for ₹${order.totalAmount}`,
+      order.id
+    ).catch(err => console.error(err));
 
     return NextResponse.json({ success: true, orderId: order.id, orderNumber: order.orderNumber });
   } catch (e: any) {

@@ -64,12 +64,12 @@ export default function AdminPage() {
     customerName: "",
     customerEmail: "",
     customerPhone: "",
-    planId: "plan-monthly-standard",
-    planName: "Standard Thali Monthly",
-    planPrice: 2799,
+    basePlan: "lunch" as "lunch" | "dinner" | "complete",
+    hasBreakfastAddon: false,
     startDate: new Date().toISOString().split("T")[0],
-    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-    totalMeals: 26,
+    paymentStatus: "paid",
+    paymentMethod: "Cash",
+    utr: "",
     address: "",
     sector: "106",
     landmark: "",
@@ -1497,6 +1497,7 @@ export default function AdminPage() {
       </div>
 
       {/* ── ADD OFFLINE SUBSCRIBER MODAL ── */}
+      {/* ── ADD OFFLINE SUBSCRIBER MODAL ── */}
       <AnimatePresence>
         {showOfflineModal && (
           <motion.div
@@ -1515,9 +1516,9 @@ export default function AdminPage() {
               <div className="flex items-center justify-between pb-4 border-b border-border mb-6">
                 <div>
                   <h3 className="text-xl font-heading font-bold text-foreground flex items-center gap-2">
-                    <UserPlus className="w-5 h-5 text-primary" /> Add Offline Subscriber
+                    <UserPlus className="w-5 h-5 text-primary" /> Create Offline Subscription
                   </h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">Manually register a cash-paying monthly customer</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Manually register an offline customer subscription</p>
                 </div>
                 <button onClick={() => setShowOfflineModal(false)} className="p-2 rounded-full hover:bg-gray-100">
                   <X className="w-5 h-5 text-muted-foreground" />
@@ -1551,7 +1552,7 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-foreground mb-1">Email (Optional, sends welcome email)</label>
+                  <label className="block text-xs font-bold text-foreground mb-1">Email (Optional, sends activation email & enables login)</label>
                   <input
                     type="email"
                     placeholder="e.g. customer@gmail.com"
@@ -1561,66 +1562,102 @@ export default function AdminPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold text-foreground mb-1">Plan</label>
-                    <select
-                      value={offlineForm.planId}
-                      onChange={e => {
-                        const sel = (data?.subscriptionPlans || []).find((p: any) => p.id === e.target.value);
-                        setOfflineForm({
-                          ...offlineForm,
-                          planId: e.target.value,
-                          planName: sel?.name || e.target.value,
-                          planPrice: sel?.price || offlineForm.planPrice
-                        });
-                      }}
-                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white"
-                    >
-                      {(data?.subscriptionPlans || []).map((p: any) => (
-                        <option key={p.id} value={p.id}>{p.name} (₹{p.price})</option>
-                      ))}
-                    </select>
+                {/* BASE PLAN SELECTION (NEVER BREAKFAST ONLY) */}
+                <div className="space-y-2 bg-gray-50 p-4 rounded-2xl border border-border">
+                  <label className="block text-xs font-bold text-foreground uppercase tracking-wider">
+                    Base Plan Selection *
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: "lunch", label: "Lunch Only", meals: "26 Meals (56 Days)", price: "₹2,099" },
+                      { id: "dinner", label: "Dinner Only", meals: "30 Meals (60 Days)", price: "₹2,500" },
+                      { id: "complete", label: "Complete Plan", meals: "56 Meals (60 Days)", price: "₹4,400" },
+                    ].map((bp) => (
+                      <button
+                        key={bp.id}
+                        type="button"
+                        onClick={() => setOfflineForm({ ...offlineForm, basePlan: bp.id as any })}
+                        className={`p-3 rounded-xl text-left border-2 transition-all ${
+                          offlineForm.basePlan === bp.id
+                            ? "border-primary bg-primary/5 shadow-xs"
+                            : "border-border bg-white hover:bg-gray-100"
+                        }`}
+                      >
+                        <p className="font-bold text-xs text-foreground">{bp.label}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{bp.meals}</p>
+                        <p className="text-xs font-black text-primary mt-1">{bp.price}</p>
+                      </button>
+                    ))}
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-foreground mb-1">Price (₹)</label>
-                    <input
-                      type="number"
-                      value={offlineForm.planPrice}
-                      onChange={e => setOfflineForm({ ...offlineForm, planPrice: Number(e.target.value) })}
-                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                    />
+
+                  {/* BREAKFAST ADD-ON CHECKBOX (ADD-ON ONLY) */}
+                  <div className="pt-2 border-t border-border/80">
+                    <label className="flex items-start gap-3 p-3 rounded-xl bg-white border border-border cursor-pointer hover:bg-amber-50/50 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={offlineForm.hasBreakfastAddon}
+                        onChange={e => setOfflineForm({ ...offlineForm, hasBreakfastAddon: e.target.checked })}
+                        className="mt-0.5 w-4 h-4 rounded text-primary focus:ring-primary"
+                      />
+                      <div>
+                        <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          🥐 Add Breakfast (Add-on Only) <span className="text-primary font-black">+₹1,620</span>
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Adds 26 Breakfast meals (56-day validity) attached to the selected base plan.
+                        </p>
+                      </div>
+                    </label>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-foreground mb-1">Start Date</label>
+                    <label className="block text-xs font-bold text-foreground mb-1">Start Date *</label>
                     <input
                       type="date"
+                      required
                       value={offlineForm.startDate}
                       onChange={e => setOfflineForm({ ...offlineForm, startDate: e.target.value })}
                       className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary"
                     />
                   </div>
+
                   <div>
-                    <label className="block text-xs font-bold text-foreground mb-1">End Date</label>
-                    <input
-                      type="date"
-                      value={offlineForm.endDate}
-                      onChange={e => setOfflineForm({ ...offlineForm, endDate: e.target.value })}
-                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                    />
+                    <label className="block text-xs font-bold text-foreground mb-1">Payment Status</label>
+                    <select
+                      value={offlineForm.paymentStatus}
+                      onChange={e => setOfflineForm({ ...offlineForm, paymentStatus: e.target.value })}
+                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white"
+                    >
+                      <option value="paid">✅ Paid (Cash / UPI)</option>
+                      <option value="pending">⏳ Pending Payment</option>
+                    </select>
                   </div>
+
                   <div>
-                    <label className="block text-xs font-bold text-foreground mb-1">Total Meals</label>
-                    <input
-                      type="number"
-                      value={offlineForm.totalMeals}
-                      onChange={e => setOfflineForm({ ...offlineForm, totalMeals: Number(e.target.value) })}
-                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                    />
+                    <label className="block text-xs font-bold text-foreground mb-1">Payment Method</label>
+                    <select
+                      value={offlineForm.paymentMethod}
+                      onChange={e => setOfflineForm({ ...offlineForm, paymentMethod: e.target.value })}
+                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white"
+                    >
+                      <option value="Cash">Cash in Hand</option>
+                      <option value="UPI">UPI Transfer</option>
+                      <option value="Bank Transfer">Bank Transfer</option>
+                    </select>
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">Transaction / UTR Reference (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. UPI UTR 123456789012"
+                    value={offlineForm.utr}
+                    onChange={e => setOfflineForm({ ...offlineForm, utr: e.target.value })}
+                    className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary font-mono"
+                  />
                 </div>
 
                 <div>
@@ -1684,7 +1721,7 @@ export default function AdminPage() {
                   <label className="block text-xs font-bold text-foreground mb-1">Special Notes</label>
                   <textarea
                     rows={2}
-                    placeholder="e.g. Paid ₹2799 cash in person on 28 Aug"
+                    placeholder="e.g. Paid in person on 28 Aug"
                     value={offlineForm.notes}
                     onChange={e => setOfflineForm({ ...offlineForm, notes: e.target.value })}
                     className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none"
@@ -1705,7 +1742,7 @@ export default function AdminPage() {
                     className="px-6 py-2.5 rounded-xl bg-primary text-white text-sm font-bold shadow-md hover:bg-primary/90 flex items-center gap-2 disabled:opacity-60"
                   >
                     {submittingOffline ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                    <span>Save Subscriber</span>
+                    <span>Create Subscription</span>
                   </button>
                 </div>
               </form>

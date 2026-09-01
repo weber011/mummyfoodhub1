@@ -1,87 +1,101 @@
 import type { UserSubscription, SubscriptionBalance, MonthlyMealReport, MealDayReport, MealSchedule } from './types';
 import { getMealsBySubscription, getMealsByDate, getMealsByDateAndType, getSkippedCountForDate } from './meals';
-import { getAllSubscriptions } from './subscriptions';
+import { getAllSubscriptions, getSubscriptionBalance } from './subscriptions';
 
-// ── Subscription Balance ────────────────────────────────────────────
-
-/**
- * Compute the subscription balance.
- * Key rule: remainingMeals = totalMeals - usedMeals (skipped meals do NOT reduce remaining)
- */
-export function getSubscriptionBalance(sub: UserSubscription): SubscriptionBalance {
-  const totalMeals = sub.totalMeals ?? 0;
-  const usedMeals = sub.usedMeals ?? 0;
-  const skippedMeals = sub.skippedMeals ?? 0;
-  const expiredMeals = sub.expiredMeals ?? 0;
-  const remainingMeals = Math.max(0, totalMeals - usedMeals);
-
-  const now = new Date();
-  const istString = now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
-  const ist = new Date(istString);
-
-  const endDate = new Date(sub.endDate);
-  const diffMs = endDate.getTime() - ist.getTime();
-  const daysRemaining = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-
-  const istDateStr = ist.toLocaleDateString('en-CA');
-  const isValid = sub.status === 'active' && istDateStr <= sub.endDate;
-
-  return {
-    totalMeals,
-    usedMeals,
-    skippedMeals,
-    remainingMeals,
-    expiredMeals,
-    daysRemaining,
-    isValid,
-    validityStartDate: sub.startDate,
-    validityEndDate: sub.endDate,
-  };
-}
+export { getSubscriptionBalance };
 
 // ── Monthly Report ─────────────────────────────────────────────────
 
 /**
  * Generate a monthly meal report for a subscription.
  * year: full year (e.g. 2026), month: 1-12
+ * Rule: Subscriptions DO NOT reset on the 1st of every month.
+ * Only display dates that fall within the subscription validity (>= sub.startDate && <= sub.endDate).
  */
 export async function getMonthlyReport(
   sub: UserSubscription,
   year: number,
   month: number
 ): Promise<MonthlyMealReport> {
-  // Get all meals for this subscription
   const allMeals = await getMealsBySubscription(sub.id, 500);
 
-  // Filter to the requested month
+  // Month prefix YYYY-MM
   const monthStr = `${year}-${month.toString().padStart(2, '0')}`;
-  const monthMeals = allMeals.filter(m => m.scheduledDate.startsWith(monthStr));
+  
+  // Filter meals strictly within the requested month AND within subscription validity
+  const monthMeals = allMeals.filter(
+    m => m.scheduledDate.startsWith(monthStr) &&
+         m.scheduledDate >= sub.startDate &&
+         m.scheduledDate <= sub.endDate
+  );
 
-  // Build day-by-day report
   const days: MealDayReport[] = monthMeals.map(m => ({
     date: m.scheduledDate,
     mealType: m.mealType,
     status: m.status,
     menu: m.menu,
+    note: m.transferredTo ? `Transferred to ${m.transferredTo}` : m.transferredFrom ? `Transferred from ${m.transferredFrom}` : undefined,
   })).sort((a, b) => a.date.localeCompare(b.date));
 
   const balance = getSubscriptionBalance(sub);
 
-  return {
+  const isDinner = sub.mealType === 'dinner' || sub.basePlan === 'dinner';
+  const isLunch = sub.mealType === 'lunch' || sub.basePlan === 'lunch';
+  const isComplete = sub.mealType === 'both' || sub.basePlan === 'complete' || (!isDinner && !isLunch);
+  const hasBreakfast = sub.hasBreakfastAddon || sub.planName?.toLowerCase().includes('breakfast') || false;
+
+  const bMeals = monthMeals.filter(m => m.mealType === 'breakfast');
+  const lMeals = monthMeals.filter(m => m.mealType === 'lunch');
+  const dMeals = monthMeals.filter(m => m.mealType === 'dinner');
+
+  const report: MonthlyMealReport = {
     year,
     month,
     subscriptionId: sub.id,
     planName: sub.planName,
-    mealType: sub.mealType ?? 'lunch',
-    totalScheduled: monthMeals.length,
-    delivered: monthMeals.filter(m => m.status === 'delivered' || m.status === 'consumed').length,
-    consumed: monthMeals.filter(m => m.status === 'consumed').length,
-    skipped: monthMeals.filter(m => m.status === 'skipped').length,
-    missed: monthMeals.filter(m => m.status === 'missed').length,
-    upcoming: monthMeals.filter(m => m.status === 'upcoming' || m.status === 'scheduled').length,
-    remainingBalance: balance.remainingMeals,
+    subscriptionPeriod: {
+      startDate: sub.startDate,
+      endDate: sub.endDate,
+    },
+    totalEligibleMeals: sub.totalMeals ?? balance.totalMeals,
+    utilizationPercentage: balance.totalMeals > 0 ? Math.round((balance.usedMeals / balance.totalMeals) * 100) : 0,
     days,
   };
+
+  if (hasBreakfast) {
+    report.breakfast = {
+      scheduled: bMeals.length,
+      total: sub.breakfastTotalMeals ?? 26,
+      consumed: bMeals.filter(m => m.status === 'delivered' || m.status === 'consumed').length,
+      skipped: bMeals.filter(m => m.status === 'skipped').length,
+      transferred: bMeals.filter(m => m.status === 'transferred').length,
+      remaining: balance.breakfast?.remaining ?? 26,
+    };
+  }
+
+  if (isLunch || isComplete) {
+    report.lunch = {
+      scheduled: lMeals.length,
+      total: sub.lunchTotalMeals ?? 26,
+      consumed: lMeals.filter(m => m.status === 'delivered' || m.status === 'consumed').length,
+      skipped: lMeals.filter(m => m.status === 'skipped').length,
+      transferred: lMeals.filter(m => m.status === 'transferred').length,
+      remaining: balance.lunch?.remaining ?? 26,
+    };
+  }
+
+  if (isDinner || isComplete) {
+    report.dinner = {
+      scheduled: dMeals.length,
+      total: sub.dinnerTotalMeals ?? 30,
+      consumed: dMeals.filter(m => m.status === 'delivered' || m.status === 'consumed').length,
+      skipped: dMeals.filter(m => m.status === 'skipped').length,
+      transferred: dMeals.filter(m => m.status === 'transferred').length,
+      remaining: balance.dinner?.remaining ?? 30,
+    };
+  }
+
+  return report;
 }
 
 // ── Food Preparation Report ────────────────────────────────────────

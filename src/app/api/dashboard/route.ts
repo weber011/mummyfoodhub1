@@ -62,6 +62,10 @@ export async function GET(req: NextRequest) {
     if (istHours >= 12 && istHours < 17) greetingPart = 'Good Afternoon';
     else if (istHours >= 17) greetingPart = 'Good Evening';
 
+    // Loyalty Record
+    const { getLoyaltyRecord } = await import('@/lib/loyalty');
+    const loyalty = await getLoyaltyRecord(user.email, user.id);
+
     return NextResponse.json({
       user: {
         id: user.id,
@@ -92,6 +96,13 @@ export async function GET(req: NextRequest) {
         lunchSkipCutoff: settings.lunchSkipCutoff,
         dinnerTime: settings.dinnerTime,
         dinnerSkipCutoff: settings.dinnerSkipCutoff,
+      },
+      loyalty: {
+        qualifyingMealCount: loyalty.qualifyingMealCount || 0,
+        rewardAvailable: loyalty.rewardAvailable || false,
+        rewardRedeemed: loyalty.rewardRedeemed || false,
+        rewardCycle: loyalty.rewardCycle || 1,
+        totalRewardsRedeemed: loyalty.totalRewardsRedeemed || 0,
       },
       notifications,
     });
