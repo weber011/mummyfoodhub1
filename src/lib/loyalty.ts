@@ -136,3 +136,47 @@ export async function redeemLoyaltyReward(
   await redisSet(`${LOYALTY_PREFIX}${normEmail}`, updated);
   return updated;
 }
+
+/**
+ * Stage information for UI display (Customer Dashboard, Cart, Checkout, Notifications)
+ */
+export function getLoyaltyStageInfo(record: LoyaltyRecord) {
+  const count = Math.min(4, Math.max(0, record.qualifyingMealCount || 0));
+  const isUnlocked = Boolean(record.rewardAvailable && !record.rewardRedeemed);
+
+  let headline = "🎁 5th Meal Loyalty Reward";
+  let subtext = "Complete 4 qualifying orders to unlock 15% OFF + FREE DELIVERY on your 5th meal.";
+  let badgeText = `${count} / 4 Orders`;
+
+  if (isUnlocked || count === 4) {
+    headline = "🎉 REWARD UNLOCKED!";
+    subtext = "Your NEXT qualifying order gets 15% OFF + FREE DELIVERY!";
+    badgeText = "4 / 4 Complete";
+  } else if (count === 1) {
+    headline = "🎉 First order complete!";
+    subtext = "Complete 3 more qualifying orders to unlock 15% OFF + FREE DELIVERY on your next order.";
+    badgeText = "1 / 4 Orders";
+  } else if (count === 2) {
+    headline = "🔥 You're halfway there!";
+    subtext = "Just 2 more qualifying orders to unlock your reward.";
+    badgeText = "2 / 4 Orders";
+  } else if (count === 3) {
+    headline = "🔥 Almost there!";
+    subtext = "Only 1 qualifying order left! Hurry up to unlock 15% OFF + FREE DELIVERY.";
+    badgeText = "3 / 4 Orders";
+  }
+
+  const dots = [count >= 1, count >= 2, count >= 3, count >= 4];
+
+  return {
+    count,
+    max: 4,
+    dots,
+    isUnlocked,
+    headline,
+    subtext,
+    badgeText,
+    rewardCycle: record.rewardCycle || 1,
+    totalRewardsRedeemed: record.totalRewardsRedeemed || 0,
+  };
+}

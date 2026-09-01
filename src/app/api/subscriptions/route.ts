@@ -4,6 +4,7 @@ import { getUserById } from '@/lib/auth';
 import { redisSet, redisGet, redisLPush } from '@/lib/redis';
 import { sendSubscriptionRequestEmail } from '@/lib/email';
 import { getActiveSubscription, getUserSubscriptions, getSubscriptionBalance } from '@/lib/subscriptions';
+import type { BasePlanType } from '@/lib/types';
 import { randomUUID } from 'crypto';
 
 // POST: Customer requests a subscription (full details)
@@ -24,6 +25,8 @@ export async function POST(req: NextRequest) {
       deliveryType, deliveryTime, notes, utr,
       mealType, deliveryPreference, deliveryInstructions,
       houseNumber, building, totalMeals, validityDays,
+      hasBreakfastAddon, basePlan,
+      separateAddresses, breakfastDelivery, lunchDelivery, dinnerDelivery,
     } = body;
 
     if (!planId || !planName || !planPrice) {
@@ -39,7 +42,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'You already have a pending subscription request. Please wait for admin approval.' }, { status: 409 });
     }
 
-    const mType = mealType || (planName.toLowerCase().includes('dinner') ? 'dinner' : 'lunch');
+    const isFullPlan = planId === 'plan-complete' || planName.toLowerCase().includes('complete') || planPrice === 5999;
+    const bPlan: BasePlanType = isFullPlan ? 'full' : basePlan || (planName.toLowerCase().includes('dinner') ? 'dinner' : planName.toLowerCase().includes('lunch and dinner') ? 'lunch_and_dinner' : 'lunch');
+    const mType = mealType || (isFullPlan || bPlan === 'lunch_and_dinner' ? 'both' : bPlan === 'dinner' ? 'dinner' : 'lunch');
     const pref = deliveryPreference || (deliveryType && deliveryType.toLowerCase().includes('door') ? 'doorstep' : 'gate');
 
     const requestId = randomUUID();
@@ -52,6 +57,8 @@ export async function POST(req: NextRequest) {
       planId,
       planName,
       planPrice,
+      basePlan: bPlan,
+      hasBreakfastAddon: isFullPlan ? false : Boolean(hasBreakfastAddon),
       address,
       sector,
       landmark: landmark || '',
@@ -62,12 +69,16 @@ export async function POST(req: NextRequest) {
       houseNumber: houseNumber || '',
       building: building || '',
       mealType: mType,
-      totalMeals: totalMeals || 26,
-      validityDays: validityDays || 56,
-      notes: notes || '',
-      utr: utr || '',
+      totalMeals: totalMeals || (isFullPlan ? 82 : bPlan === 'dinner' ? 30 : bPlan === 'lunch_and_dinner' ? 56 : 26) + (hasBreakfastAddon ? 26 : 0),
+      validityDays: validityDays || (isFullPlan || bPlan === 'dinner' || bPlan === 'lunch_and_dinner' ? 60 : 56),
+      separateAddresses: Boolean(separateAddresses),
+      breakfastDelivery: breakfastDelivery || undefined,
+      lunchDelivery: lunchDelivery || undefined,
+      dinnerDelivery: dinnerDelivery || undefined,
       status: 'pending',
       createdAt: new Date().toISOString(),
+      notes: notes || '',
+      utr: utr || '',
     };
 
     await redisSet(`sub_request:${requestId}`, subRequest);

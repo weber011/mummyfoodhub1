@@ -3,18 +3,18 @@ import { getSessionFromRequest } from '@/lib/session';
 import { getUserById } from '@/lib/auth';
 import { redisGet } from '@/lib/redis';
 import type { UserSubscription, MealSchedule } from '@/lib/types';
-import { getMealById, getMealForToday } from '@/lib/meals';
+import { createMealSchedule, getMealById, getMealForDate, getMealForToday } from '@/lib/meals';
 import { validateSkipEligibility, recordMealSkip } from '@/lib/meal-skip';
 import { sendSkipConfirmationEmail, sendAdminSkipNotificationEmail } from '@/lib/email';
 import { createNotification } from '@/lib/notifications';
 import { getSubscriptionBalance } from '@/lib/subscriptions';
-import { formatCutoffTime } from '@/lib/settings';
+import { formatCutoffTime, getIstDateString } from '@/lib/settings';
 
 /**
  * POST /api/meals/skip
- * Body: { mealId?: string, subscriptionId?: string, mealType?: 'lunch' | 'dinner', reason?: string }
+ * Body: { mealId?: string, subscriptionId?: string, mealType?: 'lunch' | 'dinner', date?: string, targetDate?: string, reason?: string }
  *
- * Validates cutoff independently server-side against Asia/Kolkata timezone.
+ * Validates cutoff independently server-side against Asia/Kolkata timezone for the target meal date.
  * Atomically records the skip and marks the meal as SKIPPED.
  * Does NOT decrement remaining meals.
  * Dispatches confirmation emails & notifications.
@@ -32,7 +32,8 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { mealId, subscriptionId, mealType, reason } = body;
+    const { mealId, subscriptionId, mealType, date, targetDate, reason } = body;
+    const reqDate = date || targetDate || getIstDateString();
 
     let targetMeal: MealSchedule | null = null;
     let targetSub: UserSubscription | null = null;
@@ -54,7 +55,18 @@ export async function POST(req: NextRequest) {
       if (targetSub.userId !== session.userId && session.role !== 'admin') {
         return NextResponse.json({ error: 'Unauthorized access to subscription.' }, { status: 403 });
       }
-      targetMeal = await getMealForToday(subscriptionId, mealType);
+      targetMeal = await getMealForDate(subscriptionId, mealType, reqDate);
+      if (!targetMeal) {
+        // Create scheduled meal record for this date if within validity
+        const todayStr = getIstDateString();
+        targetMeal = await createMealSchedule({
+          subscriptionId: targetSub.id,
+          userId: targetSub.userId,
+          mealType: mealType as any,
+          scheduledDate: reqDate,
+          status: reqDate === todayStr ? 'scheduled' : 'upcoming',
+        });
+      }
     } else {
       return NextResponse.json(
         { error: 'Provide mealId or (subscriptionId and mealType).' },
@@ -67,9 +79,10 @@ export async function POST(req: NextRequest) {
     }
 
     const mType = (targetMeal?.mealType || mealType || 'lunch') as 'lunch' | 'dinner';
+    const finalMealDate = targetMeal?.scheduledDate || reqDate;
 
     // Strict Server-Side Validation: Never trust client clocks
-    const eligibility = await validateSkipEligibility(targetSub, mType, targetMeal);
+    const eligibility = await validateSkipEligibility(targetSub, mType, targetMeal, finalMealDate);
     if (!eligibility.eligible) {
       return NextResponse.json(
         {

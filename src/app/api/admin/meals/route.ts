@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/session';
-import { getMealsByDate, updateMeal, getMealById } from '@/lib/meals';
+import { getMealsByDate, updateMeal, getMealById, generateDailyMeals } from '@/lib/meals';
 import { getIstDateString } from '@/lib/settings';
 import { redisGet, redisSet } from '@/lib/redis';
 import type { UserSubscription, MealStatus } from '@/lib/types';
 import { sendDeliveryNotificationEmail } from '@/lib/email';
 import { createNotification } from '@/lib/notifications';
 import { getUserById } from '@/lib/auth';
+import { getAllSubscriptions } from '@/lib/subscriptions';
 
 /**
- * GET /api/admin/meals?date=YYYY-MM-DD&mealType=lunch|dinner&status=...
+ * GET /api/admin/meals?date=YYYY-MM-DD&mealType=lunch|dinner|breakfast&status=...
  */
 export async function GET(req: NextRequest) {
   try {
@@ -26,7 +27,17 @@ export async function GET(req: NextRequest) {
 
     let meals = await getMealsByDate(date);
 
-    if (mealType && (mealType === 'lunch' || mealType === 'dinner')) {
+    // Auto-generate meals if none exist yet for this date
+    if (meals.length === 0) {
+      const allSubs = await getAllSubscriptions();
+      const activeSubs = allSubs.filter(s => s.status === 'active' && s.startDate <= date && s.endDate >= date);
+      if (activeSubs.length > 0) {
+        await generateDailyMeals(date, activeSubs);
+        meals = await getMealsByDate(date);
+      }
+    }
+
+    if (mealType && (mealType === 'lunch' || mealType === 'dinner' || mealType === 'breakfast')) {
       meals = meals.filter((m) => m.mealType === mealType);
     }
     if (status && status !== 'all') {
@@ -100,9 +111,31 @@ export async function PATCH(req: NextRequest) {
     if ((status === 'delivered' || status === 'consumed') && prevStatus !== 'delivered' && prevStatus !== 'consumed') {
       const sub = await redisGet<UserSubscription>(`subscription:${existingMeal.subscriptionId}`);
       if (sub) {
+        const isLunch = existingMeal.mealType === 'lunch';
+        const isDinner = existingMeal.mealType === 'dinner';
+        const isBreakfast = existingMeal.mealType === 'breakfast';
+
         await redisSet(`subscription:${sub.id}`, {
           ...sub,
           usedMeals: (sub.usedMeals ?? 0) + 1,
+          lunchUsedMeals: isLunch ? (sub.lunchUsedMeals ?? 0) + 1 : sub.lunchUsedMeals,
+          dinnerUsedMeals: isDinner ? (sub.dinnerUsedMeals ?? 0) + 1 : sub.dinnerUsedMeals,
+          breakfastUsedMeals: isBreakfast ? (sub.breakfastUsedMeals ?? 0) + 1 : sub.breakfastUsedMeals,
+        });
+      }
+    } else if (status === 'skipped' && prevStatus !== 'skipped') {
+      const sub = await redisGet<UserSubscription>(`subscription:${existingMeal.subscriptionId}`);
+      if (sub) {
+        const isLunch = existingMeal.mealType === 'lunch';
+        const isDinner = existingMeal.mealType === 'dinner';
+        const isBreakfast = existingMeal.mealType === 'breakfast';
+
+        await redisSet(`subscription:${sub.id}`, {
+          ...sub,
+          skippedMeals: (sub.skippedMeals ?? 0) + 1,
+          lunchSkippedMeals: isLunch ? (sub.lunchSkippedMeals ?? 0) + 1 : sub.lunchSkippedMeals,
+          dinnerSkippedMeals: isDinner ? (sub.dinnerSkippedMeals ?? 0) + 1 : sub.dinnerSkippedMeals,
+          breakfastSkippedMeals: isBreakfast ? (sub.breakfastSkippedMeals ?? 0) + 1 : sub.breakfastSkippedMeals,
         });
       }
     }

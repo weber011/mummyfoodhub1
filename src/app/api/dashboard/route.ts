@@ -2,16 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/session';
 import { getUserById } from '@/lib/auth';
 import { getUserSubscriptions, getSubscriptionBalance } from '@/lib/subscriptions';
-import { getTodaysMealsForUser } from '@/lib/meals';
-import { getAdminSettings, isSkipAllowed, getIstDateString, formatCutoffTime } from '@/lib/settings';
+import { getTodaysMealsForUser, getMealsForUserByDate } from '@/lib/meals';
+import { getAdminSettings, isSkipAllowedForDate, getIstDateString, formatCutoffTime } from '@/lib/settings';
 import { getUserNotifications } from '@/lib/notifications';
+import { getLoyaltyRecord, getLoyaltyStageInfo } from '@/lib/loyalty';
 
 /**
  * GET /api/dashboard
  * Returns all customer dashboard data in a single call.
  * - Active subscriptions with balance
- * - Today's meals with status
+ * - Today's and Tomorrow's meals with status
  * - Skip eligibility + cutoff countdown (server-side IST time)
+ * - Loyalty status with 4-stage progression
  * - Recent notifications
  */
 export async function GET(req: NextRequest) {
@@ -34,6 +36,9 @@ export async function GET(req: NextRequest) {
     const ist = new Date(istString);
     const todayStr = getIstDateString();
 
+    const tomorrow = new Date(ist.getTime() + 24 * 60 * 60 * 1000);
+    const tomorrowStr = tomorrow.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+
     const activeSubs = allSubs.filter(s => s.status === 'active' && s.endDate >= todayStr);
 
     // Build subscription summaries with balance
@@ -42,12 +47,15 @@ export async function GET(req: NextRequest) {
       balance: getSubscriptionBalance(sub),
     }));
 
-    // Get today's meals for this user
+    // Get today's and tomorrow's meals for this user
     const todaysMeals = await getTodaysMealsForUser(session.userId);
+    const tomorrowsMeals = await getMealsForUserByDate(session.userId, tomorrowStr);
 
-    // Build skip eligibility for each meal type
-    const lunchSkip = await isSkipAllowed('lunch');
-    const dinnerSkip = await isSkipAllowed('dinner');
+    // Build skip eligibility for today and tomorrow separately
+    const todayLunchSkip = await isSkipAllowedForDate('lunch', todayStr);
+    const todayDinnerSkip = await isSkipAllowedForDate('dinner', todayStr);
+    const tomorrowLunchSkip = await isSkipAllowedForDate('lunch', tomorrowStr);
+    const tomorrowDinnerSkip = await isSkipAllowedForDate('dinner', tomorrowStr);
 
     // IST time info for frontend countdown
     const istHours = ist.getHours();
@@ -62,9 +70,9 @@ export async function GET(req: NextRequest) {
     if (istHours >= 12 && istHours < 17) greetingPart = 'Good Afternoon';
     else if (istHours >= 17) greetingPart = 'Good Evening';
 
-    // Loyalty Record
-    const { getLoyaltyRecord } = await import('@/lib/loyalty');
+    // Loyalty Record with Stage Progression
     const loyalty = await getLoyaltyRecord(user.email, user.id);
+    const stageInfo = getLoyaltyStageInfo(loyalty);
 
     return NextResponse.json({
       user: {
@@ -76,17 +84,44 @@ export async function GET(req: NextRequest) {
       },
       greeting: `${greetingPart}, ${user.name} ❤️`,
       todayDate: todayStr,
+      tomorrowDate: tomorrowStr,
       currentIstTime,
       subscriptions: subscriptionSummaries,
       todaysMeals,
+      tomorrowsMeals,
       skipEligibility: {
+        today: {
+          lunch: {
+            ...todayLunchSkip,
+            cutoffDisplay: formatCutoffTime(settings.lunchSkipCutoff),
+            mealTimeDisplay: formatCutoffTime(settings.lunchTime),
+          },
+          dinner: {
+            ...todayDinnerSkip,
+            cutoffDisplay: formatCutoffTime(settings.dinnerSkipCutoff),
+            mealTimeDisplay: formatCutoffTime(settings.dinnerTime),
+          },
+        },
+        tomorrow: {
+          lunch: {
+            ...tomorrowLunchSkip,
+            cutoffDisplay: formatCutoffTime(settings.lunchSkipCutoff),
+            mealTimeDisplay: formatCutoffTime(settings.lunchTime),
+          },
+          dinner: {
+            ...tomorrowDinnerSkip,
+            cutoffDisplay: formatCutoffTime(settings.dinnerSkipCutoff),
+            mealTimeDisplay: formatCutoffTime(settings.dinnerTime),
+          },
+        },
+        // Top-level for backward compatibility
         lunch: {
-          ...lunchSkip,
+          ...todayLunchSkip,
           cutoffDisplay: formatCutoffTime(settings.lunchSkipCutoff),
           mealTimeDisplay: formatCutoffTime(settings.lunchTime),
         },
         dinner: {
-          ...dinnerSkip,
+          ...todayDinnerSkip,
           cutoffDisplay: formatCutoffTime(settings.dinnerSkipCutoff),
           mealTimeDisplay: formatCutoffTime(settings.dinnerTime),
         },
@@ -103,6 +138,7 @@ export async function GET(req: NextRequest) {
         rewardRedeemed: loyalty.rewardRedeemed || false,
         rewardCycle: loyalty.rewardCycle || 1,
         totalRewardsRedeemed: loyalty.totalRewardsRedeemed || 0,
+        stageInfo,
       },
       notifications,
     });

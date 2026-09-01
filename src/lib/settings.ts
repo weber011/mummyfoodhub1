@@ -46,23 +46,51 @@ export function getIstDateString(): string {
 }
 
 /**
- * Check if skip is still allowed for a given meal type.
+ * Check if skip is still allowed for a given meal type on a SPECIFIC date (YYYY-MM-DD).
+ * Evaluates the exact cutoff timestamp in Asia/Kolkata (IST).
+ * Lunch: mealDate 04:00 AM IST
+ * Dinner: mealDate 03:00 PM IST
+ */
+export async function isSkipAllowedForDate(
+  mealType: 'lunch' | 'dinner',
+  mealDate: string
+): Promise<{ allowed: boolean; minutesRemaining: number; cutoffTime: string; cutoffDateStr: string }> {
+  const settings = await getAdminSettings();
+  const cutoffStr = mealType === 'lunch' ? settings.lunchSkipCutoff : settings.dinnerSkipCutoff;
+  const [h, m] = cutoffStr.split(':').map(Number);
+  const padH = (h || 0).toString().padStart(2, '0');
+  const padM = (m || 0).toString().padStart(2, '0');
+
+  // Exact cutoff timestamp in Asia/Kolkata (+05:30)
+  const cutoffIso = `${mealDate}T${padH}:${padM}:00+05:30`;
+  const cutoffTimestamp = new Date(cutoffIso).getTime();
+  const nowTimestamp = Date.now();
+
+  const diffMs = cutoffTimestamp - nowTimestamp;
+  const allowed = diffMs > 0;
+  const minutesRemaining = Math.max(0, Math.floor(diffMs / (1000 * 60)));
+
+  return {
+    allowed,
+    minutesRemaining,
+    cutoffTime: cutoffStr,
+    cutoffDateStr: cutoffIso,
+  };
+}
+
+/**
+ * Check if skip is still allowed for a given meal type for TODAY.
  * Returns { allowed, minutesRemaining, cutoffTime }
  */
 export async function isSkipAllowed(
   mealType: 'lunch' | 'dinner'
 ): Promise<{ allowed: boolean; minutesRemaining: number; cutoffTime: string }> {
-  const settings = await getAdminSettings();
-  const cutoffStr = mealType === 'lunch' ? settings.lunchSkipCutoff : settings.dinnerSkipCutoff;
-  const { hours, minutes } = parseTime(cutoffStr);
-  const cutoffMins = hours * 60 + minutes;
-  const nowMins = getIstMinutes();
-  const minutesRemaining = cutoffMins - nowMins;
-
+  const todayStr = getIstDateString();
+  const res = await isSkipAllowedForDate(mealType, todayStr);
   return {
-    allowed: nowMins < cutoffMins,
-    minutesRemaining: Math.max(0, minutesRemaining),
-    cutoffTime: cutoffStr,
+    allowed: res.allowed,
+    minutesRemaining: res.minutesRemaining,
+    cutoffTime: res.cutoffTime,
   };
 }
 

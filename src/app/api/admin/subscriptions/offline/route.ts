@@ -37,10 +37,13 @@ export async function POST(req: NextRequest) {
       address,
       sector = '106',
       landmark,
-      deliveryType,
-      deliveryTime,
-      deliveryPreference = 'gate',
+      deliveryType = 'Office Gate',
+      deliveryTime = 'Lunch (12:30 - 2 PM)',
       notes,
+      separateAddresses,
+      breakfastDelivery,
+      lunchDelivery,
+      dinnerDelivery,
     } = body;
 
     // Strict validation: Reject Breakfast Only
@@ -55,35 +58,44 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields: Name, Phone, Base Plan, Start Date, Address are required.' }, { status: 400 });
     }
 
-    const bPlan: BasePlanType = basePlan === 'dinner' ? 'dinner' : basePlan === 'complete' ? 'complete' : 'lunch';
+    const bPlan: BasePlanType =
+      basePlan === 'full' ? 'full' :
+      basePlan === 'lunch_and_dinner' || basePlan === 'complete' ? 'lunch_and_dinner' :
+      basePlan === 'dinner' ? 'dinner' : 'lunch';
+
+    const isFull = bPlan === 'full';
+    const isLunchAndDinner = bPlan === 'lunch_and_dinner';
     const isDinner = bPlan === 'dinner';
-    const isComplete = bPlan === 'complete';
     const isLunch = bPlan === 'lunch';
-    const breakfast = Boolean(hasBreakfastAddon);
+    const breakfast = isFull || Boolean(hasBreakfastAddon);
 
     // Calculate entitlements & validity
-    let lunchMeals = isLunch || isComplete ? 26 : 0;
-    let dinnerMeals = isDinner || isComplete ? 30 : 0;
+    let lunchMeals = isLunch || isLunchAndDinner || isFull ? 26 : 0;
+    let dinnerMeals = isDinner || isLunchAndDinner || isFull ? 30 : 0;
     let breakfastMeals = breakfast ? 26 : 0;
     let totalMeals = lunchMeals + dinnerMeals + breakfastMeals;
 
-    // Validity: Lunch 56 days, Dinner 60 days, Complete 60 days
-    const validityDays = isDinner || isComplete ? 60 : 56;
+    // Validity: Lunch 56 days, Dinner 60 days, Lunch and Dinner 60 days, Complete 60 days
+    const validityDays = isDinner || isLunchAndDinner || isFull ? 60 : 56;
     const start = new Date(startDate);
     const end = new Date(start.getTime() + validityDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // Canonical Plan Name & Pricing
-    let planName = isComplete
-      ? (breakfast ? 'Complete Plan + Breakfast' : 'Complete Plan')
-      : isDinner
-        ? (breakfast ? 'Dinner + Breakfast' : 'Dinner Plan')
-        : (breakfast ? 'Lunch + Breakfast' : 'Lunch Plan');
+    let planName = isFull
+      ? 'Complete Plan'
+      : isLunchAndDinner
+        ? (breakfast ? 'Lunch and Dinner + Breakfast' : 'Lunch and Dinner Plan')
+        : isDinner
+          ? (breakfast ? 'Dinner + Breakfast' : 'Dinner Plan')
+          : (breakfast ? 'Lunch + Breakfast' : 'Lunch Plan');
 
-    let planPrice = isComplete
-      ? (breakfast ? 6000 : 4400)
-      : isDinner
-        ? (breakfast ? 4120 : 2500)
-        : (breakfast ? 3719 : 2099);
+    let planPrice = isFull
+      ? 5999
+      : isLunchAndDinner
+        ? (breakfast ? 6000 : 4400)
+        : isDinner
+          ? (breakfast ? 4120 : 2500)
+          : (breakfast ? 3719 : 2099);
 
     // 1. Link or Create customer account if email provided
     let userId = `offline_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -130,8 +142,8 @@ export async function POST(req: NextRequest) {
       breakfastUsedMeals: 0,
       breakfastSkippedMeals: 0,
       breakfastTransferredMeals: 0,
-      mealType: isComplete ? 'both' : isDinner ? 'dinner' : 'lunch',
-      deliveryPreference: deliveryPreference as 'doorstep' | 'gate',
+      mealType: (isFull || isLunchAndDinner) ? 'both' : isDinner ? 'dinner' : 'lunch',
+      deliveryPreference: (deliveryType && deliveryType.toLowerCase().includes('door')) ? 'doorstep' : 'gate',
       discountPercentage: 10,
       customerName,
       customerEmail: customerEmail || '',
@@ -139,13 +151,17 @@ export async function POST(req: NextRequest) {
       address,
       sector,
       landmark: landmark || '',
-      deliveryType: deliveryType || (deliveryPreference === 'doorstep' ? 'Doorstep Delivery' : 'Gate Delivery'),
+      deliveryType: deliveryType || ((deliveryType && deliveryType.toLowerCase().includes('door')) ? 'Doorstep Delivery' : 'Gate Delivery'),
       deliveryTime: deliveryTime || (isDinner ? 'Dinner (8:00 PM - 9:30 PM)' : 'Lunch (12:30 PM - 2:00 PM)'),
       notes: notes || '',
       utr: utr || '',
       isOffline: true,
       paymentStatus: paymentStatus as 'paid' | 'pending',
       paymentMethod,
+      separateAddresses: Boolean(separateAddresses),
+      breakfastDelivery: breakfastDelivery || undefined,
+      lunchDelivery: lunchDelivery || undefined,
+      dinnerDelivery: dinnerDelivery || undefined,
     });
 
     // 3. Generate initial meal record for today if within date range
@@ -161,7 +177,7 @@ export async function POST(req: NextRequest) {
         planName,
         planPrice,
         totalMeals,
-        mealType: isComplete ? 'both' : isDinner ? 'dinner' : 'lunch',
+        mealType: (isFull || isLunchAndDinner) ? 'both' : isDinner ? 'dinner' : 'lunch',
         startDate,
         endDate: end,
         validityDays,

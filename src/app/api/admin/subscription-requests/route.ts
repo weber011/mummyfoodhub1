@@ -69,6 +69,12 @@ export async function PATCH(req: NextRequest) {
       houseNumber: subReq.houseNumber || '',
       building: subReq.building || '',
       discountPercentage: 10,
+      basePlan: subReq.basePlan,
+      hasBreakfastAddon: subReq.hasBreakfastAddon,
+      separateAddresses: subReq.separateAddresses,
+      breakfastDelivery: subReq.breakfastDelivery,
+      lunchDelivery: subReq.lunchDelivery,
+      dinnerDelivery: subReq.dinnerDelivery,
       // Store customer delivery details
       customerName: subReq.name,
       customerEmail: subReq.email,

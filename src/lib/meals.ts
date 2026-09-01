@@ -68,25 +68,43 @@ export async function getMealsByDateAndType(date: string, mealType: 'lunch' | 'd
 }
 
 /**
- * Get today's meal for a specific subscription and meal type.
- * Returns null if no meal record exists yet for today.
+ * Get a meal for a specific subscription, meal type, and date.
  */
-export async function getMealForToday(
+export async function getMealForDate(
   subscriptionId: string,
-  mealType: 'lunch' | 'dinner'
+  mealType: 'lunch' | 'dinner' | 'breakfast',
+  date: string
 ): Promise<MealSchedule | null> {
-  const today = getIstDateString();
   const meals = await getMealsBySubscription(subscriptionId, 50);
-  return meals.find(m => m.scheduledDate === today && m.mealType === mealType) ?? null;
+  return meals.find(m => m.scheduledDate === date && m.mealType === mealType) ?? null;
 }
 
 /**
- * Find today's meal for a user across all their subscriptions.
+ * Get today's meal for a specific subscription and meal type.
+ */
+export async function getMealForToday(
+  subscriptionId: string,
+  mealType: 'lunch' | 'dinner' | 'breakfast'
+): Promise<MealSchedule | null> {
+  const today = getIstDateString();
+  return getMealForDate(subscriptionId, mealType, today);
+}
+
+/**
+ * Find today's meals for a user across all their subscriptions.
  */
 export async function getTodaysMealsForUser(userId: string): Promise<MealSchedule[]> {
   const today = getIstDateString();
   const meals = await getMealsByUser(userId, 60);
   return meals.filter(m => m.scheduledDate === today);
+}
+
+/**
+ * Find meals for a user on a specific date (e.g. tomorrow).
+ */
+export async function getMealsForUserByDate(userId: string, date: string): Promise<MealSchedule[]> {
+  const meals = await getMealsByUser(userId, 60);
+  return meals.filter(m => m.scheduledDate === date);
 }
 
 // ── Daily Meal Generation ──────────────────────────────────────────
@@ -114,13 +132,25 @@ export async function generateDailyMeals(
     const remaining = (sub.totalMeals ?? 0) - (sub.usedMeals ?? 0);
     if (remaining <= 0) { skipped++; continue; }
 
-    const mealTypes: Array<'lunch' | 'dinner'> =
-      sub.mealType === 'both' ? ['lunch', 'dinner'] :
-      sub.mealType === 'dinner' ? ['dinner'] : ['lunch'];
+    const isFullPlan = sub.basePlan === 'full' || sub.planName?.toLowerCase().includes('complete');
+    const hasBreakfast = sub.hasBreakfastAddon || isFullPlan || sub.planName?.toLowerCase().includes('breakfast');
+    const isDinner = sub.mealType === 'dinner' || sub.basePlan === 'dinner';
+    const isLunch = sub.mealType === 'lunch' || sub.basePlan === 'lunch';
+    const isBoth = sub.mealType === 'both' || sub.basePlan === 'complete' || sub.basePlan === 'lunch_and_dinner' || isFullPlan || (!isDinner && !isLunch);
+
+    const mealTypes: Array<'lunch' | 'dinner' | 'breakfast'> = [];
+    if (hasBreakfast) mealTypes.push('breakfast');
+    if (isBoth) {
+      mealTypes.push('lunch', 'dinner');
+    } else if (isDinner) {
+      mealTypes.push('dinner');
+    } else {
+      mealTypes.push('lunch');
+    }
 
     for (const mealType of mealTypes) {
       // Idempotency: check if meal already exists for this date+sub+type
-      const existingMeals = await getMealsBySubscription(sub.id, 10);
+      const existingMeals = await getMealsBySubscription(sub.id, 20);
       const alreadyExists = existingMeals.some(
         m => m.scheduledDate === date && m.mealType === mealType
       );
@@ -129,6 +159,31 @@ export async function generateDailyMeals(
       const isToday = date === getIstDateString();
       const status: MealStatus = isToday ? 'scheduled' : date > getIstDateString() ? 'upcoming' : 'scheduled';
 
+      // Per-meal address resolution
+      let mealAddress = sub.address;
+      let mealSector = sub.sector;
+      let mealPref: 'doorstep' | 'gate' = sub.deliveryPreference ?? 'gate';
+      let mealInstructions = sub.deliveryInstructions;
+
+      if (sub.separateAddresses) {
+        if (mealType === 'breakfast' && sub.breakfastDelivery) {
+          mealAddress = sub.breakfastDelivery.address || mealAddress;
+          mealSector = sub.breakfastDelivery.sector || mealSector;
+          mealPref = sub.breakfastDelivery.deliveryType?.toLowerCase().includes('doorstep') ? 'doorstep' : 'gate';
+          mealInstructions = sub.breakfastDelivery.notes || mealInstructions;
+        } else if (mealType === 'lunch' && sub.lunchDelivery) {
+          mealAddress = sub.lunchDelivery.address || mealAddress;
+          mealSector = sub.lunchDelivery.sector || mealSector;
+          mealPref = sub.lunchDelivery.deliveryType?.toLowerCase().includes('doorstep') ? 'doorstep' : 'gate';
+          mealInstructions = sub.lunchDelivery.notes || mealInstructions;
+        } else if (mealType === 'dinner' && sub.dinnerDelivery) {
+          mealAddress = sub.dinnerDelivery.address || mealAddress;
+          mealSector = sub.dinnerDelivery.sector || mealSector;
+          mealPref = sub.dinnerDelivery.deliveryType?.toLowerCase().includes('doorstep') ? 'doorstep' : 'gate';
+          mealInstructions = sub.dinnerDelivery.notes || mealInstructions;
+        }
+      }
+
       await createMealSchedule({
         subscriptionId: sub.id,
         userId: sub.userId,
@@ -136,9 +191,9 @@ export async function generateDailyMeals(
         scheduledDate: date,
         menu: dailyMenu ?? '',
         status,
-        deliveryPreference: sub.deliveryPreference ?? 'gate',
-        deliveryAddress: sub.address,
-        deliveryInstructions: sub.deliveryInstructions,
+        deliveryPreference: mealPref,
+        deliveryAddress: mealSector ? `${mealAddress}, Sector ${mealSector}` : mealAddress,
+        deliveryInstructions: mealInstructions,
       });
       created++;
     }

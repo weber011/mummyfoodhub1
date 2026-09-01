@@ -24,10 +24,76 @@ const SECTOR_OPTIONS = [
   { value: "135", label: "Sector 135" },
 ];
 
+const DEFAULT_PLANS = [
+  {
+    id: "plan-lunch",
+    name: "Lunch Plan",
+    price: 2099,
+    duration: "56 Days (26 Meals)",
+    features: [
+      "26 Fresh Homemade Lunches",
+      "56 Days Extended Validity",
+      "Skip before 4:00 AM IST",
+      "Shift skipped lunch to dinner anytime",
+      "Free Delivery within 4 KM",
+    ],
+    recommended: false,
+    savings: "₹400",
+  },
+  {
+    id: "plan-dinner",
+    name: "Dinner Plan",
+    price: 2500,
+    duration: "60 Days (30 Meals)",
+    features: [
+      "30 Hot Homemade Dinners",
+      "60 Days Extended Validity",
+      "Skip before 3:00 PM IST",
+      "Shift skipped dinner to lunch anytime",
+      "Free Delivery within 4 KM",
+    ],
+    recommended: false,
+    savings: "₹500",
+  },
+  {
+    id: "plan-lunch-dinner",
+    name: "Lunch and Dinner Plan",
+    price: 4400,
+    duration: "60 Days (56 Meals)",
+    features: [
+      "26 Lunches + 30 Dinners (56 Meals)",
+      "60 Days Extended Validity",
+      "Skip & shift lunch & dinner independently",
+      "Priority On-Time Delivery",
+      "Save over 20% on daily meal orders",
+    ],
+    recommended: false,
+    savings: "₹1,000",
+  },
+  {
+    id: "plan-complete",
+    name: "Complete Plan",
+    price: 5999,
+    duration: "60 Days (82 Meals)",
+    features: [
+      "All 3 Meals Included (Breakfast + Lunch + Dinner)",
+      "26 Breakfasts + 26 Lunches + 30 Dinners (82 Meals)",
+      "Breakfast Automatically Included",
+      "60 Days Extended Validity",
+      "Skip & shift individual meals independently",
+      "VIP Priority Support & Delivery",
+    ],
+    recommended: true,
+    savings: "₹1,800",
+  },
+];
+
 export default function SubscriptionPage() {
   const { siteData } = useSiteData();
   const { user } = useAuth();
-  const plans = siteData.subscriptionPlans;
+  const plans = siteData?.subscriptionPlans && siteData.subscriptionPlans.length > 0
+    ? siteData.subscriptionPlans
+    : DEFAULT_PLANS;
 
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [addBreakfast, setAddBreakfast] = useState(false);
@@ -47,6 +113,32 @@ export default function SubscriptionPage() {
     utr: "",
   });
 
+  const [separateAddresses, setSeparateAddresses] = useState(false);
+  const [breakfastForm, setBreakfastForm] = useState({
+    address: "",
+    sector: "106",
+    landmark: "",
+    deliveryType: "Doorstep",
+    deliveryTime: "Morning (9:00 - 10:00 AM)",
+    notes: "",
+  });
+  const [lunchForm, setLunchForm] = useState({
+    address: "",
+    sector: "106",
+    landmark: "",
+    deliveryType: "Office Gate",
+    deliveryTime: "Lunch (12:30 - 2:00 PM)",
+    notes: "",
+  });
+  const [dinnerForm, setDinnerForm] = useState({
+    address: "",
+    sector: "106",
+    landmark: "",
+    deliveryType: "Doorstep",
+    deliveryTime: "Dinner (8:00 - 9:30 PM)",
+    notes: "",
+  });
+
   // Pre-fill from user when modal opens
   useEffect(() => {
     if (user) {
@@ -57,6 +149,7 @@ export default function SubscriptionPage() {
   const openPlan = (plan: any) => {
     setSelectedPlan(plan);
     setAddBreakfast(false);
+    setSeparateAddresses(false);
     setStep(1);
     setError("");
   };
@@ -64,14 +157,31 @@ export default function SubscriptionPage() {
   const closeModal = () => {
     setSelectedPlan(null);
     setAddBreakfast(false);
+    setSeparateAddresses(false);
     setStep(1);
     setError("");
   };
 
+  const isCompletePlan = selectedPlan?.id === "plan-complete" || selectedPlan?.name?.toLowerCase().includes("complete") || selectedPlan?.price === 5999;
+  const isLunchAndDinnerPlan = selectedPlan?.id === "plan-lunch-dinner" || selectedPlan?.name?.toLowerCase().includes("lunch and dinner");
+  const isDinnerOnly = selectedPlan?.id === "plan-dinner" || (selectedPlan?.name?.toLowerCase().includes("dinner") && !isLunchAndDinnerPlan);
+  const isLunchOnly = selectedPlan?.id === "plan-lunch" || (selectedPlan?.name?.toLowerCase().includes("lunch") && !isLunchAndDinnerPlan);
+
+  const hasBreakfast = isCompletePlan || addBreakfast;
+  const hasLunch = isCompletePlan || isLunchAndDinnerPlan || isLunchOnly;
+  const hasDinner = isCompletePlan || isLunchAndDinnerPlan || isDinnerOnly;
+  const isMultiMealPlan = (hasBreakfast && (hasLunch || hasDinner)) || (hasLunch && hasDinner);
+
   const validateStep1 = () => {
     if (!form.name.trim()) return "Please enter your name.";
     if (!form.phone.replace(/\D/g, "").length || form.phone.replace(/\D/g, "").length < 10) return "Please enter a valid 10-digit phone number.";
-    if (!form.address.trim()) return "Please enter your building / society name.";
+    if (!separateAddresses) {
+      if (!form.address.trim()) return "Please enter your building / society name.";
+    } else {
+      if (hasBreakfast && !breakfastForm.address.trim()) return "Please enter your Breakfast delivery address.";
+      if (hasLunch && !lunchForm.address.trim()) return "Please enter your Lunch delivery address.";
+      if (hasDinner && !dinnerForm.address.trim()) return "Please enter your Dinner delivery address.";
+    }
     return "";
   };
 
@@ -82,8 +192,8 @@ export default function SubscriptionPage() {
     setStep(2);
   };
 
-  const currentPrice = (selectedPlan?.price || 0) + (addBreakfast ? 1620 : 0);
-  const currentPlanName = addBreakfast ? `${selectedPlan?.name} + Breakfast` : selectedPlan?.name;
+  const currentPrice = isCompletePlan ? (selectedPlan?.price || 5999) : (selectedPlan?.price || 0) + (addBreakfast ? 1620 : 0);
+  const currentPlanName = isCompletePlan ? selectedPlan?.name : addBreakfast ? `${selectedPlan?.name} + Breakfast` : selectedPlan?.name;
 
   const handleSubmit = async () => {
     if (!user) { window.location.href = "/login"; return; }
@@ -99,7 +209,18 @@ export default function SubscriptionPage() {
           planName: currentPlanName,
           planPrice: currentPrice,
           hasBreakfastAddon: addBreakfast,
+          separateAddresses,
+          breakfastDelivery: hasBreakfast && separateAddresses ? breakfastForm : undefined,
+          lunchDelivery: hasLunch && separateAddresses ? lunchForm : undefined,
+          dinnerDelivery: hasDinner && separateAddresses ? dinnerForm : undefined,
           ...form,
+          // If separate addresses, primary address defaults to lunch or dinner address
+          address: separateAddresses
+            ? (hasLunch ? lunchForm.address : hasDinner ? dinnerForm.address : breakfastForm.address)
+            : form.address,
+          sector: separateAddresses
+            ? (hasLunch ? lunchForm.sector : hasDinner ? dinnerForm.sector : breakfastForm.sector)
+            : form.sector,
         }),
       });
       const data = await res.json();
@@ -330,23 +451,35 @@ export default function SubscriptionPage() {
                     </p>
                   </div>
 
-                  {/* Breakfast Add-On Option */}
-                  <label className="flex items-start gap-2.5 p-3 rounded-xl bg-white border border-primary/20 cursor-pointer hover:bg-amber-50/50 transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={addBreakfast}
-                      onChange={e => setAddBreakfast(e.target.checked)}
-                      className="mt-0.5 w-4 h-4 rounded text-primary focus:ring-primary"
-                    />
-                    <div>
-                      <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                        🥐 Add Breakfast (+26 Meals, 56 Days) <span className="text-primary font-black">+₹1,620</span>
+                  {/* Breakfast Add-On Option or Included Badge */}
+                  {isCompletePlan ? (
+                    <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                      <p className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                        <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Breakfast Included (All 3 Meals)</span>
                       </p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
-                        Fresh morning homemade breakfast delivered to your doorstep.
+                      <p className="text-[11px] text-emerald-800 mt-0.5">
+                        Breakfast (26 meals), Lunch (26 meals), and Dinner (30 meals) are automatically included.
                       </p>
                     </div>
-                  </label>
+                  ) : (
+                    <label className="flex items-start gap-2.5 p-3 rounded-xl bg-white border border-primary/20 cursor-pointer hover:bg-amber-50/50 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={addBreakfast}
+                        onChange={e => setAddBreakfast(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 rounded text-primary focus:ring-primary"
+                      />
+                      <div>
+                        <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          🥐 Add Breakfast (+26 Meals, 56 Days) <span className="text-primary font-black">+₹1,620</span>
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Fresh morning homemade breakfast delivered to your doorstep.
+                        </p>
+                      </div>
+                    </label>
+                  )}
                 </div>
 
                 {!user ? (
@@ -389,92 +522,273 @@ export default function SubscriptionPage() {
                           </div>
                         </div>
 
-                        <div>
-                          <label className="block text-xs font-bold text-foreground mb-1">Building / Society Name *</label>
-                          <input
-                            type="text"
-                            value={form.address}
-                            onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
-                            placeholder="e.g. ATS Village, Logix City"
-                            className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-subheading"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-bold text-foreground mb-1">Sector *</label>
-                            <div className="relative">
-                              <select
-                                value={form.sector}
-                                onChange={e => setForm(f => ({ ...f, sector: e.target.value }))}
-                                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-subheading appearance-none"
-                              >
-                                {SECTOR_OPTIONS.map(s => (
-                                  <option key={s.value} value={s.value}>{s.label}</option>
-                                ))}
-                              </select>
-                              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            </div>
+                        {/* Separate Addresses Toggle for Multi-Meal Plans */}
+                        {isMultiMealPlan && (
+                          <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-3.5 space-y-1.5">
+                            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={separateAddresses}
+                                onChange={e => setSeparateAddresses(e.target.checked)}
+                                className="w-4 h-4 rounded text-primary focus:ring-primary"
+                              />
+                              <span className="text-xs font-bold text-amber-950">
+                                📍 Deliver meals to different addresses (e.g., Office for Lunch, Home for Dinner)
+                              </span>
+                            </label>
+                            <p className="text-[11px] text-amber-800/90 pl-6.5">
+                              Check this if you want morning breakfast, lunch, or dinner delivered to separate locations.
+                            </p>
                           </div>
-                          <div>
-                            <label className="block text-xs font-bold text-foreground mb-1">Landmark</label>
-                            <div className="relative">
-                              <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                        )}
+
+                        {!separateAddresses ? (
+                          <>
+                            <div>
+                              <label className="block text-xs font-bold text-foreground mb-1">Building / Society Name *</label>
                               <input
                                 type="text"
-                                value={form.landmark}
-                                onChange={e => setForm(f => ({ ...f, landmark: e.target.value }))}
-                                placeholder="Near park..."
-                                className="w-full pl-8 pr-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-subheading"
+                                value={form.address}
+                                onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+                                placeholder="e.g. ATS Village, Logix City"
+                                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-subheading"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-bold text-foreground mb-1">Sector *</label>
+                                <div className="relative">
+                                  <select
+                                    value={form.sector}
+                                    onChange={e => setForm(f => ({ ...f, sector: e.target.value }))}
+                                    className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-subheading appearance-none"
+                                  >
+                                    {SECTOR_OPTIONS.map(s => (
+                                      <option key={s.value} value={s.value}>{s.label}</option>
+                                    ))}
+                                  </select>
+                                  <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-xs font-bold text-foreground mb-1">Landmark</label>
+                                <div className="relative">
+                                  <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                                  <input
+                                    type="text"
+                                    value={form.landmark}
+                                    onChange={e => setForm(f => ({ ...f, landmark: e.target.value }))}
+                                    placeholder="Near park..."
+                                    className="w-full pl-8 pr-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-subheading"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-bold text-foreground mb-1">Deliver To</label>
+                                <div className="relative">
+                                  <select
+                                    value={form.deliveryType}
+                                    onChange={e => setForm(f => ({ ...f, deliveryType: e.target.value }))}
+                                    className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-subheading appearance-none"
+                                  >
+                                    <option>Office Gate</option>
+                                    <option>Main Gate of House</option>
+                                    <option>Doorstep</option>
+                                  </select>
+                                  <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-xs font-bold text-foreground mb-1">Delivery Time</label>
+                                <div className="relative">
+                                  <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                                  <select
+                                    value={form.deliveryTime}
+                                    onChange={e => setForm(f => ({ ...f, deliveryTime: e.target.value }))}
+                                    className="w-full pl-8 pr-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-subheading appearance-none"
+                                  >
+                                    <option>Lunch (12:30 - 2 PM)</option>
+                                    <option>Dinner (8:00 - 9:30 PM)</option>
+                                    <option>Morning (9 - 10 AM)</option>
+                                  </select>
+                                  <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none hidden" />
+                                </div>
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-bold text-foreground mb-1">Special Notes</label>
+                              <textarea
+                                rows={2}
+                                value={form.notes}
+                                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                                placeholder="Any special instructions for delivery..."
+                                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-subheading resize-none"
+                              />
+                            </div>
+                          </>
+                        ) : (
+                          <div className="space-y-4 pt-1">
+                            {/* Breakfast Delivery Card */}
+                            {hasBreakfast && (
+                              <div className="border-2 border-orange-200/80 bg-orange-50/30 rounded-2xl p-4 space-y-3">
+                                <div className="flex items-center gap-2 pb-1 border-b border-orange-200/60">
+                                  <span className="text-base">🥐</span>
+                                  <h4 className="text-xs font-bold text-orange-950 uppercase tracking-wider">Breakfast Delivery Address</h4>
+                                </div>
+
+                                <div>
+                                  <label className="block text-[11px] font-bold text-foreground mb-1">Building / Society / House *</label>
+                                  <input
+                                    type="text"
+                                    value={breakfastForm.address}
+                                    onChange={e => setBreakfastForm({ ...breakfastForm, address: e.target.value })}
+                                    placeholder="e.g. Tower B, Flat 402, Prateek Edifice"
+                                    className="w-full border border-border bg-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-primary font-subheading"
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-foreground mb-1">Sector *</label>
+                                    <select
+                                      value={breakfastForm.sector}
+                                      onChange={e => setBreakfastForm({ ...breakfastForm, sector: e.target.value })}
+                                      className="w-full border border-border bg-white rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-primary font-subheading"
+                                    >
+                                      {SECTOR_OPTIONS.map(s => (
+                                        <option key={s.value} value={s.value}>{s.label}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-foreground mb-1">Deliver To</label>
+                                    <select
+                                      value={breakfastForm.deliveryType}
+                                      onChange={e => setBreakfastForm({ ...breakfastForm, deliveryType: e.target.value })}
+                                      className="w-full border border-border bg-white rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-primary font-subheading"
+                                    >
+                                      <option>Doorstep</option>
+                                      <option>Main Gate of House</option>
+                                      <option>Office Gate</option>
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Lunch Delivery Card */}
+                            {hasLunch && (
+                              <div className="border-2 border-amber-200/80 bg-amber-50/30 rounded-2xl p-4 space-y-3">
+                                <div className="flex items-center gap-2 pb-1 border-b border-amber-200/60">
+                                  <span className="text-base">🍱</span>
+                                  <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wider">Lunch Delivery Address</h4>
+                                </div>
+
+                                <div>
+                                  <label className="block text-[11px] font-bold text-foreground mb-1">Building / Office / Tower *</label>
+                                  <input
+                                    type="text"
+                                    value={lunchForm.address}
+                                    onChange={e => setLunchForm({ ...lunchForm, address: e.target.value })}
+                                    placeholder="e.g. Candor TechSpace, Tower 4, Gate 2"
+                                    className="w-full border border-border bg-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-primary font-subheading"
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-foreground mb-1">Sector *</label>
+                                    <select
+                                      value={lunchForm.sector}
+                                      onChange={e => setLunchForm({ ...lunchForm, sector: e.target.value })}
+                                      className="w-full border border-border bg-white rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-primary font-subheading"
+                                    >
+                                      {SECTOR_OPTIONS.map(s => (
+                                        <option key={s.value} value={s.value}>{s.label}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-foreground mb-1">Deliver To</label>
+                                    <select
+                                      value={lunchForm.deliveryType}
+                                      onChange={e => setLunchForm({ ...lunchForm, deliveryType: e.target.value })}
+                                      className="w-full border border-border bg-white rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-primary font-subheading"
+                                    >
+                                      <option>Office Gate</option>
+                                      <option>Main Gate of House</option>
+                                      <option>Doorstep</option>
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Dinner Delivery Card */}
+                            {hasDinner && (
+                              <div className="border-2 border-indigo-200/80 bg-indigo-50/30 rounded-2xl p-4 space-y-3">
+                                <div className="flex items-center gap-2 pb-1 border-b border-indigo-200/60">
+                                  <span className="text-base">🍽️</span>
+                                  <h4 className="text-xs font-bold text-indigo-950 uppercase tracking-wider">Dinner Delivery Address</h4>
+                                </div>
+
+                                <div>
+                                  <label className="block text-[11px] font-bold text-foreground mb-1">Building / Society / Flat *</label>
+                                  <input
+                                    type="text"
+                                    value={dinnerForm.address}
+                                    onChange={e => setDinnerForm({ ...dinnerForm, address: e.target.value })}
+                                    placeholder="e.g. Ridge Residency, Flat 1507, Tower M"
+                                    className="w-full border border-border bg-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-primary font-subheading"
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-foreground mb-1">Sector *</label>
+                                    <select
+                                      value={dinnerForm.sector}
+                                      onChange={e => setDinnerForm({ ...dinnerForm, sector: e.target.value })}
+                                      className="w-full border border-border bg-white rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-primary font-subheading"
+                                    >
+                                      {SECTOR_OPTIONS.map(s => (
+                                        <option key={s.value} value={s.value}>{s.label}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-foreground mb-1">Deliver To</label>
+                                    <select
+                                      value={dinnerForm.deliveryType}
+                                      onChange={e => setDinnerForm({ ...dinnerForm, deliveryType: e.target.value })}
+                                      className="w-full border border-border bg-white rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-primary font-subheading"
+                                    >
+                                      <option>Doorstep</option>
+                                      <option>Main Gate of House</option>
+                                      <option>Office Gate</option>
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            <div>
+                              <label className="block text-xs font-bold text-foreground mb-1">General Delivery Notes</label>
+                              <textarea
+                                rows={2}
+                                value={form.notes}
+                                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                                placeholder="Any special notes or dietary preferences..."
+                                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-subheading resize-none"
                               />
                             </div>
                           </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-bold text-foreground mb-1">Deliver To</label>
-                            <div className="relative">
-                              <select
-                                value={form.deliveryType}
-                                onChange={e => setForm(f => ({ ...f, deliveryType: e.target.value }))}
-                                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-subheading appearance-none"
-                              >
-                                <option>Office Gate</option>
-                                <option>Main Gate of House</option>
-                                <option>Doorstep</option>
-                              </select>
-                              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-foreground mb-1">Delivery Time</label>
-                            <div className="relative">
-                              <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                              <select
-                                value={form.deliveryTime}
-                                onChange={e => setForm(f => ({ ...f, deliveryTime: e.target.value }))}
-                                className="w-full pl-8 pr-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-subheading appearance-none"
-                              >
-                                <option>Lunch (12:30 - 2 PM)</option>
-                                <option>Dinner (8:00 - 9:30 PM)</option>
-                                <option>Morning (9 - 10 AM)</option>
-                              </select>
-                              <ChevronDown className="pointer-events-none absolute right-9 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none hidden" />
-                            </div>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-bold text-foreground mb-1">Special Notes</label>
-                          <textarea
-                            rows={2}
-                            value={form.notes}
-                            onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                            placeholder="Any special instructions for delivery..."
-                            className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-subheading resize-none"
-                          />
-                        </div>
+                        )}
 
                         {error && <p className="text-red-500 text-sm font-bold bg-red-50 p-3 rounded-lg">{error}</p>}
 

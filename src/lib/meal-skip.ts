@@ -1,26 +1,24 @@
 import { randomUUID } from 'crypto';
 import { redisGet, redisSet, redisSIsMember } from './redis';
 import type { MealSchedule, MealSkip, UserSubscription } from './types';
-import { isSkipAllowed } from './settings';
+import { isSkipAllowedForDate, getIstDateString } from './settings';
 import { getMealById, updateMeal, addToSkippedSet } from './meals';
-import { redisGet as rGet, redisSet as rSet } from './redis';
 
 const SKIP_PREFIX = 'meal_skip:';
-
-// ── Skip Validation ────────────────────────────────────────────────
 
 export type SkipEligibilityResult =
   | { eligible: true; minutesRemaining: number; cutoffTime: string }
   | { eligible: false; reason: string; cutoffTime: string };
 
 /**
- * Validate whether a customer can skip a meal RIGHT NOW.
+ * Validate whether a customer can skip a meal on a specific date.
  * ALWAYS uses server-side IST time — never trusts client.
  */
 export async function validateSkipEligibility(
   sub: UserSubscription,
   mealType: 'lunch' | 'dinner',
-  meal: MealSchedule | null
+  meal: MealSchedule | null,
+  targetDate?: string
 ): Promise<SkipEligibilityResult> {
   // 1. Subscription must be active
   if (sub.status !== 'active') {
@@ -28,12 +26,15 @@ export async function validateSkipEligibility(
   }
 
   // 2. Subscription must not be expired
-  const now = new Date();
-  const istString = now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
-  const ist = new Date(istString);
-  const istDateStr = ist.toLocaleDateString('en-CA'); // YYYY-MM-DD
-  if (istDateStr > sub.endDate) {
-    return { eligible: false, reason: 'Your subscription has expired.', cutoffTime: '' };
+  const istDateStr = getIstDateString();
+  const mealDate = meal?.scheduledDate || targetDate || istDateStr;
+
+  if (mealDate > sub.endDate || istDateStr > sub.endDate) {
+    return { eligible: false, reason: 'This meal date is outside your subscription validity.', cutoffTime: '' };
+  }
+
+  if (mealDate < sub.startDate) {
+    return { eligible: false, reason: 'This meal date is before your subscription start date.', cutoffTime: '' };
   }
 
   // 3. Check remaining meals
@@ -42,26 +43,29 @@ export async function validateSkipEligibility(
     return { eligible: false, reason: 'No remaining meals in your subscription.', cutoffTime: '' };
   }
 
-  // 4. Meal must exist and be in skippable status
-  if (!meal) {
-    return { eligible: false, reason: "Today's meal has not been scheduled yet.", cutoffTime: '' };
-  }
-  if (meal.status === 'skipped') {
-    return { eligible: false, reason: "You've already skipped today's meal.", cutoffTime: '' };
-  }
-  if (meal.status === 'delivered' || meal.status === 'consumed') {
-    return { eligible: false, reason: "Today's meal has already been delivered.", cutoffTime: '' };
-  }
-  if (meal.status === 'missed' || meal.status === 'expired') {
-    return { eligible: false, reason: "Today's meal can no longer be skipped.", cutoffTime: '' };
+  // 4. Meal status check (if record exists)
+  if (meal) {
+    if (meal.status === 'skipped') {
+      return { eligible: false, reason: "You've already skipped this meal.", cutoffTime: '' };
+    }
+    if (meal.status === 'delivered' || meal.status === 'consumed') {
+      return { eligible: false, reason: "This meal has already been delivered / consumed.", cutoffTime: '' };
+    }
+    if (meal.status === 'transferred') {
+      return { eligible: false, reason: "This meal has already been transferred.", cutoffTime: '' };
+    }
+    if (meal.status === 'missed' || meal.status === 'expired' || meal.status === 'cancelled') {
+      return { eligible: false, reason: "This meal can no longer be skipped.", cutoffTime: '' };
+    }
   }
 
-  // 5. Server-side cutoff check (THE most important validation)
-  const { allowed, minutesRemaining, cutoffTime } = await isSkipAllowed(mealType);
+  // 5. Server-side cutoff check for this exact mealDate (Asia/Kolkata IST)
+  const { allowed, minutesRemaining, cutoffTime } = await isSkipAllowedForDate(mealType, mealDate);
   if (!allowed) {
-    const cutoffMsg = mealType === 'lunch'
-      ? "Today's lunch can no longer be skipped because the cutoff time has passed."
-      : "Today's dinner can no longer be skipped because the cutoff time has passed.";
+    const isToday = mealDate === istDateStr;
+    const cutoffMsg = isToday
+      ? `Today's ${mealType} can no longer be skipped because the cutoff time has passed.`
+      : `${mealType.charAt(0).toUpperCase() + mealType.slice(1)} skip cutoff time has passed for this date (${mealDate}).`;
     return {
       eligible: false,
       reason: cutoffMsg,

@@ -12,12 +12,13 @@ type AdminMeal = {
   customerPhone?: string;
   customerEmail?: string;
   planName: string;
-  mealType: "lunch" | "dinner";
+  mealType: "breakfast" | "lunch" | "dinner";
   scheduledDate: string;
   menu?: string;
   status: "upcoming" | "scheduled" | "delivered" | "consumed" | "skipped" | "missed" | "expired";
   deliveryStatus?: string;
   deliveryPreference?: "doorstep" | "gate";
+  deliveryAddress?: string;
   address?: string;
   sector?: string;
   landmark?: string;
@@ -27,7 +28,7 @@ type AdminMeal = {
 
 export function TodayMealsTab({ creds }: { creds: { u: string; p: string } }) {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
-  const [mealTypeFilter, setMealTypeFilter] = useState<"all" | "lunch" | "dinner">("all");
+  const [mealTypeFilter, setMealTypeFilter] = useState<"all" | "breakfast" | "lunch" | "dinner">("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [prefFilter, setPrefFilter] = useState("all");
   const [meals, setMeals] = useState<AdminMeal[]>([]);
@@ -136,9 +137,10 @@ export function TodayMealsTab({ creds }: { creds: { u: string; p: string } }) {
             onChange={(e) => setMealTypeFilter(e.target.value as any)}
             className="border border-border bg-white rounded-lg px-2.5 py-1.5 focus:outline-none"
           >
-            <option value="all">All (Lunch + Dinner)</option>
-            <option value="lunch">Lunch Only</option>
-            <option value="dinner">Dinner Only</option>
+            <option value="all">All Meals (Breakfast + Lunch + Dinner)</option>
+            <option value="breakfast">Breakfast</option>
+            <option value="lunch">Lunch</option>
+            <option value="dinner">Dinner</option>
           </select>
         </div>
 
@@ -185,6 +187,7 @@ export function TodayMealsTab({ creds }: { creds: { u: string; p: string } }) {
       ) : (
         <div className="space-y-4">
           {meals.map((m) => {
+            const isBreakfast = m.mealType === "breakfast";
             const isLunch = m.mealType === "lunch";
             const isLoadingAction = actionLoadingId === m.id;
 
@@ -200,10 +203,14 @@ export function TodayMealsTab({ creds }: { creds: { u: string; p: string } }) {
                     </span>
                     <span
                       className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full ${
-                        isLunch ? "bg-amber-100 text-amber-900" : "bg-indigo-100 text-indigo-900"
+                        isBreakfast
+                          ? "bg-orange-100 text-orange-900"
+                          : isLunch
+                          ? "bg-amber-100 text-amber-900"
+                          : "bg-indigo-100 text-indigo-900"
                       }`}
                     >
-                      {isLunch ? "🍱 Lunch" : "🍽️ Dinner"}
+                      {isBreakfast ? "🥐 Breakfast" : isLunch ? "🍱 Lunch" : "🍽️ Dinner"}
                     </span>
                     <span className="text-xs bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-md">
                       {m.planName || "Subscription"}
@@ -241,7 +248,7 @@ export function TodayMealsTab({ creds }: { creds: { u: string; p: string } }) {
                   {m.address && (
                     <p className="text-xs text-foreground/80 flex items-center gap-1">
                       <MapPin className="w-3 h-3 text-primary shrink-0" />
-                      <span>{m.address} {m.sector ? `, Sector ${m.sector}` : ""}</span>
+                      <span>{m.deliveryAddress || (m.address && `${m.address}${m.sector ? `, Sector ${m.sector}` : ''}`)}</span>
                     </p>
                   )}
 

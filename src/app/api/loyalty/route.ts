@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/session';
-import { getLoyaltyRecord, validateAndApplyLoyaltyReward } from '@/lib/loyalty';
+import { getLoyaltyRecord, validateAndApplyLoyaltyReward, getLoyaltyStageInfo } from '@/lib/loyalty';
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,6 +10,8 @@ export async function GET(req: NextRequest) {
     }
 
     const record = await getLoyaltyRecord(session.email, session.userId);
+    const stageInfo = getLoyaltyStageInfo(record);
+
     return NextResponse.json({
       success: true,
       loyalty: {
@@ -20,6 +22,7 @@ export async function GET(req: NextRequest) {
         totalRewardsRedeemed: record.totalRewardsRedeemed || 0,
         discountPercentage: 15,
         freeDelivery: true,
+        stageInfo,
       },
     });
   } catch (err: any) {

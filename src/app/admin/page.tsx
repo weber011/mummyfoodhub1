@@ -64,7 +64,7 @@ export default function AdminPage() {
     customerName: "",
     customerEmail: "",
     customerPhone: "",
-    basePlan: "lunch" as "lunch" | "dinner" | "complete",
+    basePlan: "lunch" as "lunch" | "dinner" | "lunch_and_dinner" | "full" | "complete",
     hasBreakfastAddon: false,
     startDate: new Date().toISOString().split("T")[0],
     paymentStatus: "paid",
@@ -75,7 +75,32 @@ export default function AdminPage() {
     landmark: "",
     deliveryType: "Office Gate",
     deliveryTime: "Lunch (12:30 - 2 PM)",
-    notes: ""
+    notes: "",
+    separateAddresses: false,
+    breakfastDelivery: {
+      address: "",
+      sector: "106",
+      landmark: "",
+      deliveryType: "Doorstep",
+      deliveryTime: "Morning (9:00 - 10:00 AM)",
+      notes: "",
+    },
+    lunchDelivery: {
+      address: "",
+      sector: "106",
+      landmark: "",
+      deliveryType: "Office Gate",
+      deliveryTime: "Lunch (12:30 - 2:00 PM)",
+      notes: "",
+    },
+    dinnerDelivery: {
+      address: "",
+      sector: "106",
+      landmark: "",
+      deliveryType: "Doorstep",
+      deliveryTime: "Dinner (8:00 - 9:30 PM)",
+      notes: "",
+    },
   });
 
   const [showDeliveryModal, setShowDeliveryModal] = useState(false);
@@ -219,9 +244,32 @@ export default function AdminPage() {
 
   const handleAddOfflineSubscriber = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!offlineForm.customerName || !offlineForm.customerPhone || !offlineForm.address) {
-      alert("Please fill all required customer fields.");
+    if (!offlineForm.customerName || !offlineForm.customerPhone) {
+      alert("Please enter customer name and phone number.");
       return;
+    }
+    if (!offlineForm.separateAddresses && !offlineForm.address) {
+      alert("Please enter customer delivery address.");
+      return;
+    }
+    if (offlineForm.separateAddresses) {
+      const isFull = offlineForm.basePlan === "full";
+      const hasBreakfast = isFull || offlineForm.hasBreakfastAddon;
+      const hasLunch = isFull || offlineForm.basePlan !== "dinner";
+      const hasDinner = isFull || offlineForm.basePlan !== "lunch";
+
+      if (hasBreakfast && !offlineForm.breakfastDelivery.address.trim()) {
+        alert("Please enter Breakfast delivery address.");
+        return;
+      }
+      if (hasLunch && !offlineForm.lunchDelivery.address.trim()) {
+        alert("Please enter Lunch delivery address.");
+        return;
+      }
+      if (hasDinner && !offlineForm.dinnerDelivery.address.trim()) {
+        alert("Please enter Dinner delivery address.");
+        return;
+      }
     }
     setSubmittingOffline(true);
     try {
@@ -972,7 +1020,28 @@ export default function AdminPage() {
                                 {sub.customerEmail ? ` • ${sub.customerEmail}` : ''}
                               </p>
                               
-                              {sub.address && (
+                              {sub.separateAddresses ? (
+                                <div className="mt-1 space-y-0.5">
+                                  {sub.breakfastDelivery?.address && (
+                                    <p className="text-xs text-foreground/80 flex items-center gap-1">
+                                      <span className="text-orange-600">🥐</span>
+                                      <span><strong>Breakfast:</strong> {sub.breakfastDelivery.address}, Sector {sub.breakfastDelivery.sector} – {sub.breakfastDelivery.deliveryType}</span>
+                                    </p>
+                                  )}
+                                  {sub.lunchDelivery?.address && (
+                                    <p className="text-xs text-foreground/80 flex items-center gap-1">
+                                      <span className="text-amber-600">🍱</span>
+                                      <span><strong>Lunch:</strong> {sub.lunchDelivery.address}, Sector {sub.lunchDelivery.sector} – {sub.lunchDelivery.deliveryType}</span>
+                                    </p>
+                                  )}
+                                  {sub.dinnerDelivery?.address && (
+                                    <p className="text-xs text-foreground/80 flex items-center gap-1">
+                                      <span className="text-indigo-600">🍽️</span>
+                                      <span><strong>Dinner:</strong> {sub.dinnerDelivery.address}, Sector {sub.dinnerDelivery.sector} – {sub.dinnerDelivery.deliveryType}</span>
+                                    </p>
+                                  )}
+                                </div>
+                              ) : sub.address && (
                                 <p className="text-xs text-foreground/80 flex items-center gap-1">
                                   <MapPin className="w-3 h-3 text-primary shrink-0" />
                                   <span>{sub.address}, Sector {sub.sector} {sub.deliveryTime ? `(${sub.deliveryTime})` : ''}</span>
@@ -1567,16 +1636,24 @@ export default function AdminPage() {
                   <label className="block text-xs font-bold text-foreground uppercase tracking-wider">
                     Base Plan Selection *
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {[
-                      { id: "lunch", label: "Lunch Only", meals: "26 Meals (56 Days)", price: "₹2,099" },
-                      { id: "dinner", label: "Dinner Only", meals: "30 Meals (60 Days)", price: "₹2,500" },
-                      { id: "complete", label: "Complete Plan", meals: "56 Meals (60 Days)", price: "₹4,400" },
+                      { id: "lunch", label: "Lunch Plan", meals: "26 Meals (56 Days)", price: "₹2,099" },
+                      { id: "dinner", label: "Dinner Plan", meals: "30 Meals (60 Days)", price: "₹2,500" },
+                      { id: "lunch_and_dinner", label: "Lunch and Dinner Plan", meals: "56 Meals (60 Days)", price: "₹4,400" },
+                      { id: "full", label: "Complete Plan", meals: "82 Meals (60 Days)", price: "₹5,999" },
                     ].map((bp) => (
                       <button
                         key={bp.id}
                         type="button"
-                        onClick={() => setOfflineForm({ ...offlineForm, basePlan: bp.id as any })}
+                        onClick={() => {
+                          const isFull = bp.id === "full";
+                          setOfflineForm({
+                            ...offlineForm,
+                            basePlan: bp.id as any,
+                            hasBreakfastAddon: isFull ? false : offlineForm.hasBreakfastAddon,
+                          });
+                        }}
                         className={`p-3 rounded-xl text-left border-2 transition-all ${
                           offlineForm.basePlan === bp.id
                             ? "border-primary bg-primary/5 shadow-xs"
@@ -1590,24 +1667,35 @@ export default function AdminPage() {
                     ))}
                   </div>
 
-                  {/* BREAKFAST ADD-ON CHECKBOX (ADD-ON ONLY) */}
+                  {/* BREAKFAST ADD-ON OR INCLUDED NOTICE */}
                   <div className="pt-2 border-t border-border/80">
-                    <label className="flex items-start gap-3 p-3 rounded-xl bg-white border border-border cursor-pointer hover:bg-amber-50/50 transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={offlineForm.hasBreakfastAddon}
-                        onChange={e => setOfflineForm({ ...offlineForm, hasBreakfastAddon: e.target.checked })}
-                        className="mt-0.5 w-4 h-4 rounded text-primary focus:ring-primary"
-                      />
-                      <div>
-                        <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                          🥐 Add Breakfast (Add-on Only) <span className="text-primary font-black">+₹1,620</span>
+                    {offlineForm.basePlan === "full" ? (
+                      <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                        <p className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                          ✓ Breakfast Included in Complete Plan
                         </p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                          Adds 26 Breakfast meals (56-day validity) attached to the selected base plan.
+                        <p className="text-[11px] text-emerald-800 mt-0.5">
+                          Includes 26 Breakfast, 26 Lunch, and 30 Dinner meals (82 total meals).
                         </p>
                       </div>
-                    </label>
+                    ) : (
+                      <label className="flex items-start gap-3 p-3 rounded-xl bg-white border border-border cursor-pointer hover:bg-amber-50/50 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={offlineForm.hasBreakfastAddon}
+                          onChange={e => setOfflineForm({ ...offlineForm, hasBreakfastAddon: e.target.checked })}
+                          className="mt-0.5 w-4 h-4 rounded text-primary focus:ring-primary"
+                        />
+                        <div>
+                          <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                            🥐 Add Breakfast (Add-on Only) <span className="text-primary font-black">+₹1,620</span>
+                          </p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            Adds 26 Breakfast meals (56-day validity) attached to the selected base plan.
+                          </p>
+                        </div>
+                      </label>
+                    )}
                   </div>
                 </div>
 
@@ -1660,62 +1748,271 @@ export default function AdminPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-foreground mb-1">Building / Society Address *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Tower 3, Flat 502, ATS Village"
-                    value={offlineForm.address}
-                    onChange={e => setOfflineForm({ ...offlineForm, address: e.target.value })}
-                    className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                  />
-                </div>
+                {/* Separate Delivery Address Toggle for Multi-Meal Plans */}
+                {(offlineForm.basePlan === "full" || offlineForm.basePlan === "lunch_and_dinner" || offlineForm.hasBreakfastAddon) && (
+                  <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-3.5 space-y-1.5">
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={offlineForm.separateAddresses}
+                        onChange={e => setOfflineForm({ ...offlineForm, separateAddresses: e.target.checked })}
+                        className="w-4 h-4 rounded text-primary focus:ring-primary"
+                      />
+                      <span className="text-xs font-bold text-amber-950">
+                        📍 Deliver meals to different addresses (e.g., Office for Lunch, Home for Dinner)
+                      </span>
+                    </label>
+                    <p className="text-[11px] text-amber-800/90 pl-6.5">
+                      Enable this to configure distinct delivery locations for morning breakfast, afternoon lunch, and dinner.
+                    </p>
+                  </div>
+                )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-foreground mb-1">Sector *</label>
-                    <select
-                      value={offlineForm.sector}
-                      onChange={e => setOfflineForm({ ...offlineForm, sector: e.target.value })}
-                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white"
-                    >
-                      <option value="106">Sector 106</option>
-                      <option value="104">Sector 104</option>
-                      <option value="107">Sector 107</option>
-                      <option value="108">Sector 108</option>
-                      <option value="82">Sector 82</option>
-                      <option value="93">Sector 93</option>
-                      <option value="133">Sector 133</option>
-                      <option value="101">Sector 101</option>
-                      <option value="135">Sector 135</option>
-                    </select>
+                {!offlineForm.separateAddresses ? (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-foreground mb-1">Building / Society Address *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Tower 3, Flat 502, ATS Village"
+                        value={offlineForm.address}
+                        onChange={e => setOfflineForm({ ...offlineForm, address: e.target.value })}
+                        className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-foreground mb-1">Sector *</label>
+                        <select
+                          value={offlineForm.sector}
+                          onChange={e => setOfflineForm({ ...offlineForm, sector: e.target.value })}
+                          className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white"
+                        >
+                          <option value="106">Sector 106</option>
+                          <option value="104">Sector 104</option>
+                          <option value="107">Sector 107</option>
+                          <option value="108">Sector 108</option>
+                          <option value="82">Sector 82</option>
+                          <option value="93">Sector 93</option>
+                          <option value="133">Sector 133</option>
+                          <option value="101">Sector 101</option>
+                          <option value="135">Sector 135</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-foreground mb-1">Deliver To</label>
+                        <select
+                          value={offlineForm.deliveryType}
+                          onChange={e => setOfflineForm({ ...offlineForm, deliveryType: e.target.value })}
+                          className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white"
+                        >
+                          <option>Office Gate</option>
+                          <option>Main Gate of House</option>
+                          <option>Doorstep</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-foreground mb-1">Preferred Time</label>
+                        <select
+                          value={offlineForm.deliveryTime}
+                          onChange={e => setOfflineForm({ ...offlineForm, deliveryTime: e.target.value })}
+                          className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white"
+                        >
+                          <option>Lunch (12:30 - 2 PM)</option>
+                          <option>Dinner (8:00 - 9:30 PM)</option>
+                          <option>Morning (9 - 10 AM)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-4 pt-1">
+                    {/* Breakfast Address */}
+                    {(offlineForm.basePlan === "full" || offlineForm.hasBreakfastAddon) && (
+                      <div className="border-2 border-orange-200 bg-orange-50/40 rounded-2xl p-4 space-y-3">
+                        <div className="flex items-center gap-2 pb-1 border-b border-orange-200">
+                          <span className="text-base">🥐</span>
+                          <h4 className="text-xs font-bold text-orange-950 uppercase tracking-wider">Breakfast Delivery Address</h4>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-foreground mb-1">Address / Society *</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Tower B, Flat 402, Prateek Edifice"
+                            value={offlineForm.breakfastDelivery.address}
+                            onChange={e => setOfflineForm({
+                              ...offlineForm,
+                              breakfastDelivery: { ...offlineForm.breakfastDelivery, address: e.target.value }
+                            })}
+                            className="w-full border border-border bg-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-primary"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[11px] font-bold text-foreground mb-1">Sector *</label>
+                            <select
+                              value={offlineForm.breakfastDelivery.sector}
+                              onChange={e => setOfflineForm({
+                                ...offlineForm,
+                                breakfastDelivery: { ...offlineForm.breakfastDelivery, sector: e.target.value }
+                              })}
+                              className="w-full border border-border bg-white rounded-xl px-2.5 py-1.5 text-xs focus:outline-none focus:border-primary"
+                            >
+                              <option value="106">Sector 106</option>
+                              <option value="104">Sector 104</option>
+                              <option value="107">Sector 107</option>
+                              <option value="108">Sector 108</option>
+                              <option value="82">Sector 82</option>
+                              <option value="93">Sector 93</option>
+                              <option value="133">Sector 133</option>
+                              <option value="101">Sector 101</option>
+                              <option value="135">Sector 135</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-foreground mb-1">Deliver To</label>
+                            <select
+                              value={offlineForm.breakfastDelivery.deliveryType}
+                              onChange={e => setOfflineForm({
+                                ...offlineForm,
+                                breakfastDelivery: { ...offlineForm.breakfastDelivery, deliveryType: e.target.value }
+                              })}
+                              className="w-full border border-border bg-white rounded-xl px-2.5 py-1.5 text-xs focus:outline-none focus:border-primary"
+                            >
+                              <option>Doorstep</option>
+                              <option>Main Gate of House</option>
+                              <option>Office Gate</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Lunch Address */}
+                    {offlineForm.basePlan !== "dinner" && (
+                      <div className="border-2 border-amber-200 bg-amber-50/40 rounded-2xl p-4 space-y-3">
+                        <div className="flex items-center gap-2 pb-1 border-b border-amber-200">
+                          <span className="text-base">🍱</span>
+                          <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wider">Lunch Delivery Address</h4>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-foreground mb-1">Office / Tower / Building *</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Candor TechSpace, Tower 4, Gate 2"
+                            value={offlineForm.lunchDelivery.address}
+                            onChange={e => setOfflineForm({
+                              ...offlineForm,
+                              lunchDelivery: { ...offlineForm.lunchDelivery, address: e.target.value }
+                            })}
+                            className="w-full border border-border bg-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-primary"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[11px] font-bold text-foreground mb-1">Sector *</label>
+                            <select
+                              value={offlineForm.lunchDelivery.sector}
+                              onChange={e => setOfflineForm({
+                                ...offlineForm,
+                                lunchDelivery: { ...offlineForm.lunchDelivery, sector: e.target.value }
+                              })}
+                              className="w-full border border-border bg-white rounded-xl px-2.5 py-1.5 text-xs focus:outline-none focus:border-primary"
+                            >
+                              <option value="106">Sector 106</option>
+                              <option value="104">Sector 104</option>
+                              <option value="107">Sector 107</option>
+                              <option value="108">Sector 108</option>
+                              <option value="82">Sector 82</option>
+                              <option value="93">Sector 93</option>
+                              <option value="133">Sector 133</option>
+                              <option value="101">Sector 101</option>
+                              <option value="135">Sector 135</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-foreground mb-1">Deliver To</label>
+                            <select
+                              value={offlineForm.lunchDelivery.deliveryType}
+                              onChange={e => setOfflineForm({
+                                ...offlineForm,
+                                lunchDelivery: { ...offlineForm.lunchDelivery, deliveryType: e.target.value }
+                              })}
+                              className="w-full border border-border bg-white rounded-xl px-2.5 py-1.5 text-xs focus:outline-none focus:border-primary"
+                            >
+                              <option>Office Gate</option>
+                              <option>Main Gate of House</option>
+                              <option>Doorstep</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Dinner Address */}
+                    {offlineForm.basePlan !== "lunch" && (
+                      <div className="border-2 border-indigo-200 bg-indigo-50/40 rounded-2xl p-4 space-y-3">
+                        <div className="flex items-center gap-2 pb-1 border-b border-indigo-200">
+                          <span className="text-base">🍽️</span>
+                          <h4 className="text-xs font-bold text-indigo-950 uppercase tracking-wider">Dinner Delivery Address</h4>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-foreground mb-1">Home / Flat / Society *</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Ridge Residency, Flat 1507, Tower M"
+                            value={offlineForm.dinnerDelivery.address}
+                            onChange={e => setOfflineForm({
+                              ...offlineForm,
+                              dinnerDelivery: { ...offlineForm.dinnerDelivery, address: e.target.value }
+                            })}
+                            className="w-full border border-border bg-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-primary"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[11px] font-bold text-foreground mb-1">Sector *</label>
+                            <select
+                              value={offlineForm.dinnerDelivery.sector}
+                              onChange={e => setOfflineForm({
+                                ...offlineForm,
+                                dinnerDelivery: { ...offlineForm.dinnerDelivery, sector: e.target.value }
+                              })}
+                              className="w-full border border-border bg-white rounded-xl px-2.5 py-1.5 text-xs focus:outline-none focus:border-primary"
+                            >
+                              <option value="106">Sector 106</option>
+                              <option value="104">Sector 104</option>
+                              <option value="107">Sector 107</option>
+                              <option value="108">Sector 108</option>
+                              <option value="82">Sector 82</option>
+                              <option value="93">Sector 93</option>
+                              <option value="133">Sector 133</option>
+                              <option value="101">Sector 101</option>
+                              <option value="135">Sector 135</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-foreground mb-1">Deliver To</label>
+                            <select
+                              value={offlineForm.dinnerDelivery.deliveryType}
+                              onChange={e => setOfflineForm({
+                                ...offlineForm,
+                                dinnerDelivery: { ...offlineForm.dinnerDelivery, deliveryType: e.target.value }
+                              })}
+                              className="w-full border border-border bg-white rounded-xl px-2.5 py-1.5 text-xs focus:outline-none focus:border-primary"
+                            >
+                              <option>Doorstep</option>
+                              <option>Main Gate of House</option>
+                              <option>Office Gate</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-foreground mb-1">Deliver To</label>
-                    <select
-                      value={offlineForm.deliveryType}
-                      onChange={e => setOfflineForm({ ...offlineForm, deliveryType: e.target.value })}
-                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white"
-                    >
-                      <option>Office Gate</option>
-                      <option>Main Gate of House</option>
-                      <option>Doorstep</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-foreground mb-1">Preferred Time</label>
-                    <select
-                      value={offlineForm.deliveryTime}
-                      onChange={e => setOfflineForm({ ...offlineForm, deliveryTime: e.target.value })}
-                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white"
-                    >
-                      <option>Lunch (12:30 - 2 PM)</option>
-                      <option>Dinner (8:00 - 9:30 PM)</option>
-                      <option>Morning (9 - 10 AM)</option>
-                    </select>
-                  </div>
-                </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-bold text-foreground mb-1">Special Notes</label>

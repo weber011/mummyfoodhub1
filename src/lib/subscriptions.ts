@@ -57,14 +57,41 @@ export function getRemainingMeals(sub: UserSubscription): number | null {
 /**
  * Full subscription balance for dashboard display.
  * remainingMeals = totalMeals - usedMeals (skipped meals are NOT deducted)
+export function getPlanDisplayName(sub: UserSubscription): string {
+  const isFull = sub.basePlan === 'full' || (sub.planName?.toLowerCase().includes('complete') && (sub.planPrice === 5999 || sub.totalMeals === 82));
+  if (isFull) return 'Complete Plan';
+
+  const isLunchAndDinner = sub.basePlan === 'lunch_and_dinner' || (sub.basePlan === 'complete' && !sub.hasBreakfastAddon) || sub.planName?.toLowerCase().includes('lunch and dinner');
+  const hasBreakfast = sub.hasBreakfastAddon || sub.planName?.toLowerCase().includes('breakfast');
+
+  if (isLunchAndDinner) {
+    return hasBreakfast ? 'Lunch and Dinner + Breakfast' : 'Lunch and Dinner Plan';
+  }
+
+  const isDinner = sub.basePlan === 'dinner' || sub.mealType === 'dinner';
+  const isLunch = sub.basePlan === 'lunch' || sub.mealType === 'lunch';
+
+  if (isDinner) {
+    return hasBreakfast ? 'Dinner + Breakfast' : 'Dinner Plan';
+  }
+  if (isLunch) {
+    return hasBreakfast ? 'Lunch + Breakfast' : 'Lunch Plan';
+  }
+
+  return sub.planName || 'Subscription Plan';
+}
+
+/**
+ * Compute the subscription balance with strict category breakdowns.
  */
 export function getSubscriptionBalance(sub: UserSubscription): SubscriptionBalance {
+  const isFull = sub.basePlan === 'full' || (sub.planName?.toLowerCase().includes('complete') && (sub.planPrice === 5999 || sub.totalMeals === 82));
   const isDinner = sub.mealType === 'dinner' || sub.basePlan === 'dinner';
   const isLunch = sub.mealType === 'lunch' || sub.basePlan === 'lunch';
-  const isComplete = sub.mealType === 'both' || sub.basePlan === 'complete' || (!isDinner && !isLunch);
-  const hasBreakfast = sub.hasBreakfastAddon || sub.planName?.toLowerCase().includes('breakfast') || false;
+  const isBoth = isFull || sub.mealType === 'both' || sub.basePlan === 'lunch_and_dinner' || sub.basePlan === 'complete' || (!isDinner && !isLunch);
+  const hasBreakfast = isFull || sub.hasBreakfastAddon || sub.planName?.toLowerCase().includes('breakfast') || false;
 
-  const totalMeals = sub.totalMeals ?? (isDinner ? 30 : isComplete ? 56 : 26) + (hasBreakfast ? 26 : 0);
+  const totalMeals = sub.totalMeals ?? (isDinner ? 30 : isBoth ? 56 : 26) + (hasBreakfast ? 26 : 0);
   const usedMeals = sub.usedMeals ?? 0;
   const skippedMeals = sub.skippedMeals ?? 0;
   const transferredMeals = sub.transferredMeals ?? 0;
@@ -107,11 +134,11 @@ export function getSubscriptionBalance(sub: UserSubscription): SubscriptionBalan
     };
   }
 
-  if (isLunch || isComplete) {
+  if (isLunch || isBoth) {
     const lTotal = sub.lunchTotalMeals ?? 26;
-    const lUsed = sub.lunchUsedMeals ?? (isLunch && !isComplete ? usedMeals : Math.floor(usedMeals / 2));
-    const lSkipped = sub.lunchSkippedMeals ?? (isLunch && !isComplete ? skippedMeals : Math.floor(skippedMeals / 2));
-    const lTransferred = sub.lunchTransferredMeals ?? (isLunch && !isComplete ? transferredMeals : 0);
+    const lUsed = sub.lunchUsedMeals ?? (isLunch && !isBoth ? usedMeals : Math.floor(usedMeals / 2));
+    const lSkipped = sub.lunchSkippedMeals ?? (isLunch && !isBoth ? skippedMeals : Math.floor(skippedMeals / 2));
+    const lTransferred = sub.lunchTransferredMeals ?? (isLunch && !isBoth ? transferredMeals : 0);
     balance.lunch = {
       total: lTotal,
       consumed: lUsed,
@@ -121,11 +148,11 @@ export function getSubscriptionBalance(sub: UserSubscription): SubscriptionBalan
     };
   }
 
-  if (isDinner || isComplete) {
+  if (isDinner || isBoth) {
     const dTotal = sub.dinnerTotalMeals ?? 30;
-    const dUsed = sub.dinnerUsedMeals ?? (isDinner && !isComplete ? usedMeals : Math.ceil(usedMeals / 2));
-    const dSkipped = sub.dinnerSkippedMeals ?? (isDinner && !isComplete ? skippedMeals : Math.ceil(skippedMeals / 2));
-    const dTransferred = sub.dinnerTransferredMeals ?? (isDinner && !isComplete ? transferredMeals : 0);
+    const dUsed = sub.dinnerUsedMeals ?? (isDinner && !isBoth ? usedMeals : Math.ceil(usedMeals / 2));
+    const dSkipped = sub.dinnerSkippedMeals ?? (isDinner && !isBoth ? skippedMeals : Math.ceil(skippedMeals / 2));
+    const dTransferred = sub.dinnerTransferredMeals ?? (isDinner && !isBoth ? transferredMeals : 0);
     balance.dinner = {
       total: dTotal,
       consumed: dUsed,

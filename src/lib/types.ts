@@ -127,6 +127,11 @@ export type SubscriptionRequest = {
   deliveryInstructions?: string;
   houseNumber?: string;
   building?: string;
+  // Separate per-meal delivery addresses
+  separateAddresses?: boolean;
+  breakfastDelivery?: MealDeliveryAddress;
+  lunchDelivery?: MealDeliveryAddress;
+  dinnerDelivery?: MealDeliveryAddress;
 };
 
 export type DeliveryStatus = 'delivered' | 'skipped' | 'issue' | 'pending';
@@ -178,10 +183,17 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
   reminderEmailHour: 8,
 };
 
-// ── Meal Types & Plans ─────────────────────────────────────────────
-
-export type BasePlanType = 'lunch' | 'dinner' | 'complete';
+export type BasePlanType = 'lunch' | 'dinner' | 'lunch_and_dinner' | 'complete' | 'full';
 export type MealType = 'breakfast' | 'lunch' | 'dinner';
+
+export type MealDeliveryAddress = {
+  address: string;
+  sector: string;
+  landmark?: string;
+  deliveryType?: string; // 'Doorstep' | 'Office Gate' | 'Main Gate of House'
+  deliveryTime?: string;
+  notes?: string;
+};
 
 export type UserSubscription = {
   id: string;
@@ -240,6 +252,11 @@ export type UserSubscription = {
   isOffline?: boolean;
   paymentStatus?: 'paid' | 'pending' | 'failed';
   paymentMethod?: string;
+  // Separate per-meal delivery addresses
+  separateAddresses?: boolean;
+  breakfastDelivery?: MealDeliveryAddress;
+  lunchDelivery?: MealDeliveryAddress;
+  dinnerDelivery?: MealDeliveryAddress;
 };
 
 // ── Meal Schedule & Shifting ───────────────────────────────────────
