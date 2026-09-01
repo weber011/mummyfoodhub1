@@ -1640,7 +1640,7 @@ export default function AdminPage() {
                     {[
                       { id: "lunch", label: "Lunch Plan", meals: "26 Meals (56 Days)", price: "₹2,099" },
                       { id: "dinner", label: "Dinner Plan", meals: "30 Meals (60 Days)", price: "₹2,500" },
-                      { id: "lunch_and_dinner", label: "Lunch and Dinner Plan", meals: "56 Meals (60 Days)", price: "₹4,400" },
+                      { id: "lunch_and_dinner", label: "Lunch and Dinner Plan", meals: "56 Meals (60 Days)", price: "₹4,399" },
                       { id: "full", label: "Complete Plan", meals: "82 Meals (60 Days)", price: "₹5,999" },
                     ].map((bp) => (
                       <button

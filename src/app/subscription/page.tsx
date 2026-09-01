@@ -58,7 +58,7 @@ const DEFAULT_PLANS = [
   {
     id: "plan-lunch-dinner",
     name: "Lunch and Dinner Plan",
-    price: 4400,
+    price: 4399,
     duration: "60 Days (56 Meals)",
     features: [
       "26 Lunches + 30 Dinners (56 Meals)",

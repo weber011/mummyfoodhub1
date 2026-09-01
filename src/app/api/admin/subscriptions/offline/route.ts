@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     let planPrice = isFull
       ? 5999
       : isLunchAndDinner
-        ? (breakfast ? 6000 : 4400)
+        ? (breakfast ? 6019 : 4399)
         : isDinner
           ? (breakfast ? 4120 : 2500)
           : (breakfast ? 3719 : 2099);
