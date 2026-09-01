@@ -91,9 +91,7 @@ const DEFAULT_PLANS = [
 export default function SubscriptionPage() {
   const { siteData } = useSiteData();
   const { user } = useAuth();
-  const plans = siteData?.subscriptionPlans && siteData.subscriptionPlans.length > 0
-    ? siteData.subscriptionPlans
-    : DEFAULT_PLANS;
+  const plans = DEFAULT_PLANS;
 
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [addBreakfast, setAddBreakfast] = useState(false);
