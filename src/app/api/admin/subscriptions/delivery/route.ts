@@ -23,13 +23,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { subscriptionId, userId, date, status, notes, notifyCustomer } = body;
+    const { subscriptionId, userId, date, status, notes, notifyCustomer, mealType } = body;
 
     if (!subscriptionId || !userId || !date || !status) {
       return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
     }
 
-    const entry = await logDelivery({ subscriptionId, userId, date, status, notes, notifyCustomer });
+    const entry = await logDelivery({ subscriptionId, userId, date, status, notes, notifyCustomer, mealType });
 
     // Optionally email the customer
     if (notifyCustomer) {

@@ -202,13 +202,33 @@ export async function logDelivery(entry: Omit<SubscriptionDelivery, 'id' | 'logg
   await redisSet(`${DELIVERY_PREFIX}${id}`, delivery);
   await redisLPush(`sub_deliveries:sub:${entry.subscriptionId}`, id);
   await redisLPush(`sub_deliveries:user:${entry.userId}`, id);
-  // Increment usedMeals on the subscription when status is 'delivered'
-  if (entry.status === 'delivered') {
-    const sub = await redisGet<UserSubscription>(`${SUB_PREFIX}${entry.subscriptionId}`);
-    if (sub) {
-      await redisSet(`${SUB_PREFIX}${entry.subscriptionId}`, { ...sub, usedMeals: (sub.usedMeals ?? 0) + 1 });
+
+  const sub = await redisGet<UserSubscription>(`${SUB_PREFIX}${entry.subscriptionId}`);
+  if (sub) {
+    const isB = entry.mealType === 'breakfast';
+    const isL = entry.mealType === 'lunch';
+    const isD = entry.mealType === 'dinner';
+    const isAll = !entry.mealType || entry.mealType === 'all';
+
+    if (entry.status === 'delivered') {
+      await redisSet(`${SUB_PREFIX}${entry.subscriptionId}`, {
+        ...sub,
+        usedMeals: (sub.usedMeals ?? 0) + (isAll ? (sub.basePlan === 'full' ? 3 : sub.basePlan === 'lunch_and_dinner' ? 2 : 1) : 1),
+        breakfastUsedMeals: (isB || isAll) ? (sub.breakfastUsedMeals ?? 0) + 1 : sub.breakfastUsedMeals,
+        lunchUsedMeals: (isL || isAll) ? (sub.lunchUsedMeals ?? 0) + 1 : sub.lunchUsedMeals,
+        dinnerUsedMeals: (isD || isAll) ? (sub.dinnerUsedMeals ?? 0) + 1 : sub.dinnerUsedMeals,
+      });
+    } else if (entry.status === 'skipped') {
+      await redisSet(`${SUB_PREFIX}${entry.subscriptionId}`, {
+        ...sub,
+        skippedMeals: (sub.skippedMeals ?? 0) + 1,
+        breakfastSkippedMeals: isB ? (sub.breakfastSkippedMeals ?? 0) + 1 : sub.breakfastSkippedMeals,
+        lunchSkippedMeals: isL ? (sub.lunchSkippedMeals ?? 0) + 1 : sub.lunchSkippedMeals,
+        dinnerSkippedMeals: isD ? (sub.dinnerSkippedMeals ?? 0) + 1 : sub.dinnerSkippedMeals,
+      });
     }
   }
+
   return delivery;
 }
 

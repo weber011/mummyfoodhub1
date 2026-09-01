@@ -141,6 +141,7 @@ export type SubscriptionDelivery = {
   subscriptionId: string;
   userId: string;
   date: string;            // YYYY-MM-DD
+  mealType?: 'breakfast' | 'lunch' | 'dinner' | 'all';
   status: DeliveryStatus;
   notes?: string;
   notifyCustomer?: boolean;

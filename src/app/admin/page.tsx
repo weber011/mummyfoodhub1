@@ -108,6 +108,7 @@ export default function AdminPage() {
   const [activeSubForDelivery, setActiveSubForDelivery] = useState<any>(null);
   const [deliveryForm, setDeliveryForm] = useState({
     date: new Date().toISOString().split("T")[0],
+    mealType: "all" as "all" | "breakfast" | "lunch" | "dinner",
     status: "delivered",
     notes: "",
     notifyCustomer: true
@@ -308,6 +309,7 @@ export default function AdminPage() {
           subscriptionId: activeSubForDelivery.id,
           userId: activeSubForDelivery.userId,
           date: deliveryForm.date,
+          mealType: deliveryForm.mealType,
           status: deliveryForm.status,
           notes: deliveryForm.notes,
           notifyCustomer: deliveryForm.notifyCustomer
@@ -315,7 +317,7 @@ export default function AdminPage() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to log delivery");
-      alert("Delivery logged successfully!");
+      alert(`Delivery for ${deliveryForm.mealType === 'all' ? 'All Meals' : deliveryForm.mealType.toUpperCase()} logged successfully!`);
       setShowDeliveryModal(false);
       fetchCustomerSubs(creds.u, creds.p);
       // Refresh logs for this subscription if expanded
@@ -324,6 +326,38 @@ export default function AdminPage() {
       alert(err.message || "Error logging delivery.");
     } finally {
       setSubmittingDelivery(false);
+    }
+  };
+
+  const handleQuickMealDelivery = async (sub: any, mealType: 'breakfast' | 'lunch' | 'dinner', status: 'delivered' | 'skipped' = 'delivered') => {
+    const today = new Date().toISOString().split("T")[0];
+    const confirmMsg = `Mark ${mealType.toUpperCase()} as ${status.toUpperCase()} for ${sub.customerName || sub.planName} on ${today}?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const res = await fetch("/api/admin/subscriptions/delivery", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': 'Basic ' + Buffer.from(`${creds.u}:${creds.p}`).toString('base64')
+        },
+        body: JSON.stringify({
+          subscriptionId: sub.id,
+          userId: sub.userId,
+          date: today,
+          mealType,
+          status,
+          notes: `Quick mark ${status} by admin`,
+          notifyCustomer: Boolean(sub.customerEmail)
+        })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to log delivery");
+      alert(`✅ ${mealType.toUpperCase()} marked as ${status} successfully!`);
+      fetchCustomerSubs(creds.u, creds.p);
+      fetchSubDeliveryLogs(sub.id);
+    } catch (err: any) {
+      alert(err.message || "Error logging meal.");
     }
   };
 
@@ -1050,8 +1084,45 @@ export default function AdminPage() {
 
                               <p className="text-[11px] text-muted-foreground">
                                 <strong>Validity:</strong> {new Date(sub.startDate).toLocaleDateString("en-IN")} – {new Date(sub.endDate).toLocaleDateString("en-IN")}
-                                {sub.totalMeals ? ` • ${sub.usedMeals || 0}/${sub.totalMeals} Meals Used` : ''}
+                                {sub.totalMeals ? ` • ${sub.usedMeals || 0}/${sub.totalMeals} Total Meals Used` : ''}
                               </p>
+
+                              {/* Separate Quick Delivery Controls per Meal Type */}
+                              {sub.status === 'active' && (
+                                <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
+                                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mr-1">Mark Today Delivered:</span>
+                                  {(sub.basePlan === 'full' || sub.hasBreakfastAddon) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleQuickMealDelivery(sub, 'breakfast', 'delivered')}
+                                      className="bg-orange-50 hover:bg-orange-100 text-orange-950 font-bold text-[11px] px-2.5 py-1 rounded-lg border border-orange-300 transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
+                                      title="Mark Breakfast Delivered"
+                                    >
+                                      🥐 Breakfast ({sub.breakfastUsedMeals || 0}/{sub.breakfastTotalMeals || 26})
+                                    </button>
+                                  )}
+                                  {(sub.basePlan !== 'dinner') && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleQuickMealDelivery(sub, 'lunch', 'delivered')}
+                                      className="bg-amber-50 hover:bg-amber-100 text-amber-950 font-bold text-[11px] px-2.5 py-1 rounded-lg border border-amber-300 transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
+                                      title="Mark Lunch Delivered"
+                                    >
+                                      🍱 Lunch ({sub.lunchUsedMeals || 0}/{sub.lunchTotalMeals || 26})
+                                    </button>
+                                  )}
+                                  {(sub.basePlan !== 'lunch') && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleQuickMealDelivery(sub, 'dinner', 'delivered')}
+                                      className="bg-indigo-50 hover:bg-indigo-100 text-indigo-950 font-bold text-[11px] px-2.5 py-1 rounded-lg border border-indigo-300 transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
+                                      title="Mark Dinner Delivered"
+                                    >
+                                      🍽️ Dinner ({sub.dinnerUsedMeals || 0}/{sub.dinnerTotalMeals || 30})
+                                    </button>
+                                  )}
+                                </div>
+                              )}
                             </div>
 
                             <div className="flex items-center gap-2 w-full md:w-auto">
@@ -1060,6 +1131,7 @@ export default function AdminPage() {
                                   setActiveSubForDelivery(sub);
                                   setDeliveryForm({
                                     date: new Date().toISOString().split("T")[0],
+                                    mealType: "all",
                                     status: "delivered",
                                     notes: "",
                                     notifyCustomer: Boolean(sub.customerEmail)
@@ -1068,7 +1140,7 @@ export default function AdminPage() {
                                 }}
                                 className="flex-1 md:flex-initial bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-colors"
                               >
-                                <Utensils className="w-3.5 h-3.5" /> Log Daily Delivery
+                                <Utensils className="w-3.5 h-3.5" /> Log Custom Delivery
                               </button>
 
                               <button
@@ -2088,6 +2160,26 @@ export default function AdminPage() {
                     onChange={e => setDeliveryForm({ ...deliveryForm, date: e.target.value })}
                     className="w-full border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">Meal to Record</label>
+                  <select
+                    value={deliveryForm.mealType}
+                    onChange={e => setDeliveryForm({ ...deliveryForm, mealType: e.target.value as any })}
+                    className="w-full border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary bg-white font-bold"
+                  >
+                    <option value="all">✨ All Included Meals</option>
+                    {(activeSubForDelivery.basePlan === 'full' || activeSubForDelivery.hasBreakfastAddon) && (
+                      <option value="breakfast">🥐 Breakfast</option>
+                    )}
+                    {activeSubForDelivery.basePlan !== 'dinner' && (
+                      <option value="lunch">🍱 Lunch</option>
+                    )}
+                    {activeSubForDelivery.basePlan !== 'lunch' && (
+                      <option value="dinner">🍽️ Dinner</option>
+                    )}
+                  </select>
                 </div>
 
                 <div>
